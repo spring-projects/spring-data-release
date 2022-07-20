@@ -1,0 +1,2 @@
+github push ${VERSION}
+release distribute ${VERSION}
