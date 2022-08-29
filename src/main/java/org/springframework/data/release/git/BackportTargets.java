@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.bouncycastle.util.Iterable;
-
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Train;
 import org.springframework.util.Assert;

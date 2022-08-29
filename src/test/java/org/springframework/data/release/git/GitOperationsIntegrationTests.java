@@ -16,7 +16,7 @@
 package org.springframework.data.release.git;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assume.*;
+import static org.assertj.core.api.Assumptions.*;
 import static org.springframework.data.release.model.Projects.*;
 
 import java.io.IOException;
@@ -52,7 +52,7 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 			urlConnection.connect();
 			urlConnection.getInputStream().close();
 		} catch (IOException e) {
-			assumeTrue("Test requires connectivity to GitHub:" + e.toString(), false);
+			assumeThat(false).as("Test requires connectivity to GitHub:" + e.toString()).isTrue();
 		}
 	}
 

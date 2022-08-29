@@ -16,7 +16,7 @@
 package org.springframework.data.release.cli;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assume.*;
+import static org.assertj.core.api.Assumptions.*;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,7 +49,7 @@ class ReleaseCommandsIntegrationTests extends AbstractIntegrationTests {
 			urlConnection.connect();
 			urlConnection.getInputStream().close();
 		} catch (IOException e) {
-			assumeTrue("Test requires connectivity to GitHub:" + e.toString(), false);
+			assumeThat(false).as("Test requires connectivity to GitHub:" + e.toString()).isTrue();
 		}
 	}
 

@@ -16,8 +16,7 @@
 package org.springframework.data.release.build;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.junit.Assume.*;
+import static org.assertj.core.api.Assumptions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -38,7 +37,7 @@ import org.springframework.data.release.model.Projects;
 
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.evaluation.XPathEvaluator;
-import org.xmlbeam.io.XBFileIO;
+import org.xmlbeam.io.FileIO;
 
 /**
  * @author Oliver Gierke
@@ -60,14 +59,14 @@ class MavenIntegrationTests extends AbstractIntegrationTests {
 			urlConnection.connect();
 			urlConnection.getInputStream().close();
 		} catch (IOException e) {
-			assumeTrue("Test requires connectivity to GitHub:" + e.toString(), false);
+			assumeThat(false).as("Test requires connectivity to GitHub:" + e.toString()).isTrue();
 		}
 	}
 
 	@Test
 	void modifiesParentPomCorrectly() throws IOException {
 
-		XBFileIO io = projection.io().file(new ClassPathResource("parent-pom.xml").getFile());
+		FileIO io = projection.io().file(new ClassPathResource("parent-pom.xml").getFile());
 
 		ParentPom pom = io.read(ParentPom.class);
 		pom.setSharedResourcesVersion(ArtifactVersion.of("1.2.0.RELEASE"));
@@ -82,7 +81,7 @@ class MavenIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void updatesRepositoriesCorrectly() throws Exception {
 
-		XBFileIO io = projection.io().file(new ClassPathResource("sample-pom.xml").getFile());
+		FileIO io = projection.io().file(new ClassPathResource("sample-pom.xml").getFile());
 
 		Pom pom = io.read(Pom.class);
 

@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-import org.bouncycastle.util.Strings;
+import org.apache.commons.io.IOUtils;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
@@ -57,7 +57,7 @@ public class InfrastructureCommands extends TimedCommand {
 	public Table listJdkVersions() {
 
 		List<JavaRuntimes.JdkInstallation> jdks = JavaRuntimes.getJdks();
-		StringBuilder builder = new StringBuilder("Available Java versions" + Strings.lineSeparator());
+		StringBuilder builder = new StringBuilder("Available Java versions" + IOUtils.LINE_SEPARATOR);
 
 		Table table = new Table();
 		table.addHeader(1, new TableHeader("Version", 15));

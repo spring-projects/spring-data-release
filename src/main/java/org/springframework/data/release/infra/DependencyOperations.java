@@ -68,8 +68,8 @@ import org.springframework.web.client.RestOperations;
 
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.annotation.XBRead;
-import org.xmlbeam.io.XBFileIO;
-import org.xmlbeam.io.XBStreamInput;
+import org.xmlbeam.io.FileIO;
+import org.xmlbeam.io.StreamInput;
 
 /**
  * Operations for dependency management.
@@ -505,7 +505,7 @@ public class DependencyOperations {
 
 			Map<String, LocalDateTime> creationDates = parseCreationDates(directoryListing.getBody());
 
-			XBStreamInput io = projectionFactory.io().stream(new ByteArrayInputStream(mavenMetadata.getBody()));
+			StreamInput io = projectionFactory.io().stream(new ByteArrayInputStream(mavenMetadata.getBody()));
 
 			MavenMetadata metadata = io.read(MavenMetadata.class);
 
@@ -556,7 +556,7 @@ public class DependencyOperations {
 
 	private <T extends Pom, R> R doWithPom(File file, Class<T> type, Function<T, R> callback) {
 
-		XBFileIO io = projectionFactory.io().file(file);
+		FileIO io = projectionFactory.io().file(file);
 
 		try {
 
@@ -570,7 +570,7 @@ public class DependencyOperations {
 
 	private <T extends Pom> void update(File file, Class<T> type, Consumer<T> callback) {
 
-		XBFileIO io = projectionFactory.io().file(file);
+		FileIO io = projectionFactory.io().file(file);
 
 		try {
 

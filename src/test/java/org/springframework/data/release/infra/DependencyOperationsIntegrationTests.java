@@ -16,7 +16,7 @@
 package org.springframework.data.release.infra;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assume.*;
+import static org.assertj.core.api.Assumptions.*;
 
 import java.io.IOException;
 import java.net.URL;
@@ -53,7 +53,7 @@ class DependencyOperationsIntegrationTests extends AbstractIntegrationTests {
 			urlConnection.connect();
 			urlConnection.getInputStream().close();
 		} catch (IOException e) {
-			assumeTrue("Test requires connectivity to Maven: " + e.toString(), false);
+			assumeThat(false).as("Test requires connectivity to Maven: " + e.toString()).isTrue();
 		}
 	}
 
