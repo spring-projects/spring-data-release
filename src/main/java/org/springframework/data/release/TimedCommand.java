@@ -65,4 +65,35 @@ public abstract class TimedCommand implements ExecutionProcessor, CommandMarker 
 		watch.stop();
 		System.out.println(String.format("Took: %.2f sec.", watch.getTotalTimeSeconds()));
 	}
+
+	/**
+	 * Means to retry commands more than once to ensure they are completed. If any exception is thrown at any time, it
+	 * will fall out and try again.
+	 *
+	 * @param action command(s) that need to be run
+	 * @param maxTimes number of times to attempt
+	 */
+	protected void retry(Runnable action, int maxTimes) {
+
+		int maxAttempts = maxTimes;
+
+		Exception lastException = null;
+
+		while (maxAttempts > 0) {
+			try {
+				action.run();
+				return;
+			} catch (Exception e) {
+				lastException = e;
+				maxAttempts--;
+			}
+		}
+
+        if (lastException != null) {
+            throw new RuntimeException(lastException);
+        } else {
+            throw new RuntimeException("Unable to complete the action within " + maxTimes + " attempts!");
+        }
+	}
+
 }

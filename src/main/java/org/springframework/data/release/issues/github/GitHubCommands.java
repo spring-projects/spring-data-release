@@ -61,10 +61,11 @@ public class GitHubCommands extends TimedCommand {
 	@CliCommand(value = "github push")
 	public void push(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
-		git.push(iteration);
-		git.pushTags(iteration.getTrain());
-
-		createOrUpdateRelease(iteration);
+		retry(() -> {
+			git.push(iteration);
+			git.pushTags(iteration.getTrain());
+			createOrUpdateRelease(iteration);
+		}, 2);
 	}
 
 	@CliCommand(value = "github create release")

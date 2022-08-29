@@ -40,6 +40,7 @@ pipeline {
 				PASSPHRASE = credentials('spring-gpg-passphrase')
 				KEYRING = credentials('spring-signing-secring.gpg')
 				SONATYPE = credentials('oss-login')
+				GPG_KEYNAME = credentials('spring-data-release-gpg-keyname')
 			}
 
 			steps {
