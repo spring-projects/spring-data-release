@@ -7,22 +7,22 @@ pipeline {
 	}
 
 	stages {
-		stage('Bake the Spring Data release tools into a container') {
-		    when {
-		        branch 'container'
-		    }
-		    agent {
-		        label 'data'
-		    }
+		stage('Build the Spring Data release tools container') {
+			when {
+				branch 'container'
+			}
+			agent {
+				label 'data'
+			}
 
-		    steps {
-		        script {
-                    def image = docker.build("springci/spring-data-release-tools:0.1", "ci")
-                    docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
-                        image.push()
-                    }
-		        }
-		    }
+			steps {
+				script {
+					def image = docker.build("springci/spring-data-release-tools:0.1", "ci")
+					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
+						image.push()
+					}
+				}
+			}
 		}
 	}
 

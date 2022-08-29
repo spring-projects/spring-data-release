@@ -21,6 +21,7 @@ maven.parallelize=true
 deployment.username=
 deployment.password=
 deployment.api-key=
+deployment.maven-central.staging-profile-id=
 
 # GPG
 gpg.keyname=

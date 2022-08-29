@@ -19,6 +19,7 @@ import lombok.Data;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -32,10 +33,14 @@ public class Gpg {
 
 	private String keyname;
 	private String executable;
-	private String passphrase;
+	private Password passphrase;
 	private String secretKeyring;
 
 	public boolean isGpgAvailable() {
-		return this.passphrase != null && StringUtils.hasText(secretKeyring);
+		return this.passphrase != null && StringUtils.hasText(keyname);
+	}
+
+	public boolean hasSecretKeyring() {
+		return !ObjectUtils.isEmpty(getSecretKeyring());
 	}
 }

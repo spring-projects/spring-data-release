@@ -18,11 +18,21 @@ package org.springframework.data.release.build;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.maven.shared.invoker.*;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.io.JavaRuntimes;
 import org.springframework.data.release.io.Workspace;
@@ -70,11 +80,7 @@ class MavenRuntime {
 		return new MavenRuntime(workspace, logger, properties, javaVersion);
 	}
 
-	public MavenProperties getProperties() {
-		return this.properties;
-	}
-
-	public void execute(Project project, CommandLine arguments) {
+	public MavenInvocationResult execute(Project project, CommandLine arguments) {
 
 		logger.log(project, "📦 Executing mvn %s", arguments.toString());
 
@@ -108,10 +114,14 @@ class MavenRuntime {
 			if (result.getExitCode() != 0) {
 				logger.warn(project, "🙈 Failed execution mvn %s", arguments.toString());
 
-				throw new IllegalStateException("🙈 Failed execution mvn " + arguments.toString(),
-						result.getExecutionException());
+				throw new IllegalStateException("🙈 Failed execution mvn " + arguments, result.getExecutionException());
 			}
 			logger.log(project, "🆗 Successful execution mvn %s", arguments.toString());
+
+			MavenInvocationResult invocationResult = new MavenInvocationResult();
+			invocationResult.getLog().addAll(mavenLogger.getLines());
+
+			return invocationResult;
 		} catch (Exception e) {
 			if (e instanceof RuntimeException) {
 				throw (RuntimeException) e;
@@ -133,6 +143,15 @@ class MavenRuntime {
 		return new FileLogger(log, project, this.workspace.getLogsDirectory(), goals);
 	}
 
+	public static class MavenInvocationResult {
+
+		private final List<String> log = new ArrayList<>();
+
+		public List<String> getLog() {
+			return log;
+		}
+	}
+
 	/**
 	 * Maven Logging Forwarder.
 	 */
@@ -141,6 +160,8 @@ class MavenRuntime {
 		void info(String message);
 
 		void warn(String message);
+
+		List<String> getLines();
 	}
 
 	@RequiredArgsConstructor
@@ -148,25 +169,36 @@ class MavenRuntime {
 
 		private final org.slf4j.Logger logger;
 		private final String logPrefix;
+		private final List<String> contents;
 
 		SlfLogger(org.slf4j.Logger logger, Project project) {
 			this.logger = logger;
 			this.logPrefix = StringUtils.padRight(project.getName(), 10);
+			this.contents = new ArrayList<>();
 		}
 
 		@Override
 		public void info(String message) {
-			logger.info(logPrefix + ": " + message);
+			String msg = logPrefix + ": " + message;
+			contents.add(msg);
+			logger.info(msg);
 		}
 
 		@Override
 		public void warn(String message) {
-			logger.warn(logPrefix + ": " + message);
+			String msg = logPrefix + ": " + message;
+			contents.add(msg);
+			logger.warn(msg);
 		}
 
 		@Override
 		public void close() throws IOException {
 			// no-op
+		}
+
+		@Override
+		public List<String> getLines() {
+			return contents;
 		}
 	}
 
@@ -174,6 +206,7 @@ class MavenRuntime {
 
 		private final PrintWriter printWriter;
 		private final FileOutputStream outputStream;
+		private final List<String> contents = new ArrayList<>();
 
 		FileLogger(org.slf4j.Logger logger, Project project, File logsDirectory, List<CommandLine.Goal> goals) {
 
@@ -199,17 +232,24 @@ class MavenRuntime {
 		@Override
 		public void info(String message) {
 			printWriter.println(message);
+			contents.add(message);
 		}
 
 		@Override
 		public void warn(String message) {
 			printWriter.println(message);
+			contents.add(message);
 		}
 
 		@Override
 		public void close() throws IOException {
 			printWriter.close();
 			outputStream.close();
+		}
+
+		@Override
+		public List<String> getLines() {
+			return contents;
 		}
 	}
 

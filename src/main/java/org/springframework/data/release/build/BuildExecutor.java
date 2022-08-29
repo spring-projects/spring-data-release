@@ -21,7 +21,12 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -30,10 +35,12 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.io.IOUtils;
+
 import org.springframework.data.release.infra.InfrastructureOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
@@ -99,13 +106,6 @@ class BuildExecutor {
 		Set<Project> skip = new HashSet<>(Arrays.asList());
 
 		skip.forEach(it -> results.put(it, CompletableFuture.completedFuture(null)));
-
-		for (M moduleIteration : iteration) {
-
-			if (skip.contains(moduleIteration.getProject())) {
-				continue;
-			}
-		}
 
 		for (M moduleIteration : iteration) {
 

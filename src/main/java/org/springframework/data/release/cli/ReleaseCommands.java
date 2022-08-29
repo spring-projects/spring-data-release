@@ -15,7 +15,7 @@
  */
 package org.springframework.data.release.cli;
 
-import static org.springframework.data.release.model.Projects.COMMONS;
+import static org.springframework.data.release.model.Projects.*;
 
 import lombok.AccessLevel;
 import lombok.NonNull;
@@ -27,11 +27,19 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.build.BuildOperations;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentOperations;
+import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.IssueTrackerCommands;
 import org.springframework.data.release.issues.github.GitHubCommands;
 import org.springframework.data.release.misc.ReleaseOperations;
-import org.springframework.data.release.model.*;
+import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Phase;
+import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.Train;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.util.Assert;
@@ -108,15 +116,16 @@ class ReleaseCommands extends TimedCommand {
 	public void repositoryOpen(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
 		if (iteration.getIteration().isPublic()) {
-			build.open();
+			build.open(iteration.getModule(Projects.BUILD));
 		}
 	}
 
 	@CliCommand(value = "repository close")
-	public void repositoryClose(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public void repositoryClose(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "stagingRepositoryId", mandatory = true) String stagingRepositoryId) {
 
 		if (iteration.getIteration().isPublic()) {
-			build.close();
+			build.close(iteration.getModule(Projects.BUILD), StagingRepository.of(stagingRepositoryId));
 		}
 	}
 

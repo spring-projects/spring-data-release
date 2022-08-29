@@ -1,7 +1,7 @@
 def p = [:]
 node {
-    checkout scm
-    p = readProperties interpolate: true, file: 'ci/release.properties'
+	checkout scm
+	p = readProperties interpolate: true, file: 'ci/release.properties'
 }
 
 pipeline {
@@ -14,9 +14,9 @@ pipeline {
 
 	stages {
 		stage('Ship It') {
-		    when {
-		        branch 'release'
-		    }
+			when {
+				branch 'release'
+			}
 			agent {
 				docker {
 					image 'springci/spring-data-release-tools:0.1'
@@ -24,56 +24,56 @@ pipeline {
 			}
 			options { timeout(time: 4, unit: 'HOURS') }
 
-            environment {
-                GIT_USERNAME = credentials('spring-data-release-git-username')
-                GIT_AUTHOR = credentials('spring-data-release-git-author')
-                GIT_EMAIL = credentials('spring-data-release-git-email')
-                GIT_PASSWORD = credentials('spring-data-release-git-password')
-                GITHUB_API_URL = credentials('spring-data-release-github-api-url')
-                DEPLOYMENT_USERNAME = credentials('spring-data-release-deployment-username')
-                DEPLOYMENT_PASSWORD = credentials('spring-data-release-deployment-password')
-                DEPLOYMENT_API_KEY = credentials('spring-data-release-deployment-api-key')
-                STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
-                JIRA_USERNAME = credentials('spring-data-release-jira-username')
-                JIRA_PASSWORD = credentials('spring-data-release-jira-password')
-                JIRA_URL = credentials('spring-data-release-jira-url')
-                PASSPHRASE = credentials('spring-gpg-passphrase')
-                KEYRING = credentials('spring-signing-secring.gpg')
-                SONATYPE = credentials('oss-login')
-            }
+			environment {
+				GIT_USERNAME = credentials('spring-data-release-git-username')
+				GIT_AUTHOR = credentials('spring-data-release-git-author')
+				GIT_EMAIL = credentials('spring-data-release-git-email')
+				GIT_PASSWORD = credentials('spring-data-release-git-password')
+				GITHUB_API_URL = credentials('spring-data-release-github-api-url')
+				DEPLOYMENT_USERNAME = credentials('spring-data-release-deployment-username')
+				DEPLOYMENT_PASSWORD = credentials('spring-data-release-deployment-password')
+				DEPLOYMENT_API_KEY = credentials('spring-data-release-deployment-api-key')
+				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
+				JIRA_USERNAME = credentials('spring-data-release-jira-username')
+				JIRA_PASSWORD = credentials('spring-data-release-jira-password')
+				JIRA_URL = credentials('spring-data-release-jira-url')
+				PASSPHRASE = credentials('spring-gpg-passphrase')
+				KEYRING = credentials('spring-signing-secring.gpg')
+				SONATYPE = credentials('oss-login')
+			}
 
 			steps {
 				script {
-                    sh "ci/build-spring-data-release-cli.bash"
-                    sh "ci/prepare-and-build.bash ${p['release.version']}"
+					sh "ci/build-spring-data-release-cli.bash"
+					sh "ci/prepare-and-build.bash ${p['release.version']}"
 
-                    slackSend(
-                        color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-                        channel: '#spring-data-dev',
-                        message: (currentBuild.currentResult == 'SUCCESS')
-                                ? "`${env.BUILD_URL}` - Build and deploy passed! Conduct smoke tests then report back here."
-                                : "`${env.BUILD_URL}` - Push and distribute failed!")
+					slackSend(
+						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
+						channel: '#spring-data-dev',
+						message: (currentBuild.currentResult == 'SUCCESS')
+								? "`${env.BUILD_URL}` - Build and deploy passed! Conduct smoke tests then report back here."
+								: "`${env.BUILD_URL}` - Push and distribute failed!")
 
-                    input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass?")
+					input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass?")
 
-                    sh "ci/conclude.bash ${p['release.version']}"
+					sh "ci/conclude.bash ${p['release.version']}"
 
-                    slackSend(
-                        color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-                        channel: '#spring-data-dev',
-                        message: "${env.BUILD_URL} - Ready to push and distribute? Check out the logs and click on either `Proceed` or `Abort`")
+					slackSend(
+						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
+						channel: '#spring-data-dev',
+						message: "${env.BUILD_URL} - Ready to push and distribute? Check out the logs and click on either `Proceed` or `Abort`")
 
-                    input("PUSH AND DISTRIBUTE: Ready to push and distribute ${p['release.version']}? (Can't go back after this)")
+					input("PUSH AND DISTRIBUTE: Ready to push and distribute ${p['release.version']}? (Can't go back after this)")
 
-                    sh "ci/push-and-distribute.bash ${p['release.version']}"
+					sh "ci/push-and-distribute.bash ${p['release.version']}"
 
-                    slackSend(
-                        color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-                        channel: '#spring-data-dev',
-                        message: (currentBuild.currentResult == 'SUCCESS')
-                                ? "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} passed! Release the build (if needed)."
-                                : "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} failed!")
-                }
+					slackSend(
+						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
+						channel: '#spring-data-dev',
+						message: (currentBuild.currentResult == 'SUCCESS')
+								? "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} passed! Release the build (if needed)."
+								: "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} failed!")
+				}
 			}
 		}
 	}

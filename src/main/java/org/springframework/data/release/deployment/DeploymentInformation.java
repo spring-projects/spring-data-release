@@ -21,48 +21,58 @@ import org.springframework.data.release.model.ModuleIteration;
 
 /**
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 public interface DeploymentInformation {
 
 	/**
 	 * Returns the name of the build.
-	 * 
+	 *
 	 * @return will never be {@literal null} or empty.
 	 */
 	String getBuildName();
 
 	/**
 	 * Returns a unique build number for this particular deployment.
-	 * 
+	 *
 	 * @return will never be {@literal null} or empty.
 	 */
 	String getBuildNumber();
 
 	/**
 	 * Returns the full URL to be used as deployment target.
-	 * 
+	 *
 	 * @return will never be {@literal null} or empty.
 	 */
 	String getDeploymentTargetUrl();
 
 	/**
 	 * Returns the name of the repository to deploy to.
-	 * 
+	 *
 	 * @return will never be {@literal null} or empty.
 	 */
 	String getTargetRepository();
 
 	/**
+	 * Staging repository identifier.
+	 *
+	 * @return
+	 */
+	StagingRepository getStagingRepositoryId();
+
+	/**
 	 * Returns the {@link ModuleIteration} the deployment information was created for.
-	 * 
+	 *
 	 * @return
 	 */
 	ModuleIteration getModule();
 
 	/**
 	 * Returns a {@link Map} to expand a URI template to access the build information.
-	 * 
+	 *
 	 * @return
 	 */
 	Map<String, Object> getBuildInfoParameters();
+
+	DeploymentInformation withModule(ModuleIteration module);
 }

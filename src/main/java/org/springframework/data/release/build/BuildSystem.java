@@ -16,7 +16,12 @@
 package org.springframework.data.release.build;
 
 import org.springframework.data.release.deployment.DeploymentInformation;
-import org.springframework.data.release.model.*;
+import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.model.JavaVersion;
+import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Phase;
+import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.ProjectAware;
 import org.springframework.plugin.core.Plugin;
 
 /**
@@ -47,9 +52,21 @@ interface BuildSystem extends Plugin<Project> {
 	/**
 	 * Open a remote repository for staging artifacts.
 	 */
-	void open();
+	StagingRepository open();
 
-	void close();
+	/**
+	 * Close a remote repository for staging artifacts.
+	 */
+	void close(StagingRepository stagingRepository);
+
+	/**
+	 * Deploy artifacts for the given {@link ModuleIteration} using {@link DeploymentInformation}.
+	 *
+	 * @param module must not be {@literal null}.
+	 * @param stagingRepository must not be {@literal null}.
+	 * @return
+	 */
+	DeploymentInformation deploy(ModuleIteration module, StagingRepository stagingRepository);
 
 	/**
 	 * Deploy artifacts for the given {@link ModuleIteration} and return the {@link DeploymentInformation}.

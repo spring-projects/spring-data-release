@@ -16,18 +16,21 @@
 package org.springframework.data.release.build;
 
 import static org.springframework.data.release.build.CommandLine.Argument.*;
-import static org.springframework.data.release.model.Projects.BOM;
-import static org.springframework.data.release.model.Projects.BUILD;
+import static org.springframework.data.release.build.CommandLine.Goal.*;
+import static org.springframework.data.release.model.Projects.*;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -37,24 +40,34 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.data.release.build.CommandLine.Argument;
 import org.springframework.data.release.build.CommandLine.Goal;
 import org.springframework.data.release.build.Pom.Artifact;
 import org.springframework.data.release.deployment.DefaultDeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentProperties;
+import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.io.Workspace;
-import org.springframework.data.release.model.*;
+import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.Gpg;
+import org.springframework.data.release.model.JavaVersion;
+import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Phase;
+import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.ProjectAware;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
+
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.dom.DOMAccess;
-import org.xmlbeam.io.XBStreamInput;
+import org.xmlbeam.io.StreamInput;
 
 /**
  * @author Oliver Gierke
@@ -77,8 +90,6 @@ class MavenBuildSystem implements BuildSystem {
 	Gpg gpg;
 
 	Environment env;
-
-	static String stagingRepositoryId = null;
 
 	static final String REPO_OPENING_TAG = "<repository>";
 	static final String REPO_CLOSING_TAG = "</repository>";
@@ -243,7 +254,7 @@ class MavenBuildSystem implements BuildSystem {
 		Project project = module.getProject();
 		UpdateInformation information = UpdateInformation.of(module.getTrainIteration(), phase);
 
-		CommandLine goals = CommandLine.of(Goal.goal("versions:set"), Goal.goal("versions:commit"));
+		CommandLine goals = CommandLine.of(goal("versions:set"), goal("versions:commit"));
 
 		if (BOM.equals(project)) {
 
@@ -276,54 +287,50 @@ class MavenBuildSystem implements BuildSystem {
 	}
 
 	/**
-	 * Perform a {@literal nexus-staging:rc-open} and extract the stagingProfileId from the results.
+	 * Perform a {@literal nexus-staging:rc-open} and extract the {@code stagingProfileId} from the results.
 	 */
 	@Override
-	public void open() {
+	public StagingRepository open() {
 
-		try {
-			CommandLine arguments = CommandLine.of(Goal.goal("nexus-staging:rc-open"), //
-					profile("central"), //
-					of("-s " + properties.getSettingsXml()), //
-					arg("stagingProfileId").withValue(properties.getMavenCentral().getStagingProfileId()), //
-					arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"));
+		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be nu,,");
+		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
 
-			mvn.execute(BUILD, arguments);
+		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-open"), //
+				profile("central"), //
+				arg("stagingProfileId").withValue(properties.getMavenCentral().getStagingProfileId()), //
+				arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
 
-			String rcOpenLogfile = "mvn-" + BUILD.getName() + "-nexus-staging.rc-open.log";
+		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(BUILD, arguments);
 
-			logger.log(BUILD, "Searching " + this.workspace.getLogsDirectory().getAbsolutePath() + " for " + rcOpenLogfile);
+		List<String> rcOpenLogContents = invocationResult.getLog();
 
-			Path rcOpenLogfilePath = Paths.get(this.workspace.getLogsDirectory().getAbsolutePath(), rcOpenLogfile);
-			logger.log(BUILD, "The log file is at " + rcOpenLogfilePath.toAbsolutePath() + " and "
-					+ (rcOpenLogfilePath.toFile().exists() ? " it exists!" : " it does NOT exist!"));
+		String stagingRepositoryId = rcOpenLogContents.stream() //
+				.filter(line -> line.contains(REPO_OPENING_TAG) && !line.contains("%s")) //
+				.reduce((first, second) -> second) // find the last entry, a.k.a. the most recent log line
+				.map(s -> s.substring( //
+						s.indexOf(REPO_OPENING_TAG) + REPO_OPENING_TAG.length(), //
+						s.indexOf(REPO_CLOSING_TAG))) //
+				.orElse("");
 
-			List<String> rcOpenLogContents = Files.readAllLines(rcOpenLogfilePath);
+		logger.log(BUILD, "Opened staging repository with Id: " + stagingRepositoryId);
 
-			stagingRepositoryId = rcOpenLogContents.stream() //
-					.filter(line -> line.contains(REPO_OPENING_TAG) && !line.contains("%s")) //
-					.reduce((first, second) -> second) // find the last entry, a.k.a. the most recent log line
-					.map(s -> s.substring( //
-							s.indexOf(REPO_OPENING_TAG) + REPO_OPENING_TAG.length(), //
-							s.indexOf(REPO_CLOSING_TAG))) //
-					.orElse("");
-
-			logger.log(BUILD, "We just grabbed the staging repository ID at " + stagingRepositoryId);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return StagingRepository.of(stagingRepositoryId);
 	}
 
 	/**
 	 * Perform a {@literal nexus-staging:rc-close}.
 	 */
 	@Override
-	public void close() {
+	public void close(StagingRepository stagingRepository) {
 
-		CommandLine arguments = CommandLine.of(Goal.goal("nexus-staging:rc-close"), //
+		Assert.notNull(stagingRepository, "StagingRepository must not be null");
+		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
+
+		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-close"), //
 				profile("central"), //
-				of("-s " + properties.getSettingsXml()), //
-				arg("stagingRepositoryId").withValue(stagingRepositoryId));
+				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
 
 		mvn.execute(BUILD, arguments);
 	}
@@ -339,11 +346,32 @@ class MavenBuildSystem implements BuildSystem {
 
 		DeploymentInformation information = new DefaultDeploymentInformation(module, properties);
 
-		deployToArtifactory(module, information);
-
-		deployToMavenCentral(module);
+		deploy(module, information);
 
 		return information;
+	}
+
+	@Override
+	public DeploymentInformation deploy(ModuleIteration module, StagingRepository stagingRepository) {
+
+		Assert.notNull(module, "Module must not be null!");
+		Assert.notNull(stagingRepository, "StagingRepository must not be null!");
+
+		DeploymentInformation information = new DefaultDeploymentInformation(module, properties, stagingRepository);
+
+		deploy(module, information);
+
+		return information;
+	}
+
+	private void deploy(ModuleIteration module, DeploymentInformation information) {
+
+		Assert.notNull(module, "Module must not be null!");
+		Assert.notNull(information, "DeploymentInformation must not be null!");
+
+		deployToArtifactory(module, information);
+
+		deployToMavenCentral(module, information);
 	}
 
 	/*
@@ -354,7 +382,7 @@ class MavenBuildSystem implements BuildSystem {
 	public <M extends ProjectAware> M triggerBuild(M module) {
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
-				.conditionalAnd(SKIP_TESTS, () -> module.getProject().skipTests());
+				.andIf(module.getProject().skipTests(), SKIP_TESTS);
 
 		mvn.execute(module.getProject(), arguments);
 
@@ -394,13 +422,19 @@ class MavenBuildSystem implements BuildSystem {
 				profile("central"), //
 				SKIP_TESTS, //
 				arg("gpg.executable").withValue(gpg.getExecutable()), //
-				arg("gpg.passphrase").withValue(gpg.getPassphrase()), //
-				arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
+				arg("gpg.keyname").withValue(gpg.getKeyname()), //
+				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
+				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
 		mvn.execute(BUILD, arguments);
 
-		mvn.execute(BUILD, CommandLine.of(Goal.goal("nexus-staging:rc-list-profiles"), //
+		mvn.execute(BUILD, CommandLine.of(goal("nexus-staging:rc-list-profiles"), //
 				profile("central")));
+
+		Assert.notNull(properties.getMavenCentral(),
+				"Maven Central properties are not set (deployment.maven-central.staging-profile-id=…)");
+		Assert.hasText(properties.getMavenCentral().getStagingProfileId(),
+				"Staging Profile Id is not set (deployment.maven-central.staging-profile-id=…)");
 	}
 
 	/**
@@ -439,10 +473,12 @@ class MavenBuildSystem implements BuildSystem {
 	 * that has to be publicly released.
 	 *
 	 * @param module must not be {@literal null}.
+	 * @param deploymentInformation must not be {@literal null}.
 	 */
-	private void deployToMavenCentral(ModuleIteration module) {
+	private void deployToMavenCentral(ModuleIteration module, DeploymentInformation deploymentInformation) {
 
 		Assert.notNull(module, "Module iteration must not be null!");
+		Assert.notNull(deploymentInformation, "DeploymentInformation iteration must not be null!");
 
 		if (!module.getIteration().isPublic()) {
 
@@ -455,13 +491,13 @@ class MavenBuildSystem implements BuildSystem {
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				profile("ci,release,central"), //
 				SKIP_TESTS, //
-				settingsXml(properties.getSettingsXml()), //
 				arg("gpg.executable").withValue(gpg.getExecutable()), //
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
-				arg("gpg.passphrase").withValue(gpg.getPassphrase()), //
-				arg("stagingRepositoryId").withValue(stagingRepositoryId)) //
-				.conditionalAnd(arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()),
-						() -> env.acceptsProfiles(Profiles.of("jenkins")));
+				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
+				.andIf(deploymentInformation.getStagingRepositoryId().isPresent(),
+						() -> arg("stagingRepositoryId").withValue(deploymentInformation.getStagingRepositoryId()))
+				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
 		mvn.execute(module.getProject(), arguments);
 	}
@@ -493,7 +529,7 @@ class MavenBuildSystem implements BuildSystem {
 	static <T extends Pom> byte[] doWithProjection(XBProjector projector, InputStream stream, Class<T> type,
 			Consumer<T> callback) throws IOException {
 
-		XBStreamInput io = projector.io().stream(stream);
+		StreamInput io = projector.io().stream(stream);
 		T pom = io.read(type);
 		callback.accept(pom);
 

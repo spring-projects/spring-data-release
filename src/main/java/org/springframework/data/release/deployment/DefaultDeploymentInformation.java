@@ -42,9 +42,26 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	private final @Getter @NonNull ModuleIteration module;
 	private final @NonNull DeploymentProperties properties;
 	private final @Getter String buildNumber;
+	private final @Getter StagingRepository stagingRepositoryId;
 
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties) {
-		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)));
+		this(module, properties, StagingRepository.EMPTY);
+	}
+
+	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
+			String stagingRepositoryId) {
+		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)),
+				StagingRepository.of(stagingRepositoryId));
+	}
+
+	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
+			StagingRepository stagingRepository) {
+		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)), stagingRepository);
+	}
+
+	@Override
+	public DeploymentInformation withModule(ModuleIteration module) {
+		return new DefaultDeploymentInformation(module, properties, buildNumber, stagingRepositoryId);
 	}
 
 	/*

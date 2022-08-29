@@ -25,8 +25,16 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.util.VisibleForTesting;
+
 import org.springframework.data.release.deployment.DeploymentInformation;
-import org.springframework.data.release.model.*;
+import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.model.Module;
+import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Phase;
+import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.Train;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
@@ -112,8 +120,18 @@ public class BuildOperations {
 	 */
 	public List<DeploymentInformation> performRelease(TrainIteration iteration) {
 
+		ModuleIteration module = iteration.getModule(Projects.BUILD);
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(module.getProject());
+
+		StagingRepository stagingRepository = iteration.getIteration().isPublic() ? orchestrator.open()
+				: StagingRepository.EMPTY;
+
 		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
-				(buildSystem, moduleIteration) -> performRelease(moduleIteration));
+				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, stagingRepository));
+
+		if (stagingRepository.isPresent()) {
+			orchestrator.close(stagingRepository);
+		}
 
 		logger.log(iteration, "Release: %s", summary);
 
@@ -175,16 +193,28 @@ public class BuildOperations {
 	/**
 	 * Opens a repository to stage artifacts for this {@link ModuleIteration}.
 	 *
-	 * @param module must not be {@literal null}.
+	 * @param iteration must not be {@literal null}.
 	 */
-	public void open() {
-		buildSystems.getRequiredPluginFor(Projects.BUILD) //
-				.withJavaVersion(executor.detectJavaVersion(Projects.BUILD)).open();
+	public void open(ModuleIteration iteration) {
+
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open());
 	}
 
-	public void close() {
-		buildSystems.getRequiredPluginFor(Projects.BUILD) //
-				.withJavaVersion(executor.detectJavaVersion(Projects.BUILD)).close();
+	/**
+	 * Closes a repository to stage artifacts for this {@link ModuleIteration}.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @param stagingRepository must not be {@literal null}.
+	 */
+	public void close(ModuleIteration iteration, StagingRepository stagingRepository) {
+
+		Assert.notNull(stagingRepository, "StagingRepository must not be null");
+		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
+
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
+			buildSystem.close(stagingRepository);
+			return null;
+		});
 	}
 
 	/**

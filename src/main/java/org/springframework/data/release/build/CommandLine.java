@@ -23,6 +23,7 @@ import lombok.Value;
 import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,12 +67,24 @@ class CommandLine {
 	 * Returns a new {@link CommandLine} with the given {@link Argument} added in case the given {@link BooleanSupplier}
 	 * evaluates to {@literal true}.
 	 *
-	 * @param argument must not be {@literal null}.
 	 * @param condition must not be {@literal null}.
+	 * @param argument must not be {@literal null}.
 	 * @return
 	 */
-	public CommandLine conditionalAnd(Argument argument, BooleanSupplier condition) {
-		return condition.getAsBoolean() ? and(argument) : this;
+	public CommandLine andIf(boolean condition, Argument argument) {
+		return condition ? and(argument) : this;
+	}
+
+	/**
+	 * Returns a new {@link CommandLine} with the given {@link Argument} added in case the given {@link BooleanSupplier}
+	 * evaluates to {@literal true}.
+	 *
+	 * @param condition must not be {@literal null}.
+	 * @param argument must not be {@literal null}.
+	 * @return
+	 */
+	public CommandLine andIf(boolean condition, Supplier<Argument> argument) {
+		return condition ? and(argument.get()) : this;
 	}
 
 	/**
