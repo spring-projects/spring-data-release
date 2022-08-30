@@ -1,5 +1,7 @@
 FROM ubuntu:22.10
 
+# Bake a container using sdkman to get all the needed JDKs.
+
 ARG USER_UID="1001"
 ARG USER_GID="1001"
 ARG USER_NAME="jenkins"
