@@ -9,7 +9,7 @@ pipeline {
 	stages {
 		stage('Build the Spring Data release tools container') {
 			when {
-				branch 'container'
+				changeset 'ci/Dockerfile'
 			}
 			agent {
 				label 'data'
