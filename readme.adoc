@@ -8,7 +8,7 @@
 === Infrastructure requirements
 
 * Ensure you have the credentials for `buildmaster` accounts on https://repo.spring.io.
-* Ensure yoiu have the credentials for https://oss.sonatype.org (to deploy and promote GA and service releases, need deployment permissions for `org.springframework.data`) in `settings.xml` for server with id `sonatype`.
+* Ensure you have the credentials for https://oss.sonatype.org (to deploy and promote GA and service releases, need deployment permissions for `org.springframework.data`) in `settings.xml` for server with id `sonatype`.
 
 Both are available in the Spring/Pivotal Last Pass repository.
 
