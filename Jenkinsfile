@@ -55,17 +55,9 @@ pipeline {
 								? "`${env.BUILD_URL}` - Build and deploy passed! Conduct smoke tests then report back here."
 								: "`${env.BUILD_URL}` - Push and distribute failed!")
 
-					input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass?")
+					input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass? Accept to conclude and distribute the release.")
 
 					sh "ci/conclude.bash ${p['release.version']}"
-
-					slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#spring-data-dev',
-						message: "${env.BUILD_URL} - Ready to push and distribute? Check out the logs and click on either `Proceed` or `Abort`")
-
-					input("PUSH AND DISTRIBUTE: Ready to push and distribute ${p['release.version']}? (Can't go back after this)")
-
 					sh "ci/push-and-distribute.bash ${p['release.version']}"
 
 					slackSend(
