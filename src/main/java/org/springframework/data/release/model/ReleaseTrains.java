@@ -76,9 +76,9 @@ public class ReleaseTrains {
 				new Module(RELATIONAL, "3.0")) //
 				.withCalver("2022.0") //
 				.filterModules(module -> !module.getProject().equals(ENVERS))
+				.filterModules(module -> !module.getProject().equals(GEODE))
 				.filterModules(module -> !module.getProject().equals(R2DBC))
-				.filterModules(module -> !module.getProject().equals(JDBC)) // filter "old" JDBC without R2DBC submodule
-				.withIterations(new Train.Iterations(M1, M2, M3, M4, M5, M6, RC1, RC2, GA, SR1, SR2, SR3, SR4, SR5));
+				.filterModules(module -> !module.getProject().equals(JDBC)); // filter "old" JDBC without R2DBC submodule
 
 		// Trains
 
