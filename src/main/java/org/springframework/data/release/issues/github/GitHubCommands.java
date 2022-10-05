@@ -79,7 +79,7 @@ public class GitHubCommands extends TimedCommand {
 
 				List<String> ticketReferences = git.getTicketReferencesBetween(it.getProject(), previousIteration, iteration)
 						.stream().map(TicketReference::getId).collect(Collectors.toList());
-				gitHub.createOrUpdateRelease(it, ticketReferences);
+				gitHub.createOrUpdateRelease(iteration, it, ticketReferences);
 			}
 		});
 	}

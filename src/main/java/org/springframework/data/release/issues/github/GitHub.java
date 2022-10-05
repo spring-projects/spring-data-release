@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.release.git.GitProject;
+import org.springframework.data.release.git.GitServer;
 import org.springframework.data.release.git.Tag;
 import org.springframework.data.release.git.VersionTags;
 import org.springframework.data.release.issues.Changelog;
@@ -91,7 +93,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private final Logger logger;
 	private final GitHubProperties properties;
-
 
 	public GitHub(@Qualifier("tracker") RestTemplateBuilder templateBuilder, Logger logger, GitHubProperties properties) {
 
@@ -369,8 +370,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		GitHubWriteIssue edit = GitHubWriteIssue.assignedTo(properties.getUsername()).close();
 
-		return operations.exchange(ISSUE_BY_ID_URI_TEMPLATE, HttpMethod.PATCH,
-				new HttpEntity<>(edit, new HttpHeaders()), ISSUE_TYPE, parameters).getBody();
+		return operations.exchange(ISSUE_BY_ID_URI_TEMPLATE, HttpMethod.PATCH, new HttpEntity<>(edit, new HttpHeaders()),
+				ISSUE_TYPE, parameters).getBody();
 	}
 
 	private String stripHash(Ticket ticket) {
@@ -400,8 +401,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 			logger.log(moduleIteration, "Looking up milestone…");
 
-			doWithPaging(MILESTONE_URI, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()),
-					MILESTONES_TYPE, milestones -> {
+			doWithPaging(MILESTONE_URI, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()), MILESTONES_TYPE,
+					milestones -> {
 
 						Optional<Milestone> milestone = milestones.stream(). //
 						filter(milestonePredicate). //
@@ -503,8 +504,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return gitHubIssues;
 	}
 
-	private GitHubReadIssue getTicket(Map<String, GitHubReadIssue> cache, String repositoryName,
-			String ticketId) {
+	private GitHubReadIssue getTicket(Map<String, GitHubReadIssue> cache, String repositoryName, String ticketId) {
 
 		if (cache.containsKey(ticketId)) {
 			return cache.get(ticketId);
@@ -533,8 +533,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		try {
 
-			return operations.exchange(ISSUE_BY_ID_URI_TEMPLATE, HttpMethod.GET,
-					new HttpEntity<>(new HttpHeaders()), ISSUE_TYPE, parameters).getBody();
+			return operations.exchange(ISSUE_BY_ID_URI_TEMPLATE, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()),
+					ISSUE_TYPE, parameters).getBody();
 		} catch (HttpStatusCodeException e) {
 
 			if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
@@ -546,10 +546,11 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	}
 
 	/**
-	 * @param module
 	 * @param ticketReferences
+	 * @param iteration
+	 * @param module
 	 */
-	public void createOrUpdateRelease(ModuleIteration module, List<String> ticketIds) {
+	public void createOrUpdateRelease(TrainIteration iteration, ModuleIteration module, List<String> ticketIds) {
 
 		logger.log(module, "Preparing GitHub Release …");
 
@@ -566,12 +567,32 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		if (module.getProject() == Projects.BOM || module.getProject() == Projects.BUILD) {
 			// We don't ship Javadoc/reference doc for build and BOM
-			createOrUpdateRelease(module, String.format("%s%n", documentationLinks, releaseBody));
+
+			if (module.getProject() == Projects.BOM) {
+				String participatingModules = createParticipatingModules(iteration);
+
+				createOrUpdateRelease(module,
+						String.format("## :shipit: Participating Modules%n%n%s%n%s%n", participatingModules, releaseBody));
+			} else {
+				createOrUpdateRelease(module, String.format("%s%n", documentationLinks, releaseBody));
+			}
 		} else {
 			createOrUpdateRelease(module, String.format("## :green_book: Links%n%s%n%s%n", documentationLinks, releaseBody));
 		}
 
 		logger.log(module, "GitHub Release up to date");
+	}
+
+	private String createParticipatingModules(TrainIteration iteration) {
+
+		Comparator<ModuleIteration> comparator = Comparator
+				.comparing(moduleIteration -> moduleIteration.getProject().getName());
+		return iteration.stream().sorted(comparator).map(module -> {
+
+			Tag tag = VersionTags.empty(module.getProject()).createTag(module);
+			return String.format("* [Spring Data %s %s](%s%s/releases/tag/%s)%n", module.getProject().getName(),
+					tag.getName(), GitServer.INSTANCE.getUri(), module.getProject().getFolderName(), tag.getName());
+		}).collect(Collectors.joining());
 	}
 
 	/**
@@ -702,11 +723,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private Stream<GitHubReadIssue> getForIssues(String template, Map<String, Object> parameters) {
 
 		List<GitHubReadIssue> issues = new ArrayList<>();
-		doWithPaging(template, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()), ISSUES_TYPE,
-				tickets -> {
-					issues.addAll(tickets);
-					return true;
-				});
+		doWithPaging(template, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()), ISSUES_TYPE, tickets -> {
+			issues.addAll(tickets);
+			return true;
+		});
 
 		return issues.stream();
 	}
@@ -715,8 +735,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Optional<Milestone> milestone = findMilestone(moduleIteration, repositoryName);
 
-		return milestone
-				.orElseThrow(() -> noSuchMilestone(moduleIteration));
+		return milestone.orElseThrow(() -> noSuchMilestone(moduleIteration));
 	}
 
 	private IllegalStateException noSuchMilestone(ModuleIteration moduleIteration) {
