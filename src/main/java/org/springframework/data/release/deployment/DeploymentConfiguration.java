@@ -15,20 +15,14 @@
  */
 package org.springframework.data.release.deployment;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.release.model.Password;
+import org.springframework.data.release.utils.HttpBasicCredentials;
+import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.data.release.utils.Logger;
-import org.springframework.http.HttpRequest;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -50,28 +44,15 @@ class DeploymentConfiguration {
 	public RestTemplate artifactoryRestTemplate() {
 
 		RestTemplate template = new RestTemplate();
-		template.setInterceptors(Arrays.asList(new AuthenticatingClientHttpRequestInterceptor(properties)));
+
+		HttpComponentsClientHttpRequestFactory factory = HttpComponentsClientHttpRequestFactoryBuilder.builder()
+				.withAuthentication(properties.getServer().getUri(),
+						new HttpBasicCredentials(properties.getUsername(), Password.of(properties.getApiKey())))
+				.build();
+
+		template.setRequestFactory(factory);
 
 		return template;
 	}
 
-	@RequiredArgsConstructor
-	private static class AuthenticatingClientHttpRequestInterceptor implements ClientHttpRequestInterceptor {
-
-		private final @NonNull DeploymentProperties properties;
-
-		/*
-		 * (non-Javadoc)
-		 * @see org.springframework.http.client.ClientHttpRequestInterceptor#intercept(org.springframework.http.HttpRequest, byte[], org.springframework.http.client.ClientHttpRequestExecution)
-		 */
-		@Override
-		public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
-				throws IOException {
-
-			request.getHeaders().add("X-Api-Key", properties.getApiKey());
-			request.getHeaders().add("Authentication", properties.getCredentials().toString());
-
-			return execution.execute(request, body);
-		}
-	}
 }
