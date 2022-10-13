@@ -100,7 +100,7 @@ public class Projects {
 				.withSkipTests(true);
 
 		REST = new Project("DATAREST", "REST", Tracker.GITHUB) //
-				.withDependencies(JPA, MONGO_DB, NEO4J, GEODE, CASSANDRA, KEY_VALUE) //
+				.withDependencies(JPA, MONGO_DB, NEO4J, CASSANDRA, KEY_VALUE) //
 				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA //
 						.artifacts("spring-data-rest-core", "spring-data-rest-core", "spring-data-rest-hal-browser",
 								"spring-data-rest-hal-explorer"));
