@@ -41,6 +41,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.release.issues.github.GitHubProperties;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.utils.HttpBasicCredentials;
+import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -89,30 +90,8 @@ class IssueTrackerConfiguration {
 	@Bean
 	HttpComponentsClientHttpRequestFactory clientHttpRequestFactory(GitHubProperties gitHubProperties) {
 
-		// Preemptive auth
-		CredentialsProvider credsProvider = new BasicCredentialsProvider();
-		AuthCache authCache = new BasicAuthCache();
-
-		addPreemptiveAuth(credsProvider, authCache, gitHubProperties.getApiUrl(), gitHubProperties.getHttpCredentials());
-
-		Lazy<CloseableHttpClient> lazy = Lazy
-				.of(() -> HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build());
-
-		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory() {
-			@Override
-			public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-				setHttpClient(lazy.get());
-				return super.createRequest(uri, httpMethod);
-			}
-		};
-
-		factory.setHttpContextFactory((httpMethod, uri) -> {
-			HttpClientContext context = HttpClientContext.create();
-			context.setAuthCache(authCache);
-			return context;
-		});
-
-		return factory;
+		return HttpComponentsClientHttpRequestFactoryBuilder.builder()
+				.withAuthentication(gitHubProperties.getApiUrl(), gitHubProperties.getHttpCredentials()).build();
 	}
 
 	@Bean
@@ -129,16 +108,6 @@ class IssueTrackerConfiguration {
 	@Bean
 	PluginRegistry<IssueTracker, Project> issueTrackers(List<? extends IssueTracker> plugins) {
 		return OrderAwarePluginRegistry.of(plugins);
-	}
-
-	private static void addPreemptiveAuth(CredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
-			HttpBasicCredentials credentials) {
-		HttpHost jiraHost = HttpHost.create(requestUrl);
-
-		credsProvider.setCredentials(new AuthScope(jiraHost),
-				new UsernamePasswordCredentials(credentials.getUsername(), credentials.getPassword().toString()));
-
-		authCache.put(jiraHost, new BasicScheme());
 	}
 
 	/**
