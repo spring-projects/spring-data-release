@@ -8,4 +8,4 @@ export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
 
-mvn clean package -DskipTests
+mvn clean package -B -DskipTests

@@ -15,11 +15,6 @@
  */
 package org.springframework.data.release.cli;
 
-import lombok.AccessLevel;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.build.BuildOperations;
@@ -29,6 +24,13 @@ import org.springframework.data.release.issues.github.GitHub;
 import org.springframework.data.release.sagan.SaganClient;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
+import org.springframework.shell.core.annotation.CliOption;
+import org.springframework.util.ObjectUtils;
+
+import lombok.AccessLevel;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 /**
  * Commands to verify a correct Release Tools Setup.
@@ -40,32 +42,48 @@ import org.springframework.shell.core.annotation.CliCommand;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 class VerifyCommands extends TimedCommand {
 
-	@NonNull GitOperations git;
-	@NonNull GitHub github;
-	@NonNull DeploymentOperations deployment;
-	@NonNull BuildOperations build;
-	@NonNull SaganClient saganClient;
-	@NonNull Logger logger;
+    @NonNull
+    GitOperations git;
+    @NonNull
+    GitHub github;
+    @NonNull
+    DeploymentOperations deployment;
+    @NonNull
+    BuildOperations build;
+    @NonNull
+    SaganClient saganClient;
+    @NonNull
+    Logger logger;
 
-	@CliCommand("verify")
-	public void verifyReleaseTools() {
+    @CliCommand("verify")
+    public void verifyReleaseTools(@CliOption(key = "", mandatory = false) String module) {
 
-		// Git checkout build
-		git.verify();
+        if (ObjectUtils.isEmpty(module) || "git".equals(module)) {
+            // Git checkout build
+            git.verify();
+        }
 
-		// Maven interaction
-		build.verify();
+        if (ObjectUtils.isEmpty(module) || "build".equals(module)) {
+            // Maven interaction
+            build.verify();
+        }
 
-		// Artifactory verification
-		deployment.verifyAuthentication();
+        if (ObjectUtils.isEmpty(module) || "deployment".equals(module)) {
+            // Artifactory verification
+            deployment.verifyAuthentication();
+        }
 
-		// GitHub verification
-		github.verifyAuthentication();
+        if (ObjectUtils.isEmpty(module) || "github".equals(module)) {
+            // GitHub verification
+            github.verifyAuthentication();
+        }
 
-		// Sagan Verification
-		saganClient.verifyAuthentication();
+        if (ObjectUtils.isEmpty(module) || "sagan".equals(module)) {
+            // Sagan Verification
+            saganClient.verifyAuthentication();
+        }
 
-		logger.log("Verify", "All settings are verified. You can ship a release now.");
-	}
+        logger.log("Verify", "All settings are verified. You can ship a release now.");
+    }
 
 }
