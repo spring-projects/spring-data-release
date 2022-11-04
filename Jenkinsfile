@@ -32,7 +32,7 @@ pipeline {
 				GITHUB_API_URL = credentials('spring-data-release-github-api-url')
 				DEPLOYMENT_USERNAME = credentials('spring-data-release-deployment-username')
 				DEPLOYMENT_PASSWORD = credentials('spring-data-release-deployment-password')
-				DEPLOYMENT_API_KEY = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
+				DEPLOYMENT_API_KEY = credentials('spring-data-release-deployment-api-key')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
 				JIRA_USERNAME = credentials('spring-data-release-jira-username')
 				JIRA_PASSWORD = credentials('spring-data-release-jira-password')
