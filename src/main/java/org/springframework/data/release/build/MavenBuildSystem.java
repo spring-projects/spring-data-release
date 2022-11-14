@@ -40,7 +40,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
-
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.release.build.CommandLine.Argument;
@@ -49,6 +48,7 @@ import org.springframework.data.release.build.Pom.Artifact;
 import org.springframework.data.release.deployment.DefaultDeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentProperties;
+import org.springframework.data.release.deployment.DeploymentProperties.MavenCentral;
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ArtifactVersion;
@@ -63,7 +63,6 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.dom.DOMAccess;
@@ -418,6 +417,8 @@ class MavenBuildSystem implements BuildSystem {
 
 		logger.log(BUILD, "Verifying Maven Build System…");
 
+		Gpg gpg = getGpg();
+
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.VERIFY, //
 				profile("central"), //
 				SKIP_TESTS, //
@@ -488,6 +489,8 @@ class MavenBuildSystem implements BuildSystem {
 
 		logger.log(module, "Deploying artifacts to Sonatype OSS Nexus…");
 
+		Gpg gpg = getGpg();
+
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				profile("ci,release,central"), //
 				SKIP_TESTS, //
@@ -508,6 +511,17 @@ class MavenBuildSystem implements BuildSystem {
 
 	private void doWithProjection(File file, Consumer<Pom> callback) {
 		doWithProjection(file, Pom.class, callback);
+	}
+
+	private Gpg getGpg() {
+
+		MavenCentral mavenCentral = properties.getMavenCentral();
+
+		if (mavenCentral.hasGpgConfiguration()) {
+			return mavenCentral.getGpg();
+		}
+
+		return gpg;
 	}
 
 	/**

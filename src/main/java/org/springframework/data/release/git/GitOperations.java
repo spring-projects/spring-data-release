@@ -25,7 +25,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -58,7 +70,6 @@ import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
-
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
@@ -697,6 +708,8 @@ public class GitOperations {
 		String email = gitProperties.getEmail();
 		boolean allowEmpty = all;
 
+		Gpg gpg = getGpg();
+
 		logger.log(project, "git commit -m \"%s\" %s --author=\"%s <%s>\"", commit.getSummary(),
 				gpg.isGpgAvailable() ? "-S" + gpg.getKeyname() : "", author, email);
 
@@ -1077,6 +1090,15 @@ public class GitOperations {
 		void doWithGit(Git git) throws Exception;
 	}
 
+	private Gpg getGpg() {
+
+		if (gitProperties.hasGpgConfiguration()) {
+			return gitProperties.getGpg();
+		}
+
+		return gpg;
+	}
+
 	/**
 	 * {@link CredentialsProvider} for GPG Keys used with JGit Commit Signing.
 	 */
@@ -1126,9 +1148,5 @@ public class GitOperations {
 			}
 			return false;
 		}
-	}
-
-	private static class VersionedIterations {
-
 	}
 }

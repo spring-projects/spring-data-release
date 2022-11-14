@@ -15,16 +15,17 @@
  */
 package org.springframework.data.release.deployment;
 
-import lombok.Data;
-
 import java.net.URI;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
 import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.util.UriTemplate;
+
+import lombok.Data;
 
 /**
  * @author Oliver Gierke
@@ -126,6 +127,11 @@ public class DeploymentProperties {
 
 		private String stagingProfileId;
 
+		private Gpg gpg;
+
+		public boolean hasGpgConfiguration() {
+			return gpg != null && gpg.isGpgAvailable();
+		}
 	}
 
 }

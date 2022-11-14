@@ -614,7 +614,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 			throw new IllegalStateException(String.format("Cannot obtain /user. Status: %s", entity.getStatusCode()));
 		}
 
-		logger.log("GitHub", "Authentication verified!");
+		logger.log("GitHub", "Authentication verified.");
 	}
 
 	private String getDocumentationLinks(ModuleIteration module, DocumentationMetadata documentation) {

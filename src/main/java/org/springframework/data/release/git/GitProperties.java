@@ -24,6 +24,7 @@ import javax.annotation.PostConstruct;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
 import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,8 @@ public class GitProperties {
 
 	private @Getter(AccessLevel.PRIVATE) Password password;
 	private String username, author, email;
+
+	private Gpg gpg;
 
 	@PostConstruct
 	public void init() {
@@ -63,5 +66,9 @@ public class GitProperties {
 
 	public HttpBasicCredentials getHttpCredentials() {
 		return new HttpBasicCredentials(username, password);
+	}
+
+	public boolean hasGpgConfiguration() {
+		return gpg != null && gpg.isGpgAvailable();
 	}
 }

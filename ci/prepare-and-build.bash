@@ -11,7 +11,7 @@ export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
 export RELEASE_TOOLS_CACHE=${JENKINS_HOME}/.m2/spring-data-release-tools
-export LOGS_DIR=${JENKINS_HOME}/spring-data-shell/logs
+export LOGS_DIR=$(pwd)/logs
 export SETTINGS_XML=${JENKINS_HOME}/settings.xml
 
 mkdir -p ${RELEASE_TOOLS_CACHE}
@@ -46,6 +46,9 @@ else
     ls -ld ~/.gnupg
     ls -lR ~/.gnupg
     id
+
+    echo "${GIT_SIGNING_KEY_PASSWORD}" | /usr/bin/gpg --batch --yes --passphrase-fd 0 --import "${GIT_SIGNING_KEY}"
+    /usr/bin/gpg -k
 
     function spring-data-release-shell {
         java \
