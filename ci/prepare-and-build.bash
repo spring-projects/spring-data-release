@@ -30,22 +30,16 @@ if test -f application-local.properties; then
 
     function spring-data-release-shell {
         java \
-            "-Ddeployment.settings-xml=${SETTINGS_XML}" \
-            "-Ddeployment.local=true" \
-            "-Dmaven.mavenHome=${MAVEN_HOME}" \
-            "-Dgpg.executable=/usr/bin/gpg" \
-            "-Dio.workDir=dist" \
             -jar target/spring-data-release-cli.jar \
             --cmdfile target/prepare-and-build.shell
     }
 else
     echo "You are running inside Jenkins! Using parameters fed from the agent."
 
-    cp $KEYRING $GNUPGHOME
+    cp ${MAVEN_SIGNING_KEYRING} ${GNUPGHOME}
 
     ls -ld ~/.gnupg
     ls -lR ~/.gnupg
-    id
 
     echo "${GIT_SIGNING_KEY_PASSWORD}" | /usr/bin/gpg --batch --yes --passphrase-fd 0 --import "${GIT_SIGNING_KEY}"
     /usr/bin/gpg -k
@@ -53,7 +47,6 @@ else
     function spring-data-release-shell {
         java \
             -Dspring.profiles.active=jenkins \
-            -Dmaven.home=${MAVEN_HOME} \
             -jar target/spring-data-release-cli.jar \
             --cmdfile target/prepare-and-build.shell
     }

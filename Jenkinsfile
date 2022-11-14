@@ -26,17 +26,14 @@ pipeline {
 
 			environment {
 				GIT_USERNAME = credentials('spring-data-release-git-username')
-				GIT_AUTHOR = credentials('spring-data-release-git-author')
-				GIT_EMAIL = credentials('spring-data-release-git-email')
 				GIT_PASSWORD = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
 				DEPLOYMENT_API_KEY = credentials('repo_spring_io-jenkins-release-token')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
-				PASSPHRASE = credentials('spring-gpg-passphrase')
-				KEYRING = credentials('spring-signing-secring.gpg')
+				MAVEN_SIGNING_KEYRING = credentials('spring-signing-secring.gpg')
+				MAVEN_SIGNING_KEY_PASSWORD = credentials('spring-gpg-passphrase')
 				GIT_SIGNING_KEY = credentials('spring-gpg-github-private-key-jenkins')
 				GIT_SIGNING_KEY_PASSWORD = credentials('spring-gpg-github-passphrase-jenkins')
 				SONATYPE = credentials('oss-login')
-				GPG_KEYNAME = credentials('spring-data-release-gpg-keyname')
 			}
 
 			steps {

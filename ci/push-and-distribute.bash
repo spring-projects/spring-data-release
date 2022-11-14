@@ -22,11 +22,6 @@ if test -f application-local.properties; then
 
     function spring-data-release-shell {
         java \
-            "-Ddeployment.settings-xml=${SETTINGS_XML}" \
-            "-Ddeployment.local=true" \
-            "-Dmaven.mavenHome=${MAVEN_HOME}" \
-            "-Dgpg.executable=/usr/bin/gpg" \
-            "-Dio.workDir=dist" \
             -jar target/spring-data-release-cli.jar \
             --cmdfile target/push-and-distribute.shell
     }
