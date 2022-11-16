@@ -25,8 +25,8 @@ pipeline {
 			options { timeout(time: 4, unit: 'HOURS') }
 
 			environment {
-				GIT_USERNAME = credentials('spring-data-release-git-username')
-				GIT_PASSWORD = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
+				GITHUB = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
+				GITHUB_TOKEN = credentials('7b3ebbea-7001-479b-8578-b8c464dab973')
 				DEPLOYMENT_API_KEY = credentials('repo_spring_io-jenkins-release-token')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
 				MAVEN_SIGNING_KEYRING = credentials('spring-signing-secring.gpg')
