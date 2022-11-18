@@ -13,13 +13,29 @@ pipeline {
 	}
 
 	stages {
+
+		stage('Build the Spring Data release tools container') {
+			agent {
+				label 'data'
+			}
+
+			steps {
+				script {
+					def image = docker.build("springci/spring-data-release-tools:0.3", "ci")
+					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
+						image.push()
+					}
+				}
+			}
+		}
+
 		stage('Ship It') {
 			when {
 				branch 'release'
 			}
 			agent {
 				docker {
-					image 'springci/spring-data-release-tools:0.1'
+					image 'springci/spring-data-release-tools:0.3'
 				}
 			}
 			options { timeout(time: 4, unit: 'HOURS') }
