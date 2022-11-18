@@ -29,7 +29,7 @@ public class ReleaseTrains {
 
 	public static final List<Train> TRAINS;
 	public static final Train CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-			OCKHAM, PASCAL, Q, RAJ, TURING;
+			OCKHAM, PASCAL, Q, RAJ, TURING, U;
 
 	static {
 
@@ -80,10 +80,13 @@ public class ReleaseTrains {
 				.filterModules(module -> !module.getProject().equals(R2DBC))
 				.filterModules(module -> !module.getProject().equals(JDBC)); // filter "old" JDBC without R2DBC submodule
 
+		U = TURING.next("U", Transition.MINOR) //
+				.withCalver("2022.1");
+
 		// Trains
 
 		TRAINS = Arrays.asList(CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-				OCKHAM, PASCAL, Q, RAJ, TURING);
+				OCKHAM, PASCAL, Q, RAJ, TURING, U);
 	}
 
 	private static Train codd() {
