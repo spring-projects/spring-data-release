@@ -1,5 +1,4 @@
 workspace cleanup
 verify github
-verify deployment
 release prepare ${VERSION}
 release build ${VERSION}
