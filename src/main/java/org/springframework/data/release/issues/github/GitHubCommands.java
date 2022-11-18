@@ -29,6 +29,7 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
+import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
@@ -64,6 +65,11 @@ public class GitHubCommands extends TimedCommand {
 		retry(() -> {
 			git.push(iteration);
 			git.pushTags(iteration.getTrain());
+
+			if (!iteration.getTrain().isAlwaysUseBranch() && iteration.getIteration().isGAIteration()) {
+				git.push(new TrainIteration(iteration.getTrain(), Iteration.SR1));
+			}
+
 			createOrUpdateRelease(iteration);
 		}, 2);
 	}
