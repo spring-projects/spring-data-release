@@ -15,6 +15,10 @@ pipeline {
 	stages {
 
 		stage('Build the Spring Data release tools container') {
+			when {
+				changeset 'ci/Dockerfile'
+			}
+
 			agent {
 				label 'data'
 			}
@@ -45,7 +49,7 @@ pipeline {
 				GITHUB_TOKEN = credentials('7b3ebbea-7001-479b-8578-b8c464dab973')
 				DEPLOYMENT_API_KEY = credentials('repo_spring_io-jenkins-release-token')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
-				MAVEN_SIGNING_KEYRING = credentials('spring-signing-secring.gpg')
+				MAVEN_SIGNING_KEY = credentials('spring-gpg-private-key')
 				MAVEN_SIGNING_KEY_PASSWORD = credentials('spring-gpg-passphrase')
 				GIT_SIGNING_KEY = credentials('spring-gpg-github-private-key-jenkins')
 				GIT_SIGNING_KEY_PASSWORD = credentials('spring-gpg-github-passphrase-jenkins')
