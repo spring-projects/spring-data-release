@@ -29,7 +29,6 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -62,8 +61,8 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 	 */
 	public HttpComponentsClientHttpRequestFactoryBuilder withAuthentication(String uri,
 			HttpBasicCredentials credentials) {
-		addPreemptiveAuth(credsProvider, authCache, uri, credentials);
 
+		addPreemptiveAuth(credsProvider, authCache, uri, credentials);
 		return this;
 	}
 
@@ -96,6 +95,7 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 
 	private static void addPreemptiveAuth(CredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
 			HttpBasicCredentials credentials) {
+
 		HttpHost host = HttpHost.create(requestUrl);
 
 		credsProvider.setCredentials(new AuthScope(host),

@@ -83,11 +83,7 @@ public class DeploymentProperties {
 	 * @return
 	 */
 	public String getStagingRepositoryUrl() {
-		return server.getUri().toString().concat("/").concat(stagingRepository);
-	}
-
-	public HttpBasicCredentials getCredentials() {
-		return new HttpBasicCredentials(username, password);
+		return server.getUri().concat("/").concat(stagingRepository);
 	}
 
 	@Data

@@ -47,7 +47,7 @@ pipeline {
 			environment {
 				GITHUB = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
 				GITHUB_TOKEN = credentials('7b3ebbea-7001-479b-8578-b8c464dab973')
-				DEPLOYMENT_API_KEY = credentials('repo_spring_io-jenkins-release-token')
+				REPO_SPRING_IO = credentials('repo_spring_io-jenkins-release-token')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
 				MAVEN_SIGNING_KEY = credentials('spring-gpg-private-key')
 				MAVEN_SIGNING_KEY_PASSWORD = credentials('spring-gpg-passphrase')

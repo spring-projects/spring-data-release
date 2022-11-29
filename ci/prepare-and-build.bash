@@ -39,8 +39,6 @@ else
     mkdir -p ~/.gnupg
     echo "${GIT_SIGNING_KEY_PASSWORD}" | /usr/bin/gpg --batch --yes --passphrase-fd 0 --import "${GIT_SIGNING_KEY}"
     echo "${MAVEN_SIGNING_KEY_PASSWORD}" | /usr/bin/gpg --batch --yes --passphrase-fd 0 --import "${MAVEN_SIGNING_KEY}"
-    ls -ld ~/.gnupg
-    ls -lR ~/.gnupg
     /usr/bin/gpg -k
 
     function spring-data-release-shell {
