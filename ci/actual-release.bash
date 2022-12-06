@@ -3,7 +3,7 @@
 set -euo pipefail
 
 VERSION=$1
-echo "You want me to build and deploy ${VERSION} ??"
+echo "You want me to build and release train tag ${VERSION} ?"
 
 export MAVEN_HOME="$HOME/.sdkman/candidates/maven/current"
 export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
@@ -31,7 +31,7 @@ if test -f application-local.properties; then
     function spring-data-release-shell {
         java \
             -jar target/spring-data-release-cli.jar \
-            --cmdfile target/prepare-and-build.shell
+            --cmdfile target/actual-release.shell
     }
 else
     echo "You are running inside Jenkins! Using parameters fed from the agent."
@@ -45,12 +45,12 @@ else
         java \
             -Dspring.profiles.active=jenkins \
             -jar target/spring-data-release-cli.jar \
-            --cmdfile target/prepare-and-build.shell
+            --cmdfile target/actual-release.shell
     }
 fi
 
-echo "About to prepare and build ${VERSION}."
+echo "About to build and stage release train tag '${VERSION}'."
 
-sed "s|\${VERSION}|${VERSION}|g" < ci/prepare-and-build.template > target/prepare-and-build.shell
+sed "s|\${VERSION}|${VERSION}|g" < ci/actual-release.template > target/actual-release.shell
 
 spring-data-release-shell

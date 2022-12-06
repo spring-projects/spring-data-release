@@ -1,0 +1,49 @@
+# TODO: Cleanup these old steps
+# workspace cleanup - CHECK
+# verify github - CHECK
+# verify deployment - CHECK
+# release prepare ${VERSION} - CHECK
+# release build ${VERSION} - CHECK
+
+################################
+#
+# Copyright 2014-2022 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#################################
+#
+# This script is focused on building an existing "tag". This is a release train tag, not an individual module's tag.
+# The tag, once built, is then staged on either maven central (releases) or artifactory (-M1, -M2, -RC1, etc.). Finally,
+# any related resources (e.g., docs, schema files) are then staged on artifactory. Actually "releasing" on maven central is
+# done manually.
+#
+# @author Greg Turnquist
+#
+################################
+
+# Need this in case there is caching on the CI agent from previous jobs
+workspace cleanup
+
+# Check out that everything is accessible. If not, fail fast
+verify github
+verify deployment
+
+# Check out the release train's tag
+git co-tag ${VERSION}
+
+# Build and staged on maven central/artifactory
+release build ${VERSION}
+
+# Build and release the docs/schema stuff on artifactory
+release distribute ${VERSION}

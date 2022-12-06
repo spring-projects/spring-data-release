@@ -21,8 +21,12 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 . Announce release preparations to mailing list (https://groups.google.com/forum/#!forum/spring-data-dev)
 . 🚥 Continue with `Build and publish the release`
 
-[[build]]
-=== 🌿 Build and publish the release
+[[prepare-release]]
+=== 🥣 Prepare the release
+
+This is the process that checks out the source code and applies a release train tag, in turn tagging all the modules.
+This can be done as a CI job, but can also be done locally if need be.
+In the event of CI or local failure, we must be and revert each module and delete the related tag.
 
 [%header,cols="1,1"]
 |===
@@ -38,8 +42,95 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 |Edit `ci/release.properties` and assign the version number of the release train you wish to release to `release.version`. (Make sure it's NOT commented out!)
 |
 
-|Commit the change to this repository
+|Commit the change to this repository (but don't push to GitHub!)
 |`$ git add ci/release.properties && git commit`
+
+|Switch to the `prepare-release` branch
+|`$ git checkout prepare-release`
+
+|Set the `HEAD` to `main` to point the content to what is on `main`
+|`$ git reset --hard main`
+
+|🚨 *To trigger 🛣 the preparation of the release* `git push` the `prepare-release` branch
+|`$ git push origin prepare-release`
+
+|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release-prepare-release/, Navigate to the `prepare-release` branch.
+A job should have started. Click on the active job, and then click on *Open Blue Ocean*.
+| Monitor the release preparation process.
+
+|===
+
+After preparing and building (approx. 20 minutes), the Jenkins pipeline will pause, indicating it's time to inspect the logs and make sure the tag was created properl, and put up a prompt: *Proceed* or *Abort*.
+
+🚨 If you click on *Proceed*, then it will continue on to the `github push` phase.
+
+
+NOTE: If the release preparation goes wrong in any, you'll have to manually clean up any commits, branches, and tags on GitHub.
+If it failed BEFORE reaching `github push`, and you *Abort*, then no cleanup required.
+You can assess the situation and potentially switch to manual procedure, as shown below.
+
+If something fails on CI, it's possible to carry out this phase manually.
+
+* You MUST have a properly configured local environment.
+* You need the tag of the release train you are making.
+(This is NOT the tag of an individual module.)
+This will be referred to as *{VERSION}* in the following steps.
+* If there are partial commits, branches, or tags pushed to GitHub, you'll have to clean them up before carrying out the following procedure.
+
+Assuming things are ready to go, here are the manual steps to prepare a release:
+
+. `mvn clean package -B -DskipTests && java -jar target/spring-data-release-cli.jar`
+. `workspace cleanup`
+. `verify github`
+. `release prepare *{VERSION}*`
+. `release conclude *{VERSION}*`
+
+At this point, all the commits are made and the tag has been created and applied.
+But it's all local.
+You can *still back out* with no cleanup effort. (`workspace cleanup` is all it takes to throw away any release preparation.)
+
+[start=6]
+. `github push {VERSION}`
+
+WARNING: If this last step goes wrong in any way, you'll have to manually clean up any commits, branches, and tags on GitHub.
+
+* 🚥 Continue with `Build and publish the release` tasks.
+
+[[build]]
+=== 🌿 Build and publish the release
+
+This is the process that checks out a release train tag, builds it, and stages it on Maven Central or Artifactory.
+
+NOTE: If the following CI job fails, and you clean up any potentially staged artifacts on Maven Central/Artifactory, you can repeat the CI job.
+
+If you just completed the <<prepare-release,Prepare the Release step>>, you can skip the following steps that involve updating `ci/release.properties`.
+
+[%header,cols="1,1"]
+|===
+|Action
+|Command
+
+|Check out this repository from GitHub
+|`$ git clone git@github.com:spring-projects/spring-data-release.git`
+
+|Checkout the `main` branch
+|`$ git checkout main`
+
+|Inspect `ci/release.properties` and make sure it has the target version applied to `release.properties`.
+WARNING: If not, *Prepare the Release* may not have been completed properly!
+|NA
+|===
+
+The following steps will trigger the actual Build and Publish Release CI job.
+
+IMPORTANT: The following steps assume that `ci/release.properties` has `release.version` configured with your release train tag.
+If not, then you must back up to the beginning of this section to point it at the right tag.
+If that tag has NOT YET BEEN CREATED, then you need to backup to the <<prepare-release,Prepare Release>> section and complete that first.
+
+[%header,cols="1,1"]
+|===
+|Action
+|Command
 
 |Switch to the `release` branch
 |`$ git checkout release`
@@ -50,15 +141,13 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 |🚨 *To trigger 🛣 the release* `git push` the `release` branch
 |`$ git push origin release`
 
-|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release-release/, Navigate to the `release` branch.
+|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release-actual-release/, Navigate to the `release` branch.
 A job should have started. Click on the active job, and then click on *Open Blue Ocean*.
 | Monitor the release process.
 
 |===
 
-After preparing and building (approx. 20 minutes), the Jenkins pipeline will pause, indicating it's time to smoke test the staged release, and put up a prompt: *Proceed* or *Abort*.
-
-🚨 If you click on *Proceed*, then it will continue on to the `release conclude`/`github push`/`release distribute` phase.
+After preparing and building (approx. 20 minutes), the Jenkins pipeline will finish with the artifacts staged on either Maven Central or Artifactory.
 
 * For a Maven central release, go to https://s01.oss.sonatype.org/ and login.
 ** After logging in, you will find a closed Spring Data Release repository.
@@ -68,12 +157,14 @@ After preparing and building (approx. 20 minutes), the Jenkins pipeline will pau
 
 *Background*
 ====
-The first CI phase includes: `release prepare` and `release build` and may take twenty minutes or so.
+The release process now has two key phases: *release train tag creation* following by *release train tag build/publish*.
+Once a release tag has been created and published to GitHub, it's possible to do the second phase over and over until properly completed.
+If this involves Artifactory, you'l have to clean up between attempts.
+If this invovles Maven Central, all you have to do is drop the release and start over.
 
 * For a maven central release, you can visit https://s01.oss.sonatype.org/, login, and inspect the staged Spring Data Release. All the Spring Data modules will inside one repository.
 * For a milestone/RC release, you can visit https://repo.spring.io/. All the Spring Data modules will be there, each module a separate "build".
 
-At this point in time, we don't have official Spring Data Release smoke testing configured, so you can simply click *Proceed* if there were no issues. +
 For milestone/RC releases, Spring Data Release tools automatically promotes them in Artifactory, so if you have to delete a build, you'll ALSO have to go and delete each module individually.
 ====
 

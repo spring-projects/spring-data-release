@@ -1,0 +1,40 @@
+# TODO: Cleanup these old steps
+# github push ${VERSION} - CHECK
+# release distribute ${VERSION} - CHECK
+
+################################
+#
+# Copyright 2014-2022 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#################################
+#
+# This script is focused on create a "tag". NOTE: This is a release train tag, not an individual module's tag.
+#
+# @author Greg Turnquist
+#
+################################
+
+# Need this in case there is caching on the CI agent from previous jobs
+workspace cleanup
+
+# Check out that everything is accessible. If not, fail fast
+verify github
+
+# Check out the appropriate branch of the train, "mvn validate" it, bump the versions on each module, and make
+# the release commits.
+release prepare ${VERSION}
+
+# Tag the train and then bump the versions to "next release"
+release conclude ${VERSION}

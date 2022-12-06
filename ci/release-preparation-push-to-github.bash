@@ -3,7 +3,7 @@
 set -euo pipefail
 
 VERSION=$1
-echo "You want me to push and distribute ${VERSION} ??"
+echo "You want me to push release train tag ${VERSION} to GitHub?"
 
 export MAVEN_HOME="$HOME/.sdkman/candidates/maven/current"
 export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
@@ -11,9 +11,17 @@ export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
 export RELEASE_TOOLS_CACHE=${JENKINS_HOME}/.m2/spring-data-release-tools
-export LOGS_DIR=${JENKINS_HOME}/spring-data-shell/logs
+export LOGS_DIR=$(pwd)/logs
 export SETTINGS_XML=${JENKINS_HOME}/settings.xml
+
+mkdir -p ${RELEASE_TOOLS_CACHE}
+mkdir -p ${LOGS_DIR}
+
 export GNUPGHOME=~/.gnupg/
+mkdir -p ${GNUPGHOME}
+chmod 700 ${GNUPGHOME}
+
+cp ci/settings.xml ${JENKINS_HOME}
 
 if test -f application-local.properties; then
     echo "You are running from dev environment! Using application-local.properties."
@@ -23,7 +31,7 @@ if test -f application-local.properties; then
     function spring-data-release-shell {
         java \
             -jar target/spring-data-release-cli.jar \
-            --cmdfile target/push-and-distribute.shell
+            --cmdfile target/release-preparation-push-to-github.shell
     }
 else
     echo "You are running inside Jenkins! Using parameters fed from the agent."
@@ -33,13 +41,13 @@ else
             -Dspring.profiles.active=jenkins \
             -Dmaven.home=${MAVEN_HOME} \
             -jar target/spring-data-release-cli.jar \
-            --cmdfile target/push-and-distribute.shell
+            --cmdfile target/release-preparation-push-to-github.shell
     }
 
 fi
 
-echo "About to push and distribute ${VERSION}."
+echo "About to push release train tag '${VERSION}' to github."
 
-sed "s|\${VERSION}|${VERSION}|g" < ci/push-and-distribute.template > target/push-and-distribute.shell
+sed "s|\${VERSION}|${VERSION}|g" < ci/release-preparation-push-to-github.template > target/release-preparation-push-to-github.shell
 
 spring-data-release-shell

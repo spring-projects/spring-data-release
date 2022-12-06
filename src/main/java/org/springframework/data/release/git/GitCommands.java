@@ -68,6 +68,12 @@ class GitCommands extends TimedCommand {
 		git.checkout(iteration);
 	}
 
+	@CliCommand("git co-tag")
+	public void checkoutTag(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+		checkout(iteration.getTrain());
+		checkout(iteration);
+	}
+
 	@CliCommand("git update")
 	public void update(@CliOption(key = { "", "train" }, mandatory = true) String trainName)
 			throws Exception, InterruptedException {

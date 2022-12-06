@@ -155,19 +155,24 @@ class MavenBuildSystem implements BuildSystem {
 
 		logger.log(project, "Triggering distribution build…");
 
-		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
-				SKIP_TESTS, profile("distribute"), Argument.of("-B"),
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword())));
+		// TODO: Reenable these commands.
+		logger.log(project, "Since we're testing, let's NOT deploy the docs/schema. TODO: Reneable docs/schema deployment");
 
-		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
-				SKIP_TESTS, profile("distribute-schema"), Argument.of("-B"),
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword())));
+		// mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+		// SKIP_TESTS, profile("distribute"), Argument.of("-B"),
+		// arg("artifactory.server").withValue(properties.getServer().getUri()),
+		// arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
+		// arg("artifactory.username").withValue(properties.getUsername()),
+		// arg("artifactory.password").withValue(properties.getPassword()),
+		// arg("artifactory.build-name").withQuotedValue("Spring Data Docs " + buildName)));
+		//
+		// mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+		// SKIP_TESTS, profile("distribute-schema"), Argument.of("-B"),
+		// arg("artifactory.server").withValue(properties.getServer().getUri()),
+		// arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
+		// arg("artifactory.username").withValue(properties.getUsername()),
+		// arg("artifactory.password").withValue(properties.getPassword()),
+		// arg("artifactory.build-name").withQuotedValue("Spring Data Schema " + buildName)));
 
 		logger.log(project, "Successfully finished distribution build!");
 

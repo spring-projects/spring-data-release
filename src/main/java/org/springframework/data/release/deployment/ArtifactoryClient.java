@@ -72,7 +72,7 @@ class ArtifactoryClient {
 
 		try {
 
-			logger.log("Artifactory", "Verifying authentication using a GET call to %s (%s %s).", verificationResource);
+			logger.log("Artifactory", "Verifying authentication using a GET call to %s.", verificationResource);
 
 			template.getForEntity(verificationResource, String.class);
 

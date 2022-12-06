@@ -143,6 +143,8 @@ class ReleaseCommands extends TimedCommand {
 			ModuleIteration module = iteration.getModule(project);
 
 			DeploymentInformation information = build.performRelease(module);
+
+
 			deployment.promote(information);
 
 		} else {

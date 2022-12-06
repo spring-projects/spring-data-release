@@ -14,32 +14,13 @@ pipeline {
 
 	stages {
 
-		stage('Build the Spring Data release tools container') {
+		stage('Prepare Release') {
 			when {
-				changeset 'ci/Dockerfile'
-			}
-
-			agent {
-				label 'data'
-			}
-
-			steps {
-				script {
-					def image = docker.build("springci/spring-data-release-tools:0.3", "ci")
-					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
-						image.push()
-					}
-				}
-			}
-		}
-
-		stage('Ship It') {
-			when {
-				branch 'release'
+				branch 'prepare-release'
 			}
 			agent {
 				docker {
-					image 'springci/spring-data-release-tools:0.3'
+					image 'springci/spring-data-release-tools:0.4'
 				}
 			}
 			options { timeout(time: 4, unit: 'HOURS') }
@@ -59,26 +40,18 @@ pipeline {
 			steps {
 				script {
 					sh "ci/build-spring-data-release-cli.bash"
-					sh "ci/prepare-and-build.bash ${p['release.version']}"
+ 					sh "ci/release-preparation-create-tag.bash ${p['release.version']}"
+
+ 					input("Did ${p['release.version']} get created? Inspect the logs then Accept to push to GitHub.")
+
+ 					sh "ci/release-preparation-push-to-github.bash ${p['release.version']}"
 
 					slackSend(
 						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
 						channel: '#spring-data-dev',
 						message: (currentBuild.currentResult == 'SUCCESS')
-								? "`${env.BUILD_URL}` - Build and deploy passed! Conduct smoke tests then report back here."
-								: "`${env.BUILD_URL}` - Push and distribute failed!")
-
-					input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass? Accept to conclude and distribute the release.")
-
-					sh "ci/conclude.bash ${p['release.version']}"
-					sh "ci/push-and-distribute.bash ${p['release.version']}"
-
-					slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#spring-data-dev',
-						message: (currentBuild.currentResult == 'SUCCESS')
-								? "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} passed! Release the build (if needed)."
-								: "`${env.BUILD_URL}` - Push and distribute ${p['release.version']} failed!")
+								? "`${env.BUILD_URL}` - Release ${p['release.version']} has been prepared! You are ready to proceed with the next phase."
+								: "`${env.BUILD_URL}` - Release ${p['release.version']} prepartion has failed! You MUST go clean up and lingering tags and commits.")
 				}
 			}
 		}

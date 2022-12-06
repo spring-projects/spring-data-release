@@ -53,7 +53,10 @@ public class DeploymentOperations {
 			return;
 		}
 
-		client.promote(information);
+        // TODO: Reenable promotion
+        logger.log(information.getModule(),
+            "Skipping build promotion as we're still testing things out! TODO: Remove this message");
+//		client.promote(information);
 	}
 
 	/**
