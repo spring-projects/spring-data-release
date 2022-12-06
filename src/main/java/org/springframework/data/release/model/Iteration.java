@@ -34,7 +34,7 @@ import org.springframework.util.ReflectionUtils;
 @EqualsAndHashCode(of = "name")
 public class Iteration implements Comparable<Iteration> {
 
-	public static final Iteration SR24 = new Iteration("SR23", null);
+	public static final Iteration SR24 = new Iteration("SR24", null);
 	public static final Iteration SR23 = new Iteration("SR23", SR24);
 	public static final Iteration SR22 = new Iteration("SR22", SR23);
 	public static final Iteration SR21 = new Iteration("SR21", SR22);
