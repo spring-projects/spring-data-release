@@ -190,7 +190,7 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public StagingRepository open() {
 
-		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be nu,,");
+		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be null");
 		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
 
 		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-open"), //
