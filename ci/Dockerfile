@@ -25,6 +25,7 @@ RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
     yes | sdk install java 8.0.322-tem && \
     yes | sdk install java 8.0.332-tem && \
     yes | sdk install java 8.0.345-tem && \
+    yes | sdk install java 8.0.352-tem && \
     yes | sdk install maven && \
     rm -rf $HOME/.sdkman/archives/* && \
     rm -rf $HOME/.sdkman/tmp/*"
