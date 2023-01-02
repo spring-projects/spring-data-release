@@ -81,7 +81,7 @@ public class ReleaseTrains {
 				.filterModules(module -> !module.getProject().equals(JDBC)); // filter "old" JDBC without R2DBC submodule
 
 		U = TURING.next("U", Transition.MINOR) //
-				.withCalver("2022.1");
+				.withCalver("2023.0");
 
 		// Trains
 
