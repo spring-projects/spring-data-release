@@ -133,6 +133,230 @@ class MavenBuildSystem implements BuildSystem {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.springframework.data.release.build.BuildSystem#prepareVersion(org.springframework.data.release.model.ModuleIteration, org.springframework.data.release.model.Phase)
+	 */
+	@Override
+	public ModuleIteration prepareVersion(ModuleIteration module, Phase phase) {
+
+		Project project = module.getProject();
+		UpdateInformation information = UpdateInformation.of(module.getTrainIteration(), phase);
+
+		CommandLine goals = CommandLine.of(goal("versions:set"), goal("versions:commit"));
+
+		if (BOM.equals(project)) {
+
+			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
+					.and(arg("generateBackupPoms").withValue("false")));
+
+			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
+					.and(arg("generateBackupPoms").withValue("false")) //
+					.and(arg("processAllModules").withValue("true")) //
+					.and(Argument.of("-pl").withValue("bom")));
+
+		} else {
+			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getProjectVersionToSet(project)))
+					.and(arg("generateBackupPoms").withValue("false")));
+		}
+
+		if (BUILD.equals(project)) {
+
+			if (!module.getTrain().usesCalver()) {
+				mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
+						.and(arg("generateBackupPoms").withValue("false")) //
+						.and(arg("groupId").withValue("org.springframework.data")) //
+						.and(arg("artifactId").withValue("spring-data-releasetrain")));
+			}
+
+			mvn.execute(project, CommandLine.of(Goal.INSTALL));
+		}
+
+		return module;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.build.BuildSystem#triggerPreReleaseCheck(org.springframework.data.release.model.ModuleIteration)
+	 */
+	public <M extends ProjectAware> M triggerPreReleaseCheck(M module) {
+
+		mvn.execute(module.getProject(), CommandLine.of(Goal.CLEAN, Goal.VALIDATE, profile("pre-release")));
+
+		return module;
+	}
+
+	/**
+	 * Perform a {@literal nexus-staging:rc-open} and extract the {@code stagingProfileId} from the results.
+	 */
+	@Override
+	public StagingRepository open() {
+
+		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be null");
+		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
+
+		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-open"), //
+				profile("central"), //
+				arg("stagingProfileId").withValue(properties.getMavenCentral().getStagingProfileId()), //
+				arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+
+		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(BUILD, arguments);
+
+		List<String> rcOpenLogContents = invocationResult.getLog();
+
+		String stagingRepositoryId = rcOpenLogContents.stream() //
+				.filter(line -> line.contains(REPO_OPENING_TAG) && !line.contains("%s")) //
+				.reduce((first, second) -> second) // find the last entry, a.k.a. the most recent log line
+				.map(s -> s.substring( //
+						s.indexOf(REPO_OPENING_TAG) + REPO_OPENING_TAG.length(), //
+						s.indexOf(REPO_CLOSING_TAG))) //
+				.orElse("");
+
+		logger.log(BUILD, "Opened staging repository with Id: " + stagingRepositoryId);
+
+		return StagingRepository.of(stagingRepositoryId);
+	}
+
+	/**
+	 * Perform a {@literal nexus-staging:rc-close}.
+	 */
+	@Override
+	public void close(StagingRepository stagingRepository) {
+
+		Assert.notNull(stagingRepository, "StagingRepository must not be null");
+		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
+
+		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-close"), //
+				profile("central"), //
+				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+
+		mvn.execute(BUILD, arguments);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.build.BuildSystem#triggerBuild(org.springframework.data.release.model.ModuleIteration)
+	 */
+	@Override
+	public <M extends ProjectAware> M triggerBuild(M module) {
+
+		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
+				.and(profile("ci,release")).andIf(module.getProject().skipTests(), SKIP_TESTS)
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
+
+		mvn.execute(module.getProject(), arguments);
+
+		return module;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.build.BuildSystem#deploy(org.springframework.data.release.model.ModuleIteration)
+	 */
+	@Override
+	public DeploymentInformation deploy(ModuleIteration module) {
+
+		Assert.notNull(module, "Module must not be null!");
+
+		DeploymentInformation information = new DefaultDeploymentInformation(module, properties);
+
+		deploy(module, information);
+
+		return information;
+	}
+
+	@Override
+	public DeploymentInformation deploy(ModuleIteration module, StagingRepository stagingRepository) {
+
+		Assert.notNull(module, "Module must not be null!");
+		Assert.notNull(stagingRepository, "StagingRepository must not be null!");
+
+		DeploymentInformation information = new DefaultDeploymentInformation(module, properties, stagingRepository);
+
+		deploy(module, information);
+
+		return information;
+	}
+
+	private void deploy(ModuleIteration module, DeploymentInformation information) {
+
+		Assert.notNull(module, "Module must not be null!");
+		Assert.notNull(information, "DeploymentInformation must not be null!");
+
+		deployToArtifactory(module, information);
+
+		deployToMavenCentral(module, information);
+	}
+
+	/**
+	 * Triggers Maven commands to deploy module artifacts to Spring Artifactory.
+	 *
+	 * @param module must not be {@literal null}.
+	 * @param information must not be {@literal null}.
+	 */
+	private void deployToArtifactory(ModuleIteration module, DeploymentInformation information) {
+
+		Assert.notNull(module, "Module iteration must not be null!");
+		Assert.notNull(information, "Deployment information must not be null!");
+
+		if (!module.getIteration().isPreview()) {
+			logger.log(module, "Not a preview version (milestone or release candidate). Skipping Artifactory deployment.");
+			return;
+		}
+
+		logger.log(module, "Deploying artifacts to Spring Artifactory…");
+
+		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+				profile("ci,release,artifactory"), //
+				SKIP_TESTS, //
+				arg("artifactory.server").withValue(properties.getServer().getUri()),
+				arg("artifactory.staging-repository").withValue(properties.getStagingRepository()),
+				arg("artifactory.username").withValue(properties.getUsername()),
+				arg("artifactory.password").withValue(properties.getPassword()),
+				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
+				arg("artifactory.build-number").withValue(information.getBuildNumber()));
+
+		mvn.execute(module.getProject(), arguments);
+	}
+
+	/**
+	 * Triggers Maven commands to deploy to Sonatype's OSS Nexus if the given {@link ModuleIteration} refers to a version
+	 * that has to be publicly released.
+	 *
+	 * @param module must not be {@literal null}.
+	 * @param deploymentInformation must not be {@literal null}.
+	 */
+	private void deployToMavenCentral(ModuleIteration module, DeploymentInformation deploymentInformation) {
+
+		Assert.notNull(module, "Module iteration must not be null!");
+		Assert.notNull(deploymentInformation, "DeploymentInformation iteration must not be null!");
+
+		if (!module.getIteration().isPublic()) {
+
+			logger.log(module, "Skipping deployment to Maven Central as it's not a public version!");
+			return;
+		}
+
+		logger.log(module, "Deploying artifacts to Sonatype OSS Nexus…");
+
+		Gpg gpg = getGpg();
+
+		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+				profile("ci,release,central"), //
+				SKIP_TESTS, //
+				arg("gpg.executable").withValue(gpg.getExecutable()), //
+				arg("gpg.keyname").withValue(gpg.getKeyname()), //
+				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
+				.andIf(deploymentInformation.getStagingRepositoryId().isPresent(),
+						() -> arg("stagingRepositoryId").withValue(deploymentInformation.getStagingRepositoryId()))
+				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
+
+		mvn.execute(module.getProject(), arguments);
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.springframework.data.release.build.BuildSystem#triggerDistributionBuild(org.springframework.data.release.model.Module)
 	 */
 	@Override
@@ -245,171 +469,6 @@ class MavenBuildSystem implements BuildSystem {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.springframework.data.release.build.BuildSystem#prepareVersion(org.springframework.data.release.model.ModuleIteration, org.springframework.data.release.model.Phase)
-	 */
-	@Override
-	public ModuleIteration prepareVersion(ModuleIteration module, Phase phase) {
-
-		Project project = module.getProject();
-		UpdateInformation information = UpdateInformation.of(module.getTrainIteration(), phase);
-
-		CommandLine goals = CommandLine.of(goal("versions:set"), goal("versions:commit"));
-
-		if (BOM.equals(project)) {
-
-			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
-					.and(arg("generateBackupPoms").withValue("false")));
-
-			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
-					.and(arg("generateBackupPoms").withValue("false")) //
-					.and(arg("processAllModules").withValue("true")) //
-					.and(Argument.of("-pl").withValue("bom")));
-
-		} else {
-			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getProjectVersionToSet(project)))
-					.and(arg("generateBackupPoms").withValue("false")));
-		}
-
-		if (BUILD.equals(project)) {
-
-			if (!module.getTrain().usesCalver()) {
-				mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
-						.and(arg("generateBackupPoms").withValue("false")) //
-						.and(arg("groupId").withValue("org.springframework.data")) //
-						.and(arg("artifactId").withValue("spring-data-releasetrain")));
-			}
-
-			mvn.execute(project, CommandLine.of(Goal.INSTALL));
-		}
-
-		return module;
-	}
-
-	/**
-	 * Perform a {@literal nexus-staging:rc-open} and extract the {@code stagingProfileId} from the results.
-	 */
-	@Override
-	public StagingRepository open() {
-
-		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be null");
-		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
-
-		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-open"), //
-				profile("central"), //
-				arg("stagingProfileId").withValue(properties.getMavenCentral().getStagingProfileId()), //
-				arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"))
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
-
-		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(BUILD, arguments);
-
-		List<String> rcOpenLogContents = invocationResult.getLog();
-
-		String stagingRepositoryId = rcOpenLogContents.stream() //
-				.filter(line -> line.contains(REPO_OPENING_TAG) && !line.contains("%s")) //
-				.reduce((first, second) -> second) // find the last entry, a.k.a. the most recent log line
-				.map(s -> s.substring( //
-						s.indexOf(REPO_OPENING_TAG) + REPO_OPENING_TAG.length(), //
-						s.indexOf(REPO_CLOSING_TAG))) //
-				.orElse("");
-
-		logger.log(BUILD, "Opened staging repository with Id: " + stagingRepositoryId);
-
-		return StagingRepository.of(stagingRepositoryId);
-	}
-
-	/**
-	 * Perform a {@literal nexus-staging:rc-close}.
-	 */
-	@Override
-	public void close(StagingRepository stagingRepository) {
-
-		Assert.notNull(stagingRepository, "StagingRepository must not be null");
-		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
-
-		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-close"), //
-				profile("central"), //
-				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
-
-		mvn.execute(BUILD, arguments);
-	}
-
-	/*
-	* (non-Javadoc)
-	* @see org.springframework.data.release.build.BuildSystem#deploy(org.springframework.data.release.model.ModuleIteration)
-	*/
-	@Override
-	public DeploymentInformation deploy(ModuleIteration module) {
-
-		Assert.notNull(module, "Module must not be null!");
-
-		DeploymentInformation information = new DefaultDeploymentInformation(module, properties);
-
-		deploy(module, information);
-
-		return information;
-	}
-
-	@Override
-	public DeploymentInformation deploy(ModuleIteration module, StagingRepository stagingRepository) {
-
-		Assert.notNull(module, "Module must not be null!");
-		Assert.notNull(stagingRepository, "StagingRepository must not be null!");
-
-		DeploymentInformation information = new DefaultDeploymentInformation(module, properties, stagingRepository);
-
-		deploy(module, information);
-
-		return information;
-	}
-
-	private void deploy(ModuleIteration module, DeploymentInformation information) {
-
-		Assert.notNull(module, "Module must not be null!");
-		Assert.notNull(information, "DeploymentInformation must not be null!");
-
-		deployToArtifactory(module, information);
-
-		deployToMavenCentral(module, information);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.build.BuildSystem#triggerBuild(org.springframework.data.release.model.ModuleIteration)
-	 */
-	@Override
-	public <M extends ProjectAware> M triggerBuild(M module) {
-
-		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
-				.andIf(module.getProject().skipTests(), SKIP_TESTS);
-
-		mvn.execute(module.getProject(), arguments);
-
-		return module;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.build.BuildSystem#triggerPreReleaseCheck(org.springframework.data.release.model.ModuleIteration)
-	 */
-	public <M extends ProjectAware> M triggerPreReleaseCheck(M module) {
-
-		mvn.execute(module.getProject(), CommandLine.of(Goal.CLEAN, Goal.VALIDATE, profile("pre-release")));
-
-		return module;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
-	 */
-	@Override
-	public boolean supports(Project project) {
-		return isMavenProject(project);
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see org.springframework.data.release.build.BuildSystem#verify()
 	 */
 	@Override
@@ -438,71 +497,13 @@ class MavenBuildSystem implements BuildSystem {
 				"Staging Profile Id is not set (deployment.maven-central.staging-profile-id=…)");
 	}
 
-	/**
-	 * Triggers Maven commands to deploy module artifacts to Spring Artifactory.
-	 *
-	 * @param module must not be {@literal null}.
-	 * @param information must not be {@literal null}.
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
 	 */
-	private void deployToArtifactory(ModuleIteration module, DeploymentInformation information) {
-
-		Assert.notNull(module, "Module iteration must not be null!");
-		Assert.notNull(information, "Deployment information must not be null!");
-
-		if (!module.getIteration().isPreview()) {
-			logger.log(module, "Not a preview version (milestone or release candidate). Skipping Artifactory deployment.");
-			return;
-		}
-
-		logger.log(module, "Deploying artifacts to Spring Artifactory…");
-
-		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
-				profile("ci,release,artifactory"), //
-				SKIP_TESTS, //
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.staging-repository").withValue(properties.getStagingRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword()),
-				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
-				arg("artifactory.build-number").withValue(information.getBuildNumber()));
-
-		mvn.execute(module.getProject(), arguments);
-	}
-
-	/**
-	 * Triggers Maven commands to deploy to Sonatype's OSS Nexus if the given {@link ModuleIteration} refers to a version
-	 * that has to be publicly released.
-	 *
-	 * @param module must not be {@literal null}.
-	 * @param deploymentInformation must not be {@literal null}.
-	 */
-	private void deployToMavenCentral(ModuleIteration module, DeploymentInformation deploymentInformation) {
-
-		Assert.notNull(module, "Module iteration must not be null!");
-		Assert.notNull(deploymentInformation, "DeploymentInformation iteration must not be null!");
-
-		if (!module.getIteration().isPublic()) {
-
-			logger.log(module, "Skipping deployment to Maven Central as it's not a public version!");
-			return;
-		}
-
-		logger.log(module, "Deploying artifacts to Sonatype OSS Nexus…");
-
-		Gpg gpg = getGpg();
-
-		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
-				profile("ci,release,central"), //
-				SKIP_TESTS, //
-				arg("gpg.executable").withValue(gpg.getExecutable()), //
-				arg("gpg.keyname").withValue(gpg.getKeyname()), //
-				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
-				.andIf(deploymentInformation.getStagingRepositoryId().isPresent(),
-						() -> arg("stagingRepositoryId").withValue(deploymentInformation.getStagingRepositoryId()))
-				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
-
-		mvn.execute(module.getProject(), arguments);
+	@Override
+	public boolean supports(Project project) {
+		return isMavenProject(project);
 	}
 
 	private boolean isMavenProject(Project project) {

@@ -16,7 +16,6 @@
 package org.springframework.data.release.cli;
 
 import org.apache.commons.io.IOUtils;
-
 import org.springframework.boot.SpringBootVersion;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;

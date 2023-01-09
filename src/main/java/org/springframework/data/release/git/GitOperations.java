@@ -202,7 +202,7 @@ public class GitOperations {
 	}
 
 	/**
-	 * Checks out all projects of the given {@link TrainIteration}.
+	 * Checks out all projects of the given {@link TrainIteration} using their tags.
 	 *
 	 * @param iteration must not be {@literal null}.
 	 */

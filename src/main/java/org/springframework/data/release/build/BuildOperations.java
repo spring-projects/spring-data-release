@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.util.VisibleForTesting;
-
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.model.Module;
@@ -74,42 +73,77 @@ public class BuildOperations {
 	}
 
 	/**
-	 * Triggers the distribution builds for all modules participating in the given {@link TrainIteration}.
+	 * Prepares the versions of the given {@link TrainIteration} depending on the given {@link Phase}.
 	 *
 	 * @param iteration must not be {@literal null}.
+	 * @param phase must not be {@literal null}.
 	 */
-	public void distributeResources(TrainIteration iteration) {
+	public void prepareVersions(TrainIteration iteration, Phase phase) {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
+		Assert.notNull(phase, "Phase must not be null!");
 
-		distributeResources(iteration.getTrain());
+		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
+				(system, module) -> system.prepareVersion(module, phase));
+
+		logger.log(iteration, "Prepare versions: %s", summary);
 	}
 
 	/**
-	 * Triggers the distribution builds for all modules participating in the given {@link Train}.
+	 * Prepares the version of the given {@link ModuleIteration} depending on the given {@link Phase}.
 	 *
-	 * @param train must not be {@literal null}.
+	 * @param iteration must not be {@literal null}.
+	 * @param phase must not be {@literal null}.
+	 * @return
 	 */
-	public void distributeResources(Train train) {
+	@VisibleForTesting
+	public ModuleIteration prepareVersion(ModuleIteration iteration, Phase phase) {
 
-		Assert.notNull(train, "Train must not be null!");
+		Assert.notNull(iteration, "Module iteration must not be null!");
+		Assert.notNull(phase, "Phase must not be null!");
 
-		BuildExecutor.Summary<Module> summary = executor.doWithBuildSystemAnyOrder(train,
-				BuildSystem::triggerDistributionBuild);
-
-		logger.log(train, "Distribution build: %s", summary);
+		return doWithBuildSystem(iteration, (system, module) -> system.prepareVersion(module, phase));
 	}
 
+
 	/**
-	 * Triggers the distribution builds for the given module.
+	 * Opens a repository to stage artifacts for this {@link ModuleIteration}.
 	 *
 	 * @param iteration must not be {@literal null}.
 	 */
-	public void distributeResources(ModuleIteration iteration) {
+	public void open(ModuleIteration iteration) {
 
-		Assert.notNull(iteration, "ModuleIteration must not be null!");
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open());
+	}
 
-		doWithBuildSystem(iteration, BuildSystem::triggerDistributionBuild);
+	/**
+	 * Closes a repository to stage artifacts for this {@link ModuleIteration}.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @param stagingRepository must not be {@literal null}.
+	 */
+	public void close(ModuleIteration iteration, StagingRepository stagingRepository) {
+
+		Assert.notNull(stagingRepository, "StagingRepository must not be null");
+		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
+
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
+			buildSystem.close(stagingRepository);
+			return null;
+		});
+	}
+
+	/**
+	 * Performs a local build for all modules in the given {@link TrainIteration}.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @return
+	 */
+	public void build(TrainIteration iteration) {
+
+		executor.doWithBuildSystemOrdered(iteration, BuildSystem::triggerBuild);
+
+		logger.log(iteration, "Build finished");
 	}
 
 	/**
@@ -149,36 +183,42 @@ public class BuildOperations {
 	}
 
 	/**
-	 * Prepares the versions of the given {@link TrainIteration} depending on the given {@link Phase}.
+	 * Triggers the distribution builds for all modules participating in the given {@link TrainIteration}.
 	 *
 	 * @param iteration must not be {@literal null}.
-	 * @param phase must not be {@literal null}.
 	 */
-	public void prepareVersions(TrainIteration iteration, Phase phase) {
+	public void distributeResources(TrainIteration iteration) {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
-		Assert.notNull(phase, "Phase must not be null!");
 
-		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
-				(system, module) -> system.prepareVersion(module, phase));
-
-		logger.log(iteration, "Prepare versions: %s", summary);
+		distributeResources(iteration.getTrain());
 	}
 
 	/**
-	 * Prepares the version of the given {@link ModuleIteration} depending on the given {@link Phase}.
+	 * Triggers the distribution builds for all modules participating in the given {@link Train}.
+	 *
+	 * @param train must not be {@literal null}.
+	 */
+	public void distributeResources(Train train) {
+
+		Assert.notNull(train, "Train must not be null!");
+
+		BuildExecutor.Summary<Module> summary = executor.doWithBuildSystemAnyOrder(train,
+				BuildSystem::triggerDistributionBuild);
+
+		logger.log(train, "Distribution build: %s", summary);
+	}
+
+	/**
+	 * Triggers the distribution builds for the given module.
 	 *
 	 * @param iteration must not be {@literal null}.
-	 * @param phase must not be {@literal null}.
-	 * @return
 	 */
-	@VisibleForTesting
-	public ModuleIteration prepareVersion(ModuleIteration iteration, Phase phase) {
+	public void distributeResources(ModuleIteration iteration) {
 
-		Assert.notNull(iteration, "Module iteration must not be null!");
-		Assert.notNull(phase, "Phase must not be null!");
+		Assert.notNull(iteration, "ModuleIteration must not be null!");
 
-		return doWithBuildSystem(iteration, (system, module) -> system.prepareVersion(module, phase));
+		doWithBuildSystem(iteration, BuildSystem::triggerDistributionBuild);
 	}
 
 	/**
@@ -188,33 +228,6 @@ public class BuildOperations {
 	 */
 	public Path getLocalRepository() {
 		return properties.getLocalRepository().toPath();
-	}
-
-	/**
-	 * Opens a repository to stage artifacts for this {@link ModuleIteration}.
-	 *
-	 * @param iteration must not be {@literal null}.
-	 */
-	public void open(ModuleIteration iteration) {
-
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open());
-	}
-
-	/**
-	 * Closes a repository to stage artifacts for this {@link ModuleIteration}.
-	 *
-	 * @param iteration must not be {@literal null}.
-	 * @param stagingRepository must not be {@literal null}.
-	 */
-	public void close(ModuleIteration iteration, StagingRepository stagingRepository) {
-
-		Assert.notNull(stagingRepository, "StagingRepository must not be null");
-		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
-
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
-			buildSystem.close(stagingRepository);
-			return null;
-		});
 	}
 
 	/**
