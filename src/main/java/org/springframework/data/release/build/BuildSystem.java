@@ -50,6 +50,15 @@ interface BuildSystem extends Plugin<Project> {
 	ModuleIteration prepareVersion(ModuleIteration module, Phase phase);
 
 	/**
+	 * Triggers the pre-release checks for the given {@link ModuleIteration}.
+	 *
+	 * @param module must not be {@literal null}.
+	 * @return
+	 */
+	<M extends ProjectAware> M triggerPreReleaseCheck(M module);
+
+
+	/**
 	 * Open a remote repository for staging artifacts.
 	 */
 	StagingRepository open();
@@ -58,6 +67,8 @@ interface BuildSystem extends Plugin<Project> {
 	 * Close a remote repository for staging artifacts.
 	 */
 	void close(StagingRepository stagingRepository);
+
+	<M extends ProjectAware> M triggerBuild(M module);
 
 	/**
 	 * Deploy artifacts for the given {@link ModuleIteration} using {@link DeploymentInformation}.
@@ -83,16 +94,6 @@ interface BuildSystem extends Plugin<Project> {
 	 * @return
 	 */
 	<M extends ProjectAware> M triggerDistributionBuild(M module);
-
-	<M extends ProjectAware> M triggerBuild(M module);
-
-	/**
-	 * Triggers the pre-release checks for the given {@link ModuleIteration}.
-	 *
-	 * @param module must not be {@literal null}.
-	 * @return
-	 */
-	<M extends ProjectAware> M triggerPreReleaseCheck(M module);
 
 	/**
 	 * Verify general functionality and correctness of the build setup.
