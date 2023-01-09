@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.cli.TrainIterationConverter;
-import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
@@ -49,7 +48,6 @@ class BuildCommands extends TimedCommand {
 
 	@NonNull BuildOperations build;
 	@NonNull Workspace workspace;
-	@NonNull GitOperations git;
 	@NonNull Logger logger;
 
 	/**
@@ -83,7 +81,6 @@ class BuildCommands extends TimedCommand {
 		project.ifPresent(it -> build.triggerBuild(iteration.getModule(it)));
 
 		if (!project.isPresent()) {
-			git.prepare(iteration);
 			iteration.forEach(build::triggerBuild);
 		}
 	}
@@ -102,17 +99,14 @@ class BuildCommands extends TimedCommand {
 					TrainIteration.class, null);
 
 			Assert.notNull(trainIteration, "TrainIteration must not be null!");
-			git.prepare(trainIteration);
 			build.distributeResources(trainIteration);
 
 			return;
 		}
 
 		Train train = ReleaseTrains.getTrainByName(trainOrIteration);
-
 		Assert.notNull(train, "Train must not be null!");
 
-		git.checkout(train);
 		build.distributeResources(train);
 	}
 }

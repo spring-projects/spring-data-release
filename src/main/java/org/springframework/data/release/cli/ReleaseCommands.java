@@ -68,6 +68,26 @@ class ReleaseCommands extends TimedCommand {
 	}
 
 	/**
+	 * Composite command to prepare a release.
+	 *
+	 * @param iteration
+	 * @throws Exception
+	 */
+	@CliCommand(value = "prepare-it")
+	public void prepareIt(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+
+		tracker.trackerPrepare(iteration);
+
+		prepare(iteration);
+
+		build.build(iteration);
+
+		conclude(iteration);
+
+		gitHub.push(iteration);
+	}
+
+	/**
 	 * Composite command to ship a full release.
 	 *
 	 * @param iteration
@@ -80,13 +100,13 @@ class ReleaseCommands extends TimedCommand {
 
 		prepare(iteration);
 
-		buildRelease(iteration, null);
-
 		conclude(iteration);
 
-		gitHub.push(iteration);
+		buildRelease(iteration, null);
 
 		distribute(iteration, null);
+
+		gitHub.push(iteration);
 
 		tracker.closeIteration(iteration);
 	}
@@ -132,6 +152,8 @@ class ReleaseCommands extends TimedCommand {
 	@CliCommand(value = "release build")
 	public void buildRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "project", mandatory = false) String projectName) {
+
+		git.checkout(iteration);
 
 		if (!iteration.getIteration().isPublic()) {
 			deployment.verifyAuthentication();
