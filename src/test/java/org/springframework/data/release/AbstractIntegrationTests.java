@@ -21,6 +21,6 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * @author Oliver Gierke
  */
-@ActiveProfiles({ "local", "test" })
+@ActiveProfiles({ "test" })
 @SpringBootTest(classes = Application.class)
 public abstract class AbstractIntegrationTests {}
