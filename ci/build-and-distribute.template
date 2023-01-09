@@ -1,0 +1,3 @@
+workspace cleanup
+release build ${VERSION}
+release distribute ${VERSION}

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 VERSION=$1
-echo "You want me to push and distribute ${VERSION} ??"
+echo "You want me to build and distribute ${VERSION} ?"
 
 export MAVEN_HOME="$HOME/.sdkman/candidates/maven/current"
 export JAVA_HOME="$HOME/.sdkman/candidates/java/current"

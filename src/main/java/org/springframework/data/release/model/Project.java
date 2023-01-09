@@ -50,7 +50,7 @@ public class Project implements Comparable<Project> {
 	}
 
 	private Project(String key, String name, String fullName, Tracker tracker) {
-		this(new ProjectKey(key), name, fullName, Collections.emptySet(), tracker, ArtifactCoordinates.SPRING_DATA, false);
+		this(new ProjectKey(key), name, fullName, Collections.emptySet(), tracker, ArtifactCoordinates.SPRING_DATA, true);
 	}
 
 	@java.beans.ConstructorProperties({ "key", "name", "fullName", "dependencies", "tracker", "additionalArtifacts",

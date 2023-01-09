@@ -241,7 +241,8 @@ class MavenBuildSystem implements BuildSystem {
 	public <M extends ProjectAware> M triggerBuild(M module) {
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
-				.andIf(module.getProject().skipTests(), SKIP_TESTS);
+				.and(profile("ci,release")).andIf(module.getProject().skipTests(), SKIP_TESTS)
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
 
 		mvn.execute(module.getProject(), arguments);
 
