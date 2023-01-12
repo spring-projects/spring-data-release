@@ -183,3 +183,49 @@ Removing a line will omit that dependency upgrade.
 To distribute `ci/pipeline.properties` across all modules use:
 
 `$ infra distribute ci-properties $trainIteration`
+
+===== Broken Link Report
+
+Resolve external links in reference documentation and print their status.
+
+`$ docs check-links $trainIteration`
+
+|===
+|Flag |Description
+
+| --local
+| read the documentation from disk (target module workspace directory)
+
+| --project
+| only check links of a specific project (eg. `redis`)
+
+| --report
+| only report errors of the given categories (ERROR,REDIRECT,OK). Default is ALL
+
+|===
+
+.Examples - Check links of release train/module
+[source,console]
+----
+$ docs check-links Turing GA --report ERROR
+
+$ docs check-links Turing SR1 --local true --project redis
+----
+
+Resolve external links of any web page (remote/local) and print their status.
+
+`$ check-links $url`
+
+|===
+|Flag |Description
+
+| --report
+| only report errors of the given categories (ERROR,REDIRECT,OK). Default is ALL
+
+|===
+
+.Example - Check links on any url
+[source,console]
+----
+$ check-links file:///usr/git/spring-data-mongodb/target/site/reference/html/index.html --report ERROR,REDIRECT
+----

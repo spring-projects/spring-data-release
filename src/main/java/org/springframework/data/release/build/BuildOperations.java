@@ -15,6 +15,8 @@
  */
 package org.springframework.data.release.build;
 
+import static org.springframework.data.release.model.Projects.*;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +37,7 @@ import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -144,6 +147,21 @@ public class BuildOperations {
 		executor.doWithBuildSystemOrdered(iteration, BuildSystem::triggerBuild);
 
 		logger.log(iteration, "Build finished");
+	}
+
+	public void buildDocumentation(TrainIteration iteration) {
+
+		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)), BuildSystem::triggerDocumentationBuild);
+
+		logger.log(iteration, "Documentation build finished");
+	}
+
+	public void buildDocumentation(ModuleIteration iteration) {
+
+		// TODO: check if this call is fine
+		// executor.doWithBuildSystemOrdered(Streamable.of(iteration), BuildSystem::triggerDocumentationBuild);
+
+		logger.log(iteration, "Documentation build finished");
 	}
 
 	/**

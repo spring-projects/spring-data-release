@@ -70,6 +70,8 @@ interface BuildSystem extends Plugin<Project> {
 
 	<M extends ProjectAware> M triggerBuild(M module);
 
+	<M extends ProjectAware> M triggerDocumentationBuild(M module);
+
 	/**
 	 * Deploy artifacts for the given {@link ModuleIteration} using {@link DeploymentInformation}.
 	 *
