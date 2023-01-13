@@ -40,6 +40,6 @@ fi
 
 echo "About to push and distribute ${VERSION}."
 
-sed "s|\${VERSION}|${VERSION}|g" < ci/push-and-distribute.template > target/push-and-distribute.shell
+sed "s|\${VERSION}|${VERSION}|g" < ci/build-and-distribute.template > target/build-and-distribute.shell
 
 spring-data-release-shell

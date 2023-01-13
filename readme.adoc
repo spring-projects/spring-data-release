@@ -51,7 +51,7 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 |🚨 *To trigger 🛣 the release* `git push` the `release` branch
 |`$ git push origin release`
 
-|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release-release/, Navigate to the `release` branch.
+|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/release, Navigate to the `release` branch.
 A job should have started. Click on the active job, and then click on *Open Blue Ocean*.
 | Monitor the release process.
 

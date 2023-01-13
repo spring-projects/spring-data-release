@@ -81,7 +81,7 @@ class BuildCommands extends TimedCommand {
 		project.ifPresent(it -> build.triggerBuild(iteration.getModule(it)));
 
 		if (!project.isPresent()) {
-			iteration.forEach(build::triggerBuild);
+			build.build(iteration);
 		}
 	}
 

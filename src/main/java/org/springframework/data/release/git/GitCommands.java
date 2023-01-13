@@ -69,9 +69,9 @@ class GitCommands extends TimedCommand {
 	}
 
 	@CliCommand("git update")
-	public void update(@CliOption(key = { "", "train" }, mandatory = true) String trainName)
+	public void update(@CliOption(key = { "", "train" }, mandatory = true) TrainIteration iteration)
 			throws Exception, InterruptedException {
-		git.update(ReleaseTrains.getTrainByName(trainName));
+		git.update(iteration.getTrain());
 	}
 
 	@CliCommand("git tags")
