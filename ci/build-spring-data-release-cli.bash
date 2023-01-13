@@ -7,5 +7,9 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
 export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
+export RELEASE_TOOLS_MAVEN_REPOSITORY=$(pwd)/maven-repository
+export SETTINGS_XML=$(pwd)/ci/settings.xml
 
-mvn clean package -B -DskipTests
+mkdir -p ${RELEASE_TOOLS_MAVEN_REPOSITORY}
+
+mvn -Dmaven.repo.local=${RELEASE_TOOLS_MAVEN_REPOSITORY} -s ${SETTINGS_XML} clean package -B -DskipTests

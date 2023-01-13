@@ -10,18 +10,16 @@ export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
 export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
-export RELEASE_TOOLS_CACHE=${JENKINS_HOME}/.m2/spring-data-release-tools
+export RELEASE_TOOLS_MAVEN_REPOSITORY=$(pwd)/maven-repository
 export LOGS_DIR=$(pwd)/logs
-export SETTINGS_XML=${JENKINS_HOME}/settings.xml
+export SETTINGS_XML=$(pwd)/ci/settings.xml
 
-mkdir -p ${RELEASE_TOOLS_CACHE}
+mkdir -p ${RELEASE_TOOLS_MAVEN_REPOSITORY}
 mkdir -p ${LOGS_DIR}
 
 export GNUPGHOME=~/.gnupg/
 mkdir -p ${GNUPGHOME}
 chmod 700 ${GNUPGHOME}
-
-cp ci/settings.xml ${JENKINS_HOME}
 
 if test -f application-local.properties; then
     echo "You are running from dev environment! Using application-local.properties."
