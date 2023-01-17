@@ -355,6 +355,21 @@ class MavenBuildSystem implements BuildSystem {
 		mvn.execute(module.getProject(), arguments);
 	}
 
+	@Override
+	public <M extends ProjectAware> M triggerDocumentationBuild(M module) {
+
+		Project project = module.getProject();
+		if(!isMavenProject(project)) {
+			logger.log(project, "Skipping project as no pom.xml could be found in the working directory!");
+			return module;
+		}
+
+		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.INSTALL, SKIP_TESTS, profile("distribute")));
+
+		logger.log(project, "Successfully finished documentation build.");
+		return module;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.springframework.data.release.build.BuildSystem#triggerDistributionBuild(org.springframework.data.release.model.Module)

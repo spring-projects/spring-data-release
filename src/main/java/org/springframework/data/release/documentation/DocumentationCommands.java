@@ -17,6 +17,7 @@ package org.springframework.data.release.documentation;
 
 import static org.springframework.data.release.model.Projects.*;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 
@@ -24,8 +25,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.build.BuildOperations;
 import org.springframework.data.release.cli.StaticResources;
 import org.springframework.data.release.documentation.DocumentationOperations.ReportFlags;
+import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.TrainIteration;
@@ -43,8 +46,10 @@ import org.springframework.shell.core.annotation.CliOption;
 public class DocumentationCommands extends TimedCommand {
 
 	private final @NonNull DocumentationOperations operations;
-	private final @NonNull Logger logger;
 	private final @NonNull ExecutorService executorService;
+	private final @NonNull BuildOperations buildOperations;
+	private final @NonNull Workspace workspace;
+	private final @NonNull Logger logger;
 
 	@CliCommand("docs check-links")
 	public void checkLinks(@CliOption(key = "", mandatory = true) TrainIteration iteration, @CliOption(key = "project", mandatory = false) Project project, @CliOption(key = "local", mandatory = false, unspecifiedDefaultValue = "false") boolean preview, @CliOption(key = "report", mandatory = false) String options) {
@@ -61,15 +66,29 @@ public class DocumentationCommands extends TimedCommand {
 
 	public void checkLinks(ModuleIteration module, boolean preview, String options) {
 
+		ReportFlags[] flags = new ReportFlags[]{ReportFlags.ALL};
+		if (options != null) {
+			flags = Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new);
+		}
+
 		if (preview) {
-			throw new RuntimeException("to be implemented");
-		} else {
-			StaticResources resources = new StaticResources(module);
-			ReportFlags[] flags = new ReportFlags[]{ReportFlags.ALL};
-			if (options != null) {
-				flags = Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new);
+			buildOperations.buildDocumentation(module);
+			File projectDirectory = workspace.getProjectDirectory(module.getProject());
+			if (!projectDirectory.exists()) {
+				logger.warn(module, "Unable to locate project directory");
+				return;
 			}
-			String result = operations.checkDocumentation(resources.getDocumentationUrl()).prettyPrint(flags);
+			File source = new File(projectDirectory, "target/site/reference/html/index.html");
+			if (!source.exists()) {
+				logger.warn(module, "Unable to locate reference documentation html %", source);
+				return;
+			}
+
+			String result = operations.checkDocumentation(source.getPath()).prettyPrint(flags);
+			logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
+		} else {
+
+			String result = operations.checkDocumentation(new StaticResources(module).getDocumentationUrl()).prettyPrint(flags);
 			logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
 		}
 	}
