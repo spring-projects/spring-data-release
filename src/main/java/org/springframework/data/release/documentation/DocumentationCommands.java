@@ -18,6 +18,7 @@ package org.springframework.data.release.documentation;
 import static org.springframework.data.release.model.Projects.*;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,9 @@ import org.springframework.data.release.documentation.DocumentationOperations.Re
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.data.util.Streamable;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 
@@ -41,15 +44,18 @@ public class DocumentationCommands extends TimedCommand {
 
 	private final @NonNull DocumentationOperations operations;
 	private final @NonNull Logger logger;
+	private final @NonNull ExecutorService executorService;
 
 	@CliCommand("docs check-links")
 	public void checkLinks(@CliOption(key = "", mandatory = true) TrainIteration iteration, @CliOption(key = "project", mandatory = false) Project project, @CliOption(key = "local", mandatory = false, unspecifiedDefaultValue = "false") boolean preview, @CliOption(key = "report", mandatory = false) String options) {
 
-		iteration.getModulesExcept(BUILD, BOM, COMMONS).forEach(module -> {
+		if (project != null) {
+			checkLinks(iteration.getModule(project), preview, options);
+			return;
+		}
 
-			if (project == null || module.getProject().getName().equals(project.getName())) {
-				checkLinks(module, preview, options);
-			}
+		ExecutionUtils.run(executorService, Streamable.of(iteration.getModulesExcept(BUILD, BOM, COMMONS)), module -> {
+			checkLinks(module, preview, options);
 		});
 	}
 
@@ -59,7 +65,11 @@ public class DocumentationCommands extends TimedCommand {
 			throw new RuntimeException("to be implemented");
 		} else {
 			StaticResources resources = new StaticResources(module);
-			String result = operations.checkDocumentation(resources.getDocumentationUrl()).prettyPrint(Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new));
+			ReportFlags[] flags = new ReportFlags[]{ReportFlags.ALL};
+			if (options != null) {
+				flags = Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new);
+			}
+			String result = operations.checkDocumentation(resources.getDocumentationUrl()).prettyPrint(flags);
 			logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
 		}
 	}
