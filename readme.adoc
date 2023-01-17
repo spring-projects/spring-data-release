@@ -183,3 +183,20 @@ Removing a line will omit that dependency upgrade.
 To distribute `ci/pipeline.properties` across all modules use:
 
 `$ infra distribute ci-properties $trainIteration`
+
+===== Broken Link Report
+
+Resolve external links in reference documentation and print their status.
+
+`$ docs check-links $trainIteration`
+
+|===
+|Flag |Description
+
+| --project
+| only check links of a specific project (eg. `redis`)
+
+| --report
+| only report errors of the given categories (ERROR,REDIRECT,OK). Default is ALL.
+
+|===
