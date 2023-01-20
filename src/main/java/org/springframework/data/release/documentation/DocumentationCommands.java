@@ -37,6 +37,7 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christoph Strobl
@@ -64,14 +65,18 @@ public class DocumentationCommands extends TimedCommand {
 		});
 	}
 
+	@CliCommand("check-links")
+	public void checkLinks(@CliOption(key = "", mandatory = true) String url, @CliOption(key = "report", mandatory = false) String options) {
+
+		String result = operations.checkDocumentation(url).prettyPrint(readFlags(options));
+		System.out.printf("Link Statistic:\r\n%s", result);
+	}
+
 	public void checkLinks(ModuleIteration module, boolean preview, String options) {
 
-		ReportFlags[] flags = new ReportFlags[]{ReportFlags.ALL};
-		if (options != null) {
-			flags = Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new);
-		}
-
+		String path;
 		if (preview) {
+
 			buildOperations.buildDocumentation(module);
 			File projectDirectory = workspace.getProjectDirectory(module.getProject());
 			if (!projectDirectory.exists()) {
@@ -83,14 +88,27 @@ public class DocumentationCommands extends TimedCommand {
 				logger.warn(module, "Unable to locate reference documentation html %", source);
 				return;
 			}
-
-			String result = operations.checkDocumentation(source.getPath()).prettyPrint(flags);
-			logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
+			path = source.getPath();
 		} else {
-
-			String result = operations.checkDocumentation(new StaticResources(module).getDocumentationUrl()).prettyPrint(flags);
-			logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
+			path = new StaticResources(module).getDocumentationUrl();
 		}
+
+		if(!StringUtils.hasText(path)) {
+			logger.warn(module, "Empty path for reference documentation.");
+			return;
+		}
+
+		String result = operations.checkDocumentation(path).prettyPrint(readFlags(options));
+		logger.log(module, "%s Documentation Link Statistic:\r\n%s", module, result);
+	}
+
+	private static ReportFlags[] readFlags(String options) {
+
+		ReportFlags[] flags = new ReportFlags[]{ReportFlags.ALL};
+		if (options != null) {
+			flags = Arrays.stream(options.split(",")).map(ReportFlags::valueOf).toArray(ReportFlags[]::new);
+		}
+		return flags;
 	}
 }
 
