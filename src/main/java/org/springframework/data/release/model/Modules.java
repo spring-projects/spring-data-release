@@ -27,7 +27,7 @@ import org.springframework.data.util.Streamable;
  *
  * @author Oliver Gierke
  */
-class Modules implements Streamable<Module> {
+public class Modules implements Streamable<Module> {
 
 	private final Collection<Module> modules;
 

@@ -25,21 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,6 +41,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.errors.EmptyCommitException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.lib.ObjectId;
@@ -75,16 +63,7 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
-import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.Gpg;
-import org.springframework.data.release.model.Iteration;
-import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.ProjectAware;
-import org.springframework.data.release.model.Projects;
-import org.springframework.data.release.model.ReleaseTrains;
-import org.springframework.data.release.model.Train;
-import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
@@ -151,6 +130,17 @@ public class GitOperations {
 	 * @param update whether to fetch an update from origin.
 	 */
 	public void checkout(Train train, boolean update) {
+		checkout(train, update, true);
+	}
+
+	/**
+	 * Checks out all projects of the given {@link Train}.
+	 *
+	 * @param train
+	 * @param update whether to fetch an update from origin.
+	 * @param reset whether to reset HARD.
+	 */
+	public void checkout(Train train, boolean update, boolean reset) {
 
 		Assert.notNull(train, "Train must not be null!");
 
@@ -158,47 +148,52 @@ public class GitOperations {
 			update(train);
 		}
 
-		AtomicBoolean mainSwitch = new AtomicBoolean();
 		ExecutionUtils.run(executor, train, module -> {
 
 			Project project = module.getProject();
 
 			doWithGit(project, git -> {
 
-				ModuleIteration gaIteration = train.getModuleIteration(project, Iteration.GA);
-				Optional<Tag> gaTag = findTagFor(project, ArtifactVersion.of(gaIteration));
+				Branch branch = getBranch(train, module, project);
+				checkoutBranch(project, git, branch);
 
-				if (!gaTag.isPresent()) {
-					logger.log(project, "Checking out main branch as no GA release tag could be found!");
+				if (reset) {
+					reset(project, branch);
 				}
-
-				Branch branch = gaTag.isPresent() ? Branch.from(module) : Branch.MAIN;
-
-				CheckoutCommand command = git.checkout().setName(branch.toString());
-
-				if (!branchExists(project, branch)) {
-
-					logger.log(project, "git checkout -b %s --track origin/%s", branch, branch);
-					command.setCreateBranch(true)//
-							.setStartPoint("origin/".concat(branch.toString()))//
-							.call();
-				} else {
-
-					logger.log(project, "git checkout %s", branch);
-					command.call();
-				}
-
-				reset(project, branch);
 			});
 		});
 
-		if (mainSwitch.get()) {
-			logger.warn(train,
-					"Successfully checked out projects. There were switches to main for certain projects. This happens if the train has no branches yet.");
-		} else {
-			logger.log(train, "Successfully checked out projects.");
+		logger.log(train, "Successfully checked out projects.");
+
+	}
+
+	private Branch getBranch(Train train, Module module, Project project) {
+
+		ModuleIteration gaIteration = train.getModuleIteration(project, Iteration.GA);
+		Optional<Tag> gaTag = findTagFor(project, ArtifactVersion.of(gaIteration));
+
+		if (!gaTag.isPresent()) {
+			logger.log(project, "Checking out main branch as no GA release tag could be found!");
 		}
 
+		return gaTag.isPresent() ? Branch.from(module) : Branch.MAIN;
+	}
+
+	private void checkoutBranch(Project project, Git git, Branch branch) throws GitAPIException {
+
+		CheckoutCommand command = git.checkout().setName(branch.toString());
+
+		if (!branchExists(project, branch)) {
+
+			logger.log(project, "git checkout -b %s --track origin/%s", branch, branch);
+			command.setCreateBranch(true)//
+					.setStartPoint("origin/".concat(branch.toString()))//
+					.call();
+		} else {
+
+			logger.log(project, "git checkout %s", branch);
+			command.call();
+		}
 	}
 
 	/**

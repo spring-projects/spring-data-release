@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.data.release.sagan;
+package org.springframework.data.release.projectservice;
 
 import lombok.Setter;
 
@@ -21,26 +21,21 @@ import java.net.URI;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.Projects;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.util.UriTemplate;
 
 /**
- * Configuration properties for the Sagan instance to talk to.
+ * Configuration properties for the Projects Service instance to talk to.
  *
- * @author Oliver Gierke
+ * @author Mark Paluch
  */
 @Component
-@ConfigurationProperties(prefix = "sagan")
-class SaganProperties {
-
-	private static String SAGAN_BASE = "https://spring.io/api/";
-	private static String SAGAN_RELEASES = SAGAN_BASE.concat("projects/{project}/releases");
-	private static String SAGAN_GENERATIONS = SAGAN_BASE.concat("projects/{project}/generations");
-	private static String SAGAN_RELEASE_VERSION = SAGAN_RELEASES.concat("/{version}");
+@ConfigurationProperties(prefix = "project-service")
+class ProjectServiceProperties implements ProjectServiceResources {
 
 	@Setter String key;
+	@Setter String base = "https://api.spring.io/";
 
 	/**
 	 * Returns the URI to the resource exposing the project releases for the given {@link Project}.
@@ -48,11 +43,11 @@ class SaganProperties {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	URI getProjectReleasesResource(Project project) {
+	public URI getProjectReleasesResource(Project project) {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		return new UriTemplate(SAGAN_RELEASES).expand(getProjectPathSegment(project));
+		return new UriTemplate(base + "projects/{project}/releases").expand(ProjectPaths.getProjectPathSegment(project));
 	}
 
 	/**
@@ -61,11 +56,11 @@ class SaganProperties {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	URI getProjectGenerationsResource(Project project) {
+	public URI getProjectGenerationsResource(Project project) {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		return new UriTemplate(SAGAN_GENERATIONS).expand(getProjectPathSegment(project));
+		return new UriTemplate(base + "projects/{project}/generations").expand(ProjectPaths.getProjectPathSegment(project));
 	}
 
 	/**
@@ -76,12 +71,13 @@ class SaganProperties {
 	 * @param version must not be {@literal null}.
 	 * @return
 	 */
-	URI getProjectReleaseResource(Project project, String version) {
+	public URI getProjectReleaseResource(Project project, String version) {
 
 		Assert.notNull(project, "Project  must not be null!");
 		Assert.hasText(version, "Version must not be null!");
 
-		return new UriTemplate(SAGAN_RELEASE_VERSION).expand(getProjectPathSegment(project), version);
+		return new UriTemplate(base + "projects/{project}/releases/{version}")
+				.expand(ProjectPaths.getProjectPathSegment(project), version);
 	}
 
 	/**
@@ -90,20 +86,7 @@ class SaganProperties {
 	 * @param version must not be {@literal null}.
 	 * @return
 	 */
-	URI getProjectMetadataResource(MaintainedVersion version) {
+	public URI getProjectMetadataResource(MaintainedVersion version) {
 		return getProjectReleaseResource(version.getProject(), version.getVersion().toString());
-	}
-
-	private static String getProjectPathSegment(Project project) {
-
-		if (Projects.BUILD.equals(project)) {
-			return "spring-data";
-		}
-
-		if (Projects.RELATIONAL.equals(project) || Projects.JDBC.equals(project)) {
-			return "spring-data-jdbc";
-		}
-
-		return project.getFolderName();
 	}
 }

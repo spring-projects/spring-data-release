@@ -80,8 +80,8 @@ A job should have started. Click on the active job, and then click on *Open Blue
 |Create new release versions and tickets for upcoming version
 |`$ tracker setup-next $trainIteration.next`
 
-|Update versions in Sagan. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann`
-|`$ sagan update $releasetrains`
+|Update versions in the Projects Service. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann`
+|`$ projects update $releasetrains`
 
 |Create list of docs for release announcements
 |`$ announcement $trainIteration`
@@ -120,7 +120,7 @@ Add an `application-local.properties` to the project root and add the following 
 * `gpg.passphrase` - The password of your GPG key.
 * `gpg.executable` - Path to your GPG executable, typically `/usr/local/MacGPG2/bin/gpg2`
  or `/usr/local/bin/gpg`.
-* `sagan.key` - Sagan authentication token. Must be a valid GitHub token. Can be the same
+* `project-service.key` - Project Service authentication token. Must be a valid GitHub token. Can be the same
  as `git.password` when using a GitHub token as password.
 
 After that, run the `verify` command (`$ verify`) to verify your settings (authentication,
@@ -146,7 +146,7 @@ See `application-local.template` for details.
 2+| *Post-release tasks*
 |Close JIRA tickets and GitHub release tickets. |`$ tracker close $trainIteration`
 |Create new release versions and tickets for upcoming version |`$ tracker setup-next $trainIteration.next`
-|Update versions in Sagan. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ sagan update $releasetrains`
+|Update versions in Projects Service. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ projects update $releasetrains`
 |Create list of docs for release announcements |`$ announcement $trainIteration`
 |===
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2022 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.data.release.sagan;
+package org.springframework.data.release.projectservice;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -49,14 +49,14 @@ import org.springframework.util.Assert;
  */
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-class SaganOperations {
+class ProjectServiceOperations {
 
 	private static final List<Project> TO_FILTER = Arrays.asList(Projects.COMMONS, //
 			Projects.KEY_VALUE);
 
 	GitOperations git;
 	Executor executor;
-	SaganClient client;
+	ProjectService client;
 	Logger logger;
 
 	/**
@@ -77,13 +77,33 @@ class SaganOperations {
 
 		Map<Project, MaintainedVersions> versions = findVersions(trains);
 
-		ExecutionUtils.run(executor, Streamable.of(versions.entrySet()), entry -> {
+		Streamable.of(versions.entrySet()).forEach(entry -> {
 
 			if (entry.getKey() == Projects.BOM) {
 				return;
 			}
 
-			client.updateProjectMetadata(entry.getKey(), entry.getValue());
+			if(entry.getKey() == Projects.JDBC){
+				return;
+			}
+
+			// Sometimes we see 404 Not Found: [no body], sometimes
+			// 400 Bad Request: "Release '2.2.13-SNAPSHOT' already present
+			RuntimeException rethrow = null;
+			for (int i = 0; i < 5; i++) {
+
+				try {
+					client.updateProjectMetadata(entry.getKey(), entry.getValue());
+					return;
+				} catch (RuntimeException e) {
+					rethrow = e;
+					logger.warn(entry.getKey(), e.toString());
+				}
+			}
+
+			if (rethrow != null) {
+				throw rethrow;
+			}
 		});
 	}
 

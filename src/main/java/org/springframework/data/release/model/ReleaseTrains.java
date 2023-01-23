@@ -126,7 +126,7 @@ public class ReleaseTrains {
 		return TRAINS.stream() //
 				.filter(it -> it.getName().equalsIgnoreCase(name)) //
 				.findFirst() //
-				.orElse(null);
+				.orElseThrow(() -> new IllegalArgumentException("Cannot resolve " + name + " to a Release Train"));
 	}
 
 	public static Train getTrainByCalver(Version calver) {

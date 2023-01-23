@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.data.release.sagan;
+package org.springframework.data.release.projectservice;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.model.Project;
@@ -30,15 +29,15 @@ import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
 
 /**
- * Integration tests for {@link SaganOperations}.
+ * Integration tests for {@link ProjectServiceOperations}.
  *
  * @author Oliver Gierke
  */
 @Disabled("I will write to production systems")
-class SaganOperationsIntegrationTests extends AbstractIntegrationTests {
+class ProjectServiceOperationsIntegrationTests extends AbstractIntegrationTests {
 
-	@Autowired SaganOperations sagan;
-	@Autowired SaganClient client;
+	@Autowired ProjectServiceOperations sagan;
+	@Autowired ProjectService client;
 
 	@Test
 	void detectVersionsToUpdate() {
@@ -78,7 +77,7 @@ class SaganOperationsIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void updateJpa() {
 
-		MaintainedVersions versions = sagan.findVersions(ReleaseTrains.KAY, ReleaseTrains.INGALLS, ReleaseTrains.HOPPER)
+		MaintainedVersions versions = sagan.findVersions(ReleaseTrains.Q, ReleaseTrains.RAJ, ReleaseTrains.TURING)
 				.get(Projects.JPA);
 
 		System.out.println(versions);

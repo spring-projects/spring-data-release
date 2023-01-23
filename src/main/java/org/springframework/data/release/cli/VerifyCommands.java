@@ -26,7 +26,7 @@ import org.springframework.data.release.build.BuildOperations;
 import org.springframework.data.release.deployment.DeploymentOperations;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.github.GitHub;
-import org.springframework.data.release.sagan.SaganClient;
+import org.springframework.data.release.projectservice.ProjectService;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -46,7 +46,7 @@ class VerifyCommands extends TimedCommand {
 	@NonNull GitHub github;
 	@NonNull DeploymentOperations deployment;
 	@NonNull BuildOperations build;
-	@NonNull SaganClient saganClient;
+	@NonNull ProjectService projectService;
 	@NonNull Logger logger;
 
 	@CliCommand("verify")
@@ -72,9 +72,9 @@ class VerifyCommands extends TimedCommand {
 			github.verifyAuthentication();
 		}
 
-		if (ObjectUtils.isEmpty(module) || "sagan".equals(module)) {
-			// Sagan Verification
-			saganClient.verifyAuthentication();
+		if (ObjectUtils.isEmpty(module) || "projects".equals(module)) {
+			// Projects Service Verification
+			projectService.verifyAuthentication();
 		}
 
 		logger.log("Verify", "All settings are verified. You can ship a release now.");
