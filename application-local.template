@@ -26,7 +26,7 @@ deployment.maven-central.staging-profile-id=
 # GPG
 gpg.keyname=
 gpg.passphrase=
-gpg.executable=/usr/local/bin/gpg2
+gpg.executable=/usr/local/bin/gpg1
 
 # A GitHub token with user:email, read:user and read:org scopes.
 # User needs to be part of the Spring team on GitHub as well.
