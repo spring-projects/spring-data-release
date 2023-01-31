@@ -15,27 +15,32 @@
  */
 package org.springframework.data.release.documentation;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.fusesource.jansi.Ansi;
-import org.fusesource.jansi.Ansi.Color;
+import lombok.Value;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Christoph Strobl
@@ -45,112 +50,123 @@ import org.springframework.util.ObjectUtils;
 class DocumentationOperations {
 
 	private final @NonNull Logger logger;
+	private final WebClient webClient;
 
-	PageStats checkDocumentation(String url) {
-		PageStats stats = new PageStats();
-		stats.links(new LinkChecker(logger).inspect(url));
-		return stats;
+	PageStats checkDocumentation(Project project, String url) {
+		return new PageStats(project, new LinkChecker(logger).inspect(project, url));
 	}
 
-	enum ReportFlags {
+	enum ReportFlag {
 
-		ERROR(1), REDIRECT(2), OK(4), ALL(8);
+		ERROR(1), REDIRECT(2), OK(4), ALL(8), TO_BE_UPDATED(16);
 
 		int bin;
 
-		ReportFlags(int bin) {
+		ReportFlag(int bin) {
 			this.bin = bin;
 		}
 
-		static int flagsOf(ReportFlags... flags) {
-			int value = 0;
-			for (ReportFlags opt : flags) {
-				value = value | opt.bin;
+	}
+
+	@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+	static class ReportFlags {
+
+		private final EnumSet<ReportFlag> flags;
+
+		public static ReportFlags parse(String options) {
+
+			EnumSet<ReportFlag> set = EnumSet.noneOf(ReportFlag.class);
+			if (options != null) {
+				Arrays.stream(options.split(",")).map(ReportFlag::valueOf).forEach(set::add);
+			} else {
+				set.add(ReportFlag.TO_BE_UPDATED);
 			}
-			return value;
+
+			return new ReportFlags(set);
 		}
-	}
 
-	static class PageStats {
+		public boolean isIncluded(HttpStatus status) {
 
-		public static final int ERROR = 1;  // Binary 00001
-		public static final int REDIRECT = 2;  // Binary 00010
-		public static final int OK = 4;  // Binary 00100
-		public static final int ALL = 8;  // Binary 01000
-
-		LinkStats linkStats;
-
-		String prettyPrint(ReportFlags... options) {
-
-			if (linkStats != null) {
-				return linkStats.prettyPrint(options);
+			if (flags.contains(ReportFlag.ALL)) {
+				return true;
 			}
-			return "PageStats n/a";
-		}
 
-		void links(LinkStats linkStats) {
-			this.linkStats = linkStats;
-		}
-	}
+			if (flags.contains(ReportFlag.TO_BE_UPDATED)) {
+				return !status.is2xxSuccessful();
+			}
 
+			if (status.is2xxSuccessful() && flags.contains(ReportFlag.OK)) {
+				return true;
+			}
+			if (status.is3xxRedirection() && flags.contains(ReportFlag.REDIRECT)) {
+				return true;
+			}
+			if (status.is4xxClientError() && flags.contains(ReportFlag.ERROR)) {
+				return true;
+			}
 
-	static class LinkStats {
-
-		Map<String, HttpStatus> resultMap = new LinkedHashMap<>(200);
-
-		public HttpStatus computeIfAbsent(String key, Function<? super String, ? extends HttpStatus> mappingFunction) {
-			return resultMap.computeIfAbsent(key, mappingFunction);
-		}
-
-		int size() {
-			return resultMap.size();
-		}
-
-		String prettyPrint() {
-			return prettyPrint(ReportFlags.ALL);
-		}
-
-		String prettyPrint(ReportFlags... options) {
-
-			int flags = ObjectUtils.isEmpty(options) ? ReportFlags.flagsOf(ReportFlags.ALL) : ReportFlags.flagsOf(options);
-
-			return resultMap.entrySet().stream().filter(entry -> {
-				if ((flags & ReportFlags.ALL.bin) == ReportFlags.ALL.bin) {
-					return true;
-				}
-				if (entry.getValue().is2xxSuccessful() && (flags & ReportFlags.OK.bin) == ReportFlags.OK.bin) {
-					return true;
-				}
-				if (entry.getValue().is3xxRedirection() && (flags & ReportFlags.REDIRECT.bin) == ReportFlags.REDIRECT.bin) {
-					return true;
-				}
-				if (entry.getValue().is4xxClientError() && (flags & ReportFlags.ERROR.bin) == ReportFlags.ERROR.bin) {
-					return true;
-				}
-				return false;
-			}).sorted(Comparator.comparingInt(o -> o.getValue().value())).map(entry -> {
-				Ansi ansi = Ansi.ansi();
-				if (entry.getValue().is2xxSuccessful()) {
-					ansi.fg(Color.GREEN);
-				} else if (entry.getValue().is4xxClientError())
-					ansi.fg(Color.RED);
-				else if (entry.getValue().is3xxRedirection()) {
-					ansi.fg(Color.YELLOW);
-				}
-				return ansi.a(entry.getValue()).fg(Color.DEFAULT).a(": " + entry.getKey()).toString();
-			}).collect(Collectors.joining("\r\n"));
+			return false;
 		}
 	}
-
 
 	@RequiredArgsConstructor
-	static class LinkChecker {
+	static class PageStats {
+
+		public static final int ERROR = 1; // Binary 00001
+		public static final int REDIRECT = 2; // Binary 00010
+		public static final int OK = 4; // Binary 00100
+		public static final int ALL = 8; // Binary 01000
+
+		@Getter final Project project;
+		final LinkStats linkStats;
+
+		public PageStats filter(ReportFlags reportFlags) {
+			return new PageStats(project, linkStats.filter(reportFlags));
+		}
+
+		public void forEach(Consumer<CheckedLink> consumer) {
+			linkStats.checkedLinks.forEach(consumer);
+		}
+	}
+
+	@RequiredArgsConstructor
+	static class LinkStats {
+
+		final List<CheckedLink> checkedLinks;
+
+		int size() {
+			return checkedLinks.size();
+		}
+
+		List<CheckedLink> getResults() {
+			return checkedLinks;
+		}
+
+		public LinkStats filter(ReportFlags reportFlags) {
+
+			List<CheckedLink> filtered = checkedLinks.stream().filter(entry -> {
+				HttpStatus status = entry.getResult();
+				return reportFlags.isIncluded(status);
+			}).collect(Collectors.toList());
+
+			return new LinkStats(filtered);
+		}
+	}
+
+	@Value
+	static class CheckedLink {
+		String url;
+		HttpStatus result;
+	}
+
+	@RequiredArgsConstructor
+	class LinkChecker {
 
 		private final Logger logger;
 
-		LinkStats inspect(String url) throws RuntimeException {
+		LinkStats inspect(Project project, String url) throws RuntimeException {
 
-			logger.log("", "Collecting links from: %s", url);
+			logger.log(project, "Collecting links from: %s", url);
 
 			Document doc = null;
 			try {
@@ -168,35 +184,39 @@ class DocumentationOperations {
 
 			Elements links = doc.select("a[href]"); // a with href
 
-			logger.log("", "Found %s links.", links.size());
+			logger.log(project, "Found %s links.", links.size());
 
-			LinkStats stats = new LinkStats();
+			Map<String, CompletableFuture<HttpStatus>> resultMap = new LinkedHashMap<>(200);
 
 			links.forEach(link -> {
-				if (link.attr("href").startsWith("#")) {
+				String href = link.attr("href");
+
+				if (href.startsWith("#")) {
 					return;
 				}
-				checkUrl(link.attr("href"), stats);
+
+				if (href.contains("#")) {
+					href = href.substring(0, href.indexOf('#'));
+				}
+
+				checkUrl(resultMap, href);
 			});
 
-			logger.log("", "Analyzed %s external links.", stats.size());
+			List<CheckedLink> checkedLinks = resultMap.entrySet().stream()
+					.map(it -> new CheckedLink(it.getKey(), it.getValue().join())).collect(Collectors.toList());
+
+			LinkStats stats = new LinkStats(checkedLinks);
+
+			logger.log(project, "Analyzed %s external links.", stats.size());
 
 			return stats;
 		}
 
-		private void checkUrl(String url, LinkStats stats) {
+		private void checkUrl(Map<String, CompletableFuture<HttpStatus>> resultMap, String url) {
 
-			stats.computeIfAbsent(url, key -> {
-				try {
-					HttpURLConnection connection = (HttpURLConnection) new URL(key).openConnection();
-					connection.setRequestMethod("HEAD");
-					connection.setConnectTimeout(5000);
-					connection.setReadTimeout(8000);
-					return HttpStatus.valueOf(connection.getResponseCode());
-				} catch (Exception ex) {
-					return HttpStatus.valueOf(500);
-				}
-			});
+			resultMap.computeIfAbsent(url, key -> webClient.get().uri(url)
+					.exchangeToMono(clientResponse -> clientResponse.toBodilessEntity().thenReturn(clientResponse.statusCode()))
+					.onErrorReturn(HttpStatus.INTERNAL_SERVER_ERROR).toFuture());
 		}
 	}
 }
