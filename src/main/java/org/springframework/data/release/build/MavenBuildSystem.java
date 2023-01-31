@@ -359,10 +359,6 @@ class MavenBuildSystem implements BuildSystem {
 	public <M extends ProjectAware> M triggerDocumentationBuild(M module) {
 
 		Project project = module.getProject();
-		if(!isMavenProject(project)) {
-			logger.log(project, "Skipping project as no pom.xml could be found in the working directory!");
-			return module;
-		}
 
 		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.INSTALL, SKIP_TESTS, profile("distribute")));
 

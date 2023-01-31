@@ -108,7 +108,6 @@ public class BuildOperations {
 		return doWithBuildSystem(iteration, (system, module) -> system.prepareVersion(module, phase));
 	}
 
-
 	/**
 	 * Opens a repository to stage artifacts for this {@link ModuleIteration}.
 	 *
@@ -151,15 +150,15 @@ public class BuildOperations {
 
 	public void buildDocumentation(TrainIteration iteration) {
 
-		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)), BuildSystem::triggerDocumentationBuild);
+		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)),
+				BuildSystem::triggerDocumentationBuild);
 
 		logger.log(iteration, "Documentation build finished");
 	}
 
 	public void buildDocumentation(ModuleIteration iteration) {
 
-		// TODO: check if this call is fine
-		// executor.doWithBuildSystemOrdered(Streamable.of(iteration), BuildSystem::triggerDocumentationBuild);
+		doWithBuildSystem(iteration, BuildSystem::triggerDocumentationBuild);
 
 		logger.log(iteration, "Documentation build finished");
 	}
