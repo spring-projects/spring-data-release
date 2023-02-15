@@ -15,7 +15,6 @@
  */
 package org.springframework.data.release.model;
 
-import static org.springframework.data.release.model.Iteration.*;
 import static org.springframework.data.release.model.Projects.*;
 
 import java.util.Arrays;
@@ -29,7 +28,7 @@ public class ReleaseTrains {
 
 	public static final List<Train> TRAINS;
 	public static final Train CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-			OCKHAM, PASCAL, Q, RAJ, TURING, U;
+			OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN;
 
 	static {
 
@@ -80,13 +79,13 @@ public class ReleaseTrains {
 				.filterModules(module -> !module.getProject().equals(R2DBC))
 				.filterModules(module -> !module.getProject().equals(JDBC)); // filter "old" JDBC without R2DBC submodule
 
-		U = TURING.next("U", Transition.MINOR) //
+		ULLMAN = TURING.next("Ullman", Transition.MINOR) //
 				.withCalver("2023.0");
 
 		// Trains
 
 		TRAINS = Arrays.asList(CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-				OCKHAM, PASCAL, Q, RAJ, TURING, U);
+				OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN);
 	}
 
 	private static Train codd() {
