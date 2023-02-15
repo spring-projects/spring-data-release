@@ -28,11 +28,11 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 /**
- * Central place for managing {@link Project projects} within the a release train.
+ * Central place for managing {@link Project projects} within a release train.
  * <p />
  * When adding a new {@link Project} make sure to set the {@link Project#withDependencies(Project...)} and do not forget
  * to add it to the list of projects, defining the dependency order, below. <br />
- * Also add the a new {@link Module} to the {@link ReleaseTrains}.
+ * Also add a new {@link Module} to the {@link ReleaseTrains}.
  *
  * @author Oliver Gierke
  * @author Mark Paluch
