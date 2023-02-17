@@ -19,6 +19,8 @@ import java.util.logging.Logger;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.shell.core.ExitShellRequest;
 import org.springframework.shell.support.logging.HandlerUtils;
 
 /**
@@ -31,14 +33,20 @@ public class Application {
 
 		SpringApplication application = new SpringApplication(Application.class);
 		application.setAdditionalProfiles("local");
+		ExitShellRequest exitShellRequest = null;
 
-		try {
-			BootShim bs = new BootShim(args, application.run(args));
-			bs.run();
+		try (ConfigurableApplicationContext context = application.run(args)) {
+			BootShim bs = new BootShim(args, context);
+			exitShellRequest = bs.run();
+
 		} catch (RuntimeException e) {
 			throw e;
 		} finally {
 			HandlerUtils.flushAllHandlers(Logger.getLogger(""));
+		}
+
+		if (exitShellRequest != null) {
+			System.exit(exitShellRequest.getExitCode());
 		}
 	}
 }
