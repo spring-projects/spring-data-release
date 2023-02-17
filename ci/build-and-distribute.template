@@ -2,3 +2,4 @@ workspace cleanup
 git update ${VERSION}
 release build ${VERSION}
 release distribute ${VERSION}
+quit
