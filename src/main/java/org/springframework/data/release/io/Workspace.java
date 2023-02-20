@@ -43,6 +43,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -151,6 +152,11 @@ public class Workspace {
 	public File getProjectDirectory(Project project) {
 
 		Assert.notNull(project, "Project must not be null!");
+
+		if (project == Projects.SMOKE_TESTS) {
+			return new File("smoke-tests");
+		}
+
 		return new File(getWorkingDirectory(), project.getFolderName());
 	}
 

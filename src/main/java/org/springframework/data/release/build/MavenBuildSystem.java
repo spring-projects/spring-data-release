@@ -59,6 +59,7 @@ import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.ProjectAware;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.model.Version;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -353,6 +354,37 @@ class MavenBuildSystem implements BuildSystem {
 				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
 		mvn.execute(module.getProject(), arguments);
+	}
+
+	@Override
+	public void smokeTests(TrainIteration iteration, StagingRepository stagingRepository) {
+
+		Assert.notNull(iteration, "Train iteration must not be null!");
+		Assert.notNull(stagingRepository, "StagingRepository iteration must not be null!");
+
+		logger.log(iteration, "🚬 Running smoke test…");
+
+		boolean mavenCentral = iteration.getIteration().isPublic();
+		String profile = mavenCentral ? "maven-central" : "artifactory";
+
+		ModuleIteration module = iteration.getModule(BUILD);
+
+		doWithProjection(workspace.getFile(POM_XML, SMOKE_TESTS), pom -> {
+
+			Version version = module.getVersion();
+			String targetBootVersion = version.getMajor() == 2 ? "2.7.8" : "3.0.2";
+
+			pom.setParentVersion(ArtifactVersion.of(Version.parse(targetBootVersion), true));
+		});
+
+		CommandLine arguments = CommandLine.of(Goal.CLEAN, VERIFY, //
+				profile(profile), //
+				arg("spring-data-bom.version").withValue(iteration.getReleaseTrainNameAndVersion())) //
+				.andIf(mavenCentral, arg("stagingRepository").withValue(stagingRepository.getId()));
+
+		mvn.execute(SMOKE_TESTS, arguments);
+
+		logger.log(iteration, "✅ Smoke tests passed. Do not smoke 🚭. It's unhealthy.");
 	}
 
 	@Override

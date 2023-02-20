@@ -129,7 +129,6 @@ public class MavenRuntime {
 				mavenLogger.info(String.format("Executing: mvn %s", arguments));
 
 				mvn.setGoals(arguments.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
-
 			});
 
 			if (result.getExitCode() != 0) {

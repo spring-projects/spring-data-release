@@ -148,6 +148,20 @@ public class BuildOperations {
 		logger.log(iteration, "Build finished");
 	}
 
+	/**
+	 * Run smoke tests for a {@link TrainIteration} against a {@link StagingRepository}.
+	 *
+	 * @param iteration
+	 * @param stagingRepository
+	 */
+	public void smokeTests(TrainIteration iteration, StagingRepository stagingRepository) {
+
+		doWithBuildSystem(iteration.getModule(BUILD), (buildSystem, moduleIteration) -> {
+			buildSystem.smokeTests(iteration, stagingRepository);
+			return null;
+		});
+	}
+
 	public void buildDocumentation(TrainIteration iteration) {
 
 		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)),
@@ -183,6 +197,8 @@ public class BuildOperations {
 		if (stagingRepository.isPresent()) {
 			orchestrator.close(stagingRepository);
 		}
+
+		smokeTests(iteration, stagingRepository);
 
 		logger.log(iteration, "Release: %s", summary);
 

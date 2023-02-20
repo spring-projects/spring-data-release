@@ -70,7 +70,11 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	}
 
 	public static ArtifactVersion of(Version version) {
-		return new ArtifactVersion(version, false, RELEASE_SUFFIX);
+		return of(version, false);
+	}
+
+	public static ArtifactVersion of(Version version, boolean useModifierFormat) {
+		return new ArtifactVersion(version, useModifierFormat, RELEASE_SUFFIX);
 	}
 
 	/**

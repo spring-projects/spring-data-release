@@ -22,6 +22,7 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.ProjectAware;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.plugin.core.Plugin;
 
 /**
@@ -57,7 +58,6 @@ interface BuildSystem extends Plugin<Project> {
 	 */
 	<M extends ProjectAware> M triggerPreReleaseCheck(M module);
 
-
 	/**
 	 * Open a remote repository for staging artifacts.
 	 */
@@ -88,6 +88,14 @@ interface BuildSystem extends Plugin<Project> {
 	 * @return
 	 */
 	DeploymentInformation deploy(ModuleIteration module);
+
+	/**
+	 * Run smoke test against a {@link StagingRepository}.
+	 *
+	 * @param iteration
+	 * @param stagingRepository
+	 */
+	void smokeTests(TrainIteration iteration, StagingRepository stagingRepository);
 
 	/**
 	 * Runs the distribution build.

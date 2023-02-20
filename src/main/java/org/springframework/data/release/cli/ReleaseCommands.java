@@ -224,6 +224,19 @@ class ReleaseCommands extends TimedCommand {
 	}
 
 	/**
+	 * Triggers the smoke tests.
+	 *
+	 * @param iteration
+	 * @throws Exception
+	 */
+	@CliCommand(value = "release smoke-tests")
+	public void runSmokeTests(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "stagingRepository", mandatory = false) String stagingRepository) throws Exception {
+		build.smokeTests(iteration,
+				stagingRepository != null ? StagingRepository.of(stagingRepository) : StagingRepository.EMPTY);
+	}
+
+	/**
 	 * Triggers the distribution of release artifacts for all projects.
 	 *
 	 * @param iteration

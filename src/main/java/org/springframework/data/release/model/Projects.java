@@ -42,6 +42,7 @@ public class Projects {
 	public static final Project BOM, COMMONS, BUILD, REST, JDBC, RELATIONAL, JPA, MONGO_DB, NEO4J, SOLR, COUCHBASE,
 			CASSANDRA, ELASTICSEARCH, R2DBC, REDIS, KEY_VALUE, ENVERS, LDAP, GEODE;
 	public static final List<Project> PROJECTS;
+	public static final Project SMOKE_TESTS = new Project("SMOKE_TESTS", "Smoke Tests", Tracker.GITHUB);
 
 	static {
 
