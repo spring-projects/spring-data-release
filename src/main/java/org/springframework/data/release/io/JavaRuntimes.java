@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
-
+import org.springframework.boot.diagnostics.AbstractFailureAnalyzer;
+import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.boot.system.SystemProperties;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.Version;
@@ -76,7 +77,7 @@ public class JavaRuntimes {
 	 * @return
 	 */
 	public static JdkInstallation getJdk(Predicate<JdkInstallation> filter) {
-		return getJdk(filter, () -> "Cannot obtain required JDK");
+		return getJdk(filter, "Java Runtime", () -> "Cannot obtain required JDK");
 	}
 
 	/**
@@ -84,15 +85,18 @@ public class JavaRuntimes {
 	 * first matching one or throws {@link NoSuchElementException}.
 	 *
 	 * @param filter
+	 * @param runtimeName
 	 * @param message
 	 * @return
 	 */
-	public static JdkInstallation getJdk(Predicate<JdkInstallation> filter, Supplier<String> message) {
+	public static JdkInstallation getJdk(Predicate<JdkInstallation> filter, String runtimeName,
+			Supplier<String> message) {
 
 		List<JdkInstallation> jdks = JDKS.get();
 
 		return jdks.stream().filter(filter).findFirst()
-				.orElseThrow(() -> new NoSuchElementException(String.format("%s%nAvailable JDK: %s", message.get(), jdks)));
+				.orElseThrow(() -> new NoSuchJavaRuntimeException(String.format("%s%nAvailable JDK: %s", message.get(), jdks),
+						jdks, runtimeName));
 	}
 
 	public static List<JdkInstallation> getJdks() {
@@ -126,6 +130,8 @@ public class JavaRuntimes {
 	public static class Selector {
 
 		private String notFoundMessage;
+
+		private String javaRuntimeName;
 		private Predicate<JdkInstallation> predicate;
 
 		private Selector() {
@@ -141,7 +147,11 @@ public class JavaRuntimes {
 			return builder()
 					.and(it -> javaVersion.getVersionDetector().test(it.getVersion())
 							&& javaVersion.getImplementor().test(it.getImplementor()))
-					.message("Cannot find Java " + javaVersion.getName());
+					.name(javaVersion.getName()).message("Cannot find required " + javaVersion.getName());
+		}
+
+		public static Selector notGraalVM(JavaVersion javaVersion) {
+			return from(javaVersion).notGraalVM();
 		}
 
 		public Selector and(Predicate<JdkInstallation> predicate) {
@@ -159,8 +169,13 @@ public class JavaRuntimes {
 			return this;
 		}
 
+		public Selector name(String javaRuntimeName) {
+			this.javaRuntimeName = javaRuntimeName;
+			return this;
+		}
+
 		public JdkInstallation getRequiredJdkInstallation() {
-			return JavaRuntimes.getJdk(predicate, () -> notFoundMessage);
+			return JavaRuntimes.getJdk(predicate, javaRuntimeName, () -> notFoundMessage);
 		}
 
 	}
@@ -209,15 +224,22 @@ public class JavaRuntimes {
 		@SneakyThrows
 		private String parseImplementor(File candidateHome) {
 
-			List<String> release = FileUtils.readLines(new File(candidateHome, "release"));
+			File releaseMeta = new File(candidateHome, "release");
+			if (releaseMeta.exists()) {
+				List<String> release = FileUtils.readLines(releaseMeta);
 
-			for (String line : release) {
+				for (String line : release) {
 
-				if (line.startsWith("IMPLEMENTOR=")) {
-					String substring = line.substring(line.indexOf("=\""));
-					substring = substring.substring(2, substring.length() - 1);
-					return substring;
+					if (line.startsWith("IMPLEMENTOR=")) {
+						String substring = line.substring(line.indexOf("=\""));
+						substring = substring.substring(2, substring.length() - 1);
+						return substring;
+					}
 				}
+			}
+
+			if (candidateHome.getName().endsWith("-zulu")) {
+				return "Azul Systems, Inc.";
 			}
 
 			return "?";
@@ -340,4 +362,46 @@ public class JavaRuntimes {
 
 		return implementor + " " + version;
 	}
+
+	public static class NoSuchJavaRuntimeException extends NoSuchElementException {
+
+		private final List<JdkInstallation> installations;
+
+		private final String requiredJdk;
+
+		public NoSuchJavaRuntimeException(String message, List<JdkInstallation> installations, String requiredJdk) {
+			super(message);
+			this.installations = installations;
+			this.requiredJdk = requiredJdk;
+		}
+
+		public List<JdkInstallation> getInstallations() {
+			return installations;
+		}
+
+		public String getRequiredJdk() {
+			return requiredJdk;
+		}
+	}
+
+	static class NoSuchJavaRuntimeExceptionFailureAnalyzer extends AbstractFailureAnalyzer<NoSuchJavaRuntimeException> {
+
+		@Override
+		protected FailureAnalysis analyze(Throwable rootFailure, NoSuchJavaRuntimeException cause) {
+
+			String action = "  Make sure to install %s using your platform installation method or SDKman.%n%n"
+					+ "  Detected Java Runtimes are: %n" + "%s";
+
+			StringBuilder detectedRuntimes = new StringBuilder();
+
+			for (JdkInstallation installation : cause.getInstallations()) {
+				detectedRuntimes.append(String.format("    - %-20s %-10s %s%n", installation.getImplementor(),
+						installation.getVersion(), installation.getHome()));
+			}
+
+			return new FailureAnalysis("⚠️ A required JDK was not found: " + cause.getRequiredJdk(),
+					String.format(action, cause.getRequiredJdk(), detectedRuntimes), cause);
+		}
+	}
+
 }

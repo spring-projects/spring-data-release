@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-
 import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -61,7 +60,7 @@ public class Train implements Streamable<Module> {
 	}
 
 	public Train(String name, Collection<Module> modules) {
-		this(name, Modules.of(modules), null, Iterations.DEFAULT, false, JavaVersion.JAVA_8);
+		this(name, Modules.of(modules), null, Iterations.DEFAULT, false, JavaVersion.VERSION_1_8);
 	}
 
 	/*
@@ -267,8 +266,8 @@ public class Train implements Streamable<Module> {
 	@ToString
 	public static class Iterations implements Iterable<Iteration> {
 
-		public static Iterations DEFAULT = new Iterations(M1, M2, M3, M4, M5, M6, RC1, RC2, GA, SR1, SR2, SR3, SR4, SR5, SR6, SR7, SR8,
-				SR9, SR10, SR11, SR12, SR13, SR14, SR15, SR16, SR17, SR18, SR19, SR20, SR21, SR22, SR23, SR24);
+		public static Iterations DEFAULT = new Iterations(M1, M2, M3, M4, M5, M6, RC1, RC2, GA, SR1, SR2, SR3, SR4, SR5,
+				SR6, SR7, SR8, SR9, SR10, SR11, SR12, SR13, SR14, SR15, SR16, SR17, SR18, SR19, SR20, SR21, SR22, SR23, SR24);
 
 		private final List<Iteration> iterations;
 

@@ -17,19 +17,19 @@ RUN set -eux; \
 	sed -i -e 's/ports.ubuntu.com/ftp.tu-chemnitz.de\/pub\/linux/g' /etc/apt/sources.list && \
 	sed -i -e 's/http/https/g' /etc/apt/sources.list && \
 	apt-get update &&  \
-    apt-get -y install curl zip gnupg gnupg1 libfreetype6 fontconfig
-RUN rm -rf /var/lib/apt/lists/* &&  \
+    apt-get -y install curl zip gnupg gnupg1 libfreetype6 fontconfig && \
+    rm -rf /var/lib/apt/lists/* &&  \
     rm -rf /tmp/*
 
 USER $USER_UID:$USER_GID
 
+COPY java-init.sh /temp/java-init.sh
+COPY java-tools.properties /temp/java-tools.properties
+
 RUN curl -s "https://get.sdkman.io" | bash
 
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && \
-    yes | sdk install java 17.0.6-tem && \
-    yes | sdk install java 8.0.352-tem && \
-    yes | sdk install java 8.0.362-tem && \
-    yes | sdk install maven && \
+RUN bash -c "cd /temp && \
+    ./java-init.sh && \
     rm -rf $HOME/.sdkman/archives/* && \
     rm -rf $HOME/.sdkman/tmp/*"
 

@@ -242,4 +242,5 @@ public class Version implements Comparable<Version> {
 
 		return StringUtils.collectionToDelimitedString(digits, ".");
 	}
+
 }

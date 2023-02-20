@@ -16,6 +16,7 @@
 package org.springframework.data.release.build;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
@@ -24,7 +25,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -32,7 +37,7 @@ import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
-
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.io.JavaRuntimes;
 import org.springframework.data.release.io.Workspace;
@@ -48,8 +53,9 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-class MavenRuntime {
+public class MavenRuntime {
 
+	private static final Pattern versionPattern = Pattern.compile("Apache Maven ((\\d\\.?)+) \\(.*\\)");
 	private final Workspace workspace;
 	private final Logger logger;
 	private final MavenProperties properties;
@@ -64,7 +70,7 @@ class MavenRuntime {
 	 */
 	@Autowired
 	public MavenRuntime(Workspace workspace, Logger logger, MavenProperties properties) {
-		this(workspace, logger, properties, JavaVersion.JAVA_8);
+		this(workspace, logger, properties, JavaVersion.VERSION_1_8);
 	}
 
 	private MavenRuntime(Workspace workspace, Logger logger, MavenProperties properties,
@@ -74,10 +80,35 @@ class MavenRuntime {
 		this.logger = logger;
 		this.properties = properties;
 		this.jdk = JavaRuntimes.Selector.from(requiredJavaVersion).notGraalVM().getRequiredJdkInstallation();
+		logger.log("Maven", "Using" + jdk + " as default Java Runtime");
 	}
 
 	public MavenRuntime withJavaVersion(JavaVersion javaVersion) {
 		return new MavenRuntime(workspace, logger, properties, javaVersion);
+	}
+
+	@SneakyThrows
+	public String getVersion() throws IllegalStateException {
+
+		StringBuilder builder = new StringBuilder();
+		Invoker invoker = new DefaultInvoker();
+		invoker.setMavenHome(properties.getMavenHome());
+		invoker.setErrorHandler(builder::append);
+		invoker.setOutputHandler(builder::append);
+
+		doWithMaven(invoker, mvn -> {
+			mvn.setShowVersion(true);
+			mvn.setGoals(Collections.emptyList());
+		});
+
+		Matcher matcher = versionPattern.matcher(builder);
+		boolean foundVersion = matcher.find();
+
+		if(!foundVersion){
+			throw new IllegalStateException("Cannot determine Maven Version: " + builder);
+		}
+
+		return matcher.group(1);
 	}
 
 	public MavenInvocationResult execute(Project project, CommandLine arguments) {
@@ -91,25 +122,15 @@ class MavenRuntime {
 			invoker.setOutputHandler(mavenLogger::info);
 			invoker.setErrorHandler(mavenLogger::warn);
 
-			File localRepository = properties.getLocalRepository();
+			InvocationResult result = doWithMaven(invoker, mvn -> {
 
-			if (localRepository != null) {
-				invoker.setLocalRepositoryDirectory(localRepository);
-			}
+				mvn.setBaseDirectory(workspace.getProjectDirectory(project));
+				mavenLogger.info(String.format("Java Home: %s", jdk));
+				mavenLogger.info(String.format("Executing: mvn %s", arguments));
 
-			File javaHome = getJavaHome();
-			mavenLogger.info(String.format("Java Home: %s", jdk));
-			mavenLogger.info(String.format("Executing: mvn %s", arguments));
+				mvn.setGoals(arguments.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
 
-			InvocationRequest request = new DefaultInvocationRequest();
-			request.setJavaHome(javaHome);
-			request.setShellEnvironmentInherited(true);
-			request.setBaseDirectory(workspace.getProjectDirectory(project));
-			request.setBatchMode(true);
-
-			request.setGoals(arguments.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
-
-			InvocationResult result = invoker.execute(request);
+			});
 
 			if (result.getExitCode() != 0) {
 				logger.warn(project, "🙈 Failed execution mvn %s", arguments.toString());
@@ -128,6 +149,26 @@ class MavenRuntime {
 			}
 			throw new RuntimeException(e);
 		}
+	}
+
+	private InvocationResult doWithMaven(Invoker invoker, Consumer<InvocationRequest> mvn)
+			throws MavenInvocationException {
+
+		File localRepository = properties.getLocalRepository();
+
+		if (localRepository != null) {
+			invoker.setLocalRepositoryDirectory(localRepository);
+		}
+
+		File javaHome = getJavaHome();
+		InvocationRequest request = new DefaultInvocationRequest();
+		request.setJavaHome(javaHome);
+		request.setShellEnvironmentInherited(true);
+		request.setBatchMode(true);
+
+		mvn.accept(request);
+
+		return invoker.execute(request);
 	}
 
 	private File getJavaHome() {

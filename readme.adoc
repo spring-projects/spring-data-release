@@ -152,6 +152,10 @@ See `application-local.template` for details.
 
 ==== Utilities
 
+===== Java and Maven Versions used in the Container
+
+Java and Maven versions are installed via https://sdkman.io/[SDKman] during the link:ci/Dockerfile[`Dockerfile`] build. See link:ci/java-tools.properties[`ci/java-tools.properties`] for further details.
+
 ===== GitHub Labels
 
 `ProjectLabelConfiguration` contains a per-project configuration which labels should be present in a project. To apply that configuration (create or update), use:

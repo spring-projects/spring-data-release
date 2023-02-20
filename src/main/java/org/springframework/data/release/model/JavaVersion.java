@@ -29,11 +29,9 @@ import java.util.regex.Pattern;
 @Value(staticConstructor = "of")
 public class JavaVersion {
 
+	public static final JavaVersion VERSION_1_8 = of("1.8");
+
 	private static final Pattern DOCKER_TAG_PATTERN = Pattern.compile("((:?\\d+(:?u\\d+)?(:?\\.\\d+)*)).*");
-
-	public static final JavaVersion JAVA_8 = of("1.8.0_362");
-
-	public static final JavaVersion JAVA_17 = of("Java 17", version -> version.getMajor() == 17, it -> true);
 
 	String name;
 	Predicate<Version> versionDetector;
@@ -41,10 +39,20 @@ public class JavaVersion {
 
 	public static JavaVersion of(String version) {
 		Version expectedVersion = parse(version);
-		return of("Java " + version, candidate -> candidate.is(expectedVersion), it -> true);
+		return of("JDK " + version, candidate -> {
+
+			if (expectedVersion.getBugfix() == 0 && expectedVersion.getBuild() == 0) {
+				return candidate.withBugfix(0).is(expectedVersion);
+			}
+
+			return candidate.is(expectedVersion);
+		}, it -> true);
 	}
 
 	public static Version parse(String version) {
+		if (version.startsWith("8.")) {
+			version = "1." + version;
+		}
 		return Version.parse(version.replace('_', '.'));
 	}
 

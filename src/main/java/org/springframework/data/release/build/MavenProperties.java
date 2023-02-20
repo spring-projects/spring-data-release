@@ -22,7 +22,6 @@ import java.io.File;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -37,7 +36,7 @@ import org.springframework.util.Assert;
 @Data
 @Component
 @ConfigurationProperties(prefix = "maven")
-class MavenProperties {
+public class MavenProperties {
 
 	private File mavenHome;
 	private File localRepository;
