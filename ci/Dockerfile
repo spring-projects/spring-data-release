@@ -17,7 +17,7 @@ RUN set -eux; \
 	sed -i -e 's/ports.ubuntu.com/ftp.tu-chemnitz.de\/pub\/linux/g' /etc/apt/sources.list && \
 	sed -i -e 's/http/https/g' /etc/apt/sources.list && \
 	apt-get update &&  \
-    apt-get -y install curl zip gnupg gnupg1 libfreetype6 fontconfig && \
+    apt-get -y install curl zip gnupg gnupg1 libfreetype6 fontconfig wget git && \
     rm -rf /var/lib/apt/lists/* &&  \
     rm -rf /tmp/*
 
