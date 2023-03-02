@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.springframework.data.build</groupId>
 	<artifactId>spring-data-release-cli</artifactId>
-	<version>1.0.0.BUILD-SNAPSHOT</version>
+	<version>1.0.0.BUILD-upgrade-lombok-SNAPSHOT</version>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
