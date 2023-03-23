@@ -387,6 +387,23 @@ class MavenBuildSystem implements BuildSystem {
 		logger.log(iteration, "✅ Smoke tests passed. Do not smoke 🚭. It's unhealthy.");
 	}
 
+	/**
+	 * Perform a {@literal nexus-staging:rc-release}.
+	 */
+	@Override
+	public void release(StagingRepository stagingRepository) {
+
+		Assert.notNull(stagingRepository, "StagingRepository must not be null");
+		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
+
+		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-release"), //
+				profile("central"), //
+				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+
+		mvn.execute(BUILD, arguments);
+	}
+
 	@Override
 	public <M extends ProjectAware> M triggerDocumentationBuild(M module) {
 

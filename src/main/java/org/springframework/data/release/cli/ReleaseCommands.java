@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Oliver Gierke
+ * @author Greg Turnquist
  */
 @CliComponent
 @RequiredArgsConstructor
@@ -146,6 +147,15 @@ class ReleaseCommands extends TimedCommand {
 
 		if (iteration.getIteration().isPublic()) {
 			build.close(iteration.getModule(Projects.BUILD), StagingRepository.of(stagingRepositoryId));
+		}
+	}
+
+	@CliCommand(value = "release repository")
+	public void repositoryRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "stagingRepositoryId", mandatory = true) String stagingRepositoryId) {
+
+		if (iteration.getIteration().isPublic()) {
+			build.release(iteration.getModule(Projects.BUILD), StagingRepository.of(stagingRepositoryId));
 		}
 	}
 
