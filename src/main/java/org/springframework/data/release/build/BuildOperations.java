@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
+ * @author Greg Turnquist
  */
 @Component
 @RequiredArgsConstructor
@@ -162,6 +163,20 @@ public class BuildOperations {
 		});
 	}
 
+	/**
+	 * Releases a repository of staged artifacts for this {@link ModuleIteration}.
+	 * 
+	 * @param iteration
+	 * @param stagingRepository
+	 */
+	public void release(ModuleIteration iteration, StagingRepository stagingRepository) {
+
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
+			buildSystem.release(stagingRepository);
+			return null;
+		});
+	}
+
 	public void buildDocumentation(TrainIteration iteration) {
 
 		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)),
@@ -201,6 +216,10 @@ public class BuildOperations {
 		smokeTests(iteration, stagingRepository);
 
 		logger.log(iteration, "Release: %s", summary);
+
+		if (iteration.getIteration().isPublic() && stagingRepository.isPresent()) {
+			release(module, stagingRepository);
+		}
 
 		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
 	}

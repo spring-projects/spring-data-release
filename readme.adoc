@@ -57,10 +57,8 @@ A job should have started. Click on the active job, and then click on *Open Blue
 
 |===
 
-* For a Maven central release, go to https://s01.oss.sonatype.org/ and login.
-** After logging in, you will find a closed Spring Data Release repository.
-** Click the repository and then choose "Release".
-* For an artifactory release, the release will already have been staged and promoted, so there is nothing more to do.
+* For a Maven central release, if the smoke test has passed, the repository will already have been released, so there is nothing more to do.
+* For an Artifactory release, if the smoke test has passed, the release will already have been staged and promoted, so there is nothing more to do.
 * 🚥 Continue with `Post-release tasks`
 
 [[post-release]]
@@ -100,7 +98,6 @@ Congratulations 🥳 You completed the release ❤️.
 ===== Infrastructure requirements
 
 * Ensure you have the credentials for `buildmaster` accounts on https://repo.spring.io.
-* Ensure you have the credentials for https://oss.sonatype.org (to deploy and promote GA and service releases, need deployment permissions for `org.springframework.data`) in `settings.xml` for server with id `sonatype`.
 
 Both are available in the Spring/Pivotal Last Pass repository.
 
@@ -139,7 +136,7 @@ See `application-local.template` for details.
 | |`$ release prepare $trainIteration`
 | |`$ release conclude $trainIteration`
 2+| *Build the release*
-|Build the artifacts from tag and push them to the appropriate maven repository |`$ release build $trainIteration`
+|Build the artifacts from tag and push them to the appropriate maven repository. Also runs smoke tests, does Sonatype "release" if applicable, and does Artifactory "promote" if applicable. |`$ release build $trainIteration`
 |Distribute documentation and static resources from tag |`$ release distribute $trainIteration`
 |Push the created commits to GitHub |`$ github push $trainIteration`
 |Push new maintenance branches if the release version was a GA release (`X.Y.0` version) |`$ git push $trainIteration.next`

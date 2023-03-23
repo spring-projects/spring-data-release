@@ -30,6 +30,7 @@ import org.springframework.plugin.core.Plugin;
  *
  * @author Oliver Gierke
  * @author Mark Paluch
+ * @author Greg Turnquist
  */
 interface BuildSystem extends Plugin<Project> {
 
@@ -67,6 +68,11 @@ interface BuildSystem extends Plugin<Project> {
 	 * Close a remote repository for staging artifacts.
 	 */
 	void close(StagingRepository stagingRepository);
+
+	/**
+	 * Release a remote repository of staged artifacts.
+	 */
+	void release(StagingRepository stagingRepository);
 
 	<M extends ProjectAware> M triggerBuild(M module);
 
