@@ -15,9 +15,7 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 
 . Ensure all work on CVEs potentially contained in the release is done (incl. backports etc.).
 . Upgrade dependencies in Spring Data Build parent pom (mind minor/major version rules).
-. All release tickets are present (CLI: `$ tracker releasetickets $trainIteration`)
-. Review open tickets for release.
-. Self-assign release tickets (CLI: `$ tracker prepare $trainIteration`)
+. Review open tickets for release (CLI: `$ tracker open-tickets $trainIteration`).
 . Announce release preparations to mailing list (https://groups.google.com/forum/#!forum/spring-data-dev)
 . Create release tag, verify the release can be built, and publish tags (CLI: `$ prepare-it $trainIteration`)
 . 🚥 Continue with `Build and distribute the release`
