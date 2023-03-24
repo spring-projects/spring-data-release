@@ -23,6 +23,7 @@ import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.TrainIteration;
 
 /**
  * Unit tests for {@link GithubMilestone}.
@@ -81,6 +82,17 @@ class GithubMilestoneUnitTests {
 
 		GithubMilestone version = new GithubMilestone(module);
 		assertThat(version.getDescription()).isEqualTo("Dijkstra M2");
+	}
+
+	@Test
+	void rendersShortBomAndReleaseMilestoneVersions() {
+
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.ULLMAN, Iteration.SR1);
+		ModuleIteration module = iteration.getModule(Projects.BOM);
+
+		GithubMilestone milestone = new GithubMilestone(module);
+		assertThat(milestone.toMilestone().getTitle()).isEqualTo("2023.0.1");
+		assertThat(milestone.toMilestone().getDescription()).isEqualTo("2023.0.1");
 	}
 
 	private void assertIterationVersion(Iteration iteration, String expected) {

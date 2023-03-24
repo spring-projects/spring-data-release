@@ -44,9 +44,12 @@ public class Projects {
 	public static final List<Project> PROJECTS;
 	public static final Project SMOKE_TESTS = new Project("SMOKE_TESTS", "Smoke Tests", Tracker.GITHUB);
 
+	public static final Project RELEASE = new Project("RELEASE", "Release", Tracker.GITHUB)
+			.withUseShortVersionMilestones(true);
+
 	static {
 
-		BOM = new Project("DATABOM", "BOM", Tracker.GITHUB);
+		BOM = new Project("DATABOM", "BOM", Tracker.GITHUB).withUseShortVersionMilestones(true);
 
 		BUILD = new Project("DATABUILD", "Build", Tracker.GITHUB) //
 				.withAdditionalArtifacts(ArtifactCoordinates.forGroupId("org.springframework.data.build")

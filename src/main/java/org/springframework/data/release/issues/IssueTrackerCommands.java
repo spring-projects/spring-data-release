@@ -29,11 +29,13 @@ import java.util.stream.StreamSupport;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
+import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -115,7 +117,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 	@CliCommand(value = "tracker create releaseversions")
 	public void jiraCreateReleaseVersions(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		run(executor, iteration, module -> getTrackerFor(module).createReleaseVersion(module));
+		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).createReleaseVersion(module));
 	}
 
 	@CliCommand(value = "tracker create releasetickets")
@@ -188,12 +190,17 @@ public class IssueTrackerCommands extends TimedCommand {
 
 	@CliCommand("tracker close")
 	public void closeIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		run(executor, iteration, module -> getTrackerFor(module).closeIteration(module));
+		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).closeIteration(module));
 	}
 
 	@CliCommand("tracker archive")
 	public void archiveIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 		run(executor, iteration, module -> getTrackerFor(module).archiveReleaseVersion(module));
+	}
+
+	private static Streamable<ModuleIteration> withReleaseProject(TrainIteration iteration) {
+		ModuleIteration bom = iteration.getModule(Projects.BOM);
+		return iteration.and(new ModuleIteration(new Module(Projects.RELEASE, bom.getVersion()), iteration));
 	}
 
 	private IssueTracker getTrackerFor(ModuleIteration moduleIteration) {

@@ -116,7 +116,7 @@ public class ModuleIteration implements IterationVersion, ProjectAware {
 			if (getTrain().usesCalver()) {
 				builder.append(trainIteration.getName());
 			} else {
-				builder.append(trainIteration.toString());
+				builder.append(trainIteration);
 			}
 		} else {
 			builder.append(" ").append(iteration.getName()).append(" (");

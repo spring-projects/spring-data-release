@@ -465,7 +465,9 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		// - if no next version exists, create
 
-		closeReleaseTicket(module);
+		if (getTicketsFor(module).hasReleaseTicket(module)) {
+			closeReleaseTicket(module);
+		}
 	}
 
 	@Override

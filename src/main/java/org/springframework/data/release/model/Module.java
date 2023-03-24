@@ -37,6 +37,9 @@ public class Module implements VersionAware, ProjectAware, Comparable<Module> {
 		this(project, version, null);
 	}
 
+	public Module(Project project, Version version) {
+		this(project, version, null);
+	}
 
 	Module(Project project, String version, String customFirstIteration) {
 

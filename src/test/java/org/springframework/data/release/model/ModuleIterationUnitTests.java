@@ -45,4 +45,5 @@ class ModuleIterationUnitTests {
 		assertThat(module.getMediumVersionString()).isEqualTo("1.6.1 (Dijkstra SR1)");
 		assertThat(module.getFullVersionString()).isEqualTo("1.6.1.RELEASE (Dijkstra SR1)");
 	}
+
 }
