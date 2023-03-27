@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.assertj.core.util.VisibleForTesting;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
@@ -150,6 +151,49 @@ public class BuildOperations {
 	}
 
 	/**
+	 * Open a staging repository.
+	 *
+	 * @param iteration
+	 * @return
+	 */
+	public StagingRepository openStagingRepository(Iteration iteration) {
+
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+
+		return iteration.isPublic() ? orchestrator.open() : StagingRepository.EMPTY;
+	}
+
+	/**
+	 * Close a staging repository.
+	 *
+	 * @param stagingRepository
+	 * @return
+	 */
+	public void closeStagingRepository(StagingRepository stagingRepository) {
+
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+
+		if (stagingRepository.isPresent()) {
+			orchestrator.close(stagingRepository);
+		}
+	}
+
+	/**
+	 * Promote the staging repository.
+	 *
+	 * @param stagingRepository
+	 * @return
+	 */
+	public void releaseStagingRepository(StagingRepository stagingRepository) {
+
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+
+		if (stagingRepository.isPresent()) {
+			orchestrator.release(stagingRepository);
+		}
+	}
+
+	/**
 	 * Run smoke tests for a {@link TrainIteration} against a {@link StagingRepository}.
 	 *
 	 * @param iteration
@@ -165,7 +209,7 @@ public class BuildOperations {
 
 	/**
 	 * Releases a repository of staged artifacts for this {@link ModuleIteration}.
-	 * 
+	 *
 	 * @param iteration
 	 * @param stagingRepository
 	 */
@@ -200,25 +244,22 @@ public class BuildOperations {
 	 */
 	public List<DeploymentInformation> performRelease(TrainIteration iteration) {
 
-		ModuleIteration module = iteration.getModule(Projects.BUILD);
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(module.getProject());
-
-		StagingRepository stagingRepository = iteration.getIteration().isPublic() ? orchestrator.open()
-				: StagingRepository.EMPTY;
+		Iteration it = iteration.getIteration();
+		StagingRepository stagingRepository = it.isPublic() ? openStagingRepository(it) : StagingRepository.EMPTY;
 
 		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, stagingRepository));
 
 		if (stagingRepository.isPresent()) {
-			orchestrator.close(stagingRepository);
+			closeStagingRepository(stagingRepository);
 		}
 
 		smokeTests(iteration, stagingRepository);
 
 		logger.log(iteration, "Release: %s", summary);
 
-		if (iteration.getIteration().isPublic() && stagingRepository.isPresent()) {
-			release(module, stagingRepository);
+		if (stagingRepository.isPresent()) {
+			releaseStagingRepository(stagingRepository);
 		}
 
 		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());

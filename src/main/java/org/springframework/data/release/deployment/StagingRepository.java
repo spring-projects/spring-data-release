@@ -20,6 +20,8 @@ import lombok.Value;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * Value object representing a OSS Sonatype staging repository.
+ *
  * @author Mark Paluch
  */
 @Value(staticConstructor = "of")

@@ -25,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Maven configuration properties.
@@ -43,6 +44,15 @@ public class MavenProperties {
 	private Map<String, String> plugins;
 	private boolean consoleLogger = true;
 	private boolean parallelize = false;
+
+	public MavenProperties() {
+
+		String maven_home = System.getenv("MAVEN_HOME");
+
+		if (StringUtils.hasText(maven_home)) {
+			mavenHome = new File(maven_home);
+		}
+	}
 
 	/**
 	 * Configures the local Maven repository location to use. In case the given folder does not already exists it's
