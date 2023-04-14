@@ -15,6 +15,12 @@ pipeline {
 	stages {
 
 		stage('Build the Spring Data release tools container') {
+			when {
+				anyOf {
+				   changeset 'ci/Dockerfile'
+				   changeset 'ci/java-tools.properties'
+				}
+			}
 			agent {
 				label 'data'
 			}
