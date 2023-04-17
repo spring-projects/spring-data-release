@@ -97,7 +97,7 @@ public class IssueTrackerCommands extends TimedCommand {
 	@CliCommand(value = "tracker setup-next")
 	public String trackerSetupNext(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
-		jiraCreateReleaseVersions(iteration);
+		createReleaseVersions(iteration);
 
 		return createReleaseTickets(iteration);
 	}
@@ -116,7 +116,7 @@ public class IssueTrackerCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "tracker create releaseversions")
-	public void jiraCreateReleaseVersions(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public void createReleaseVersions(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).createReleaseVersion(module));
 	}
 

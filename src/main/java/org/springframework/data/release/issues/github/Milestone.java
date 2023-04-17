@@ -36,6 +36,11 @@ class Milestone {
 	}
 
 	public boolean matches(ModuleIteration moduleIteration) {
+
+		if (moduleIteration.getProject().isUseShortVersionMilestones()) {
+			return title.equals(moduleIteration.getReleaseVersionString());
+		}
+
 		return title.contains(moduleIteration.getShortVersionString());
 	}
 
