@@ -62,19 +62,7 @@ pipeline {
 			steps {
 				script {
 					sh "ci/build-spring-data-release-cli.bash"
-					// sh "ci/prepare-and-build.bash ${p['release.version']}"
 
-					/*slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#spring-data-dev',
-						message: (currentBuild.currentResult == 'SUCCESS')
-								? "`${env.BUILD_URL}` - Build and deploy passed! Conduct smoke tests then report back here."
-								: "`${env.BUILD_URL}` - Push and distribute failed!")
-
-					input("SMOKE TEST: Did the smoke tests for ${p['release.version']} pass? Accept to conclude and distribute the release.")
-					*/
-
-					// sh "ci/conclude.bash ${p['release.version']}"
 					sh "ci/build-and-distribute.bash ${p['release.version']}"
 
 					slackSend(
