@@ -21,6 +21,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
@@ -83,13 +87,20 @@ public class UpdateInformation {
 		throw new IllegalStateException("Unexpected phase detected " + phase + " detected!");
 	}
 
-	/**
-	 * Returns the {@link Repository} to use (milestone or release).
-	 *
-	 * @return will never be {@literal null}.
-	 */
-	public Repository getRepository() {
-		return new Repository(train.getIteration());
+	public List<Repository> getRepositories() {
+
+		if (phase == Phase.PREPARE) {
+
+			if (train.getIteration().isMilestone()) {
+				return Collections.singletonList(Repository.MILESTONE);
+			}
+		}
+
+		if (phase == Phase.CLEANUP) {
+			return Arrays.asList(Repository.SNAPSHOT, Repository.MILESTONE);
+		}
+
+		return Collections.emptyList();
 	}
 
 	/**

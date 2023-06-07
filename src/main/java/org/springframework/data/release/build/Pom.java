@@ -15,9 +15,20 @@
  */
 package org.springframework.data.release.build;
 
+import lombok.SneakyThrows;
+
+import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.release.model.ArtifactVersion;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.xmlbeam.annotation.XBDelete;
 import org.xmlbeam.annotation.XBRead;
 import org.xmlbeam.annotation.XBValue;
 import org.xmlbeam.annotation.XBWrite;
@@ -57,6 +68,12 @@ public interface Pom {
 	@XBWrite("/project/repositories/repository[id=\"{0}\"]/url")
 	void setRepositoryUrl(String id, @XBValue String url);
 
+	@XBDelete("/project/repositories/*")
+	void deleteRepositories();
+
+	@XBWrite("/project/repositories")
+	void setRepositories(Element repositories);
+
 	/**
 	 * Sets the version of the dependency with the given artifact identifier to the given {@link ArtifactVersion}.
 	 *
@@ -78,13 +95,93 @@ public interface Pom {
 	@XBRead("//dependency[substring(version, string-length(version) - string-length('-SNAPSHOT') + 1) = '-SNAPSHOT']")
 	List<Artifact> getSnapshotDependencies();
 
-	public interface Repository {
+	class RepositoryElementFactory {
 
-		@XBRead("child::id")
-		String getId();
+		public static Element of(Repository... repositories) {
+			return of(Arrays.asList(repositories));
+		}
 
-		@XBRead("child::url")
-		String getUrl();
+		public static Element of(List<Repository> repositories) {
+
+			Document doc = createDocument();
+			Element repos = doc.createElement("repositories");
+			repos.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repos.appendChild(doc.createTextNode("\t\t"));
+
+			for (int i = 0; i < repositories.size(); i++) {
+
+				Repository repo = repositories.get(i);
+
+				repos.appendChild(toElement(doc, repo));
+				repos.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+
+				if (i + 1 == repositories.size()) {
+					repos.appendChild(indent(doc, 1));
+				} else {
+					repos.appendChild(indent(doc, 2));
+				}
+			}
+
+			return repos;
+		}
+
+		private static Element toElement(Document doc, Repository repo) {
+
+			Element repository = doc.createElement("repository");
+
+			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+
+			repository.appendChild(indent(doc, 3));
+			repository.appendChild(createElement(doc, "id", repo.getId()));
+			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+
+			repository.appendChild(indent(doc, 3));
+			repository.appendChild(createElement(doc, "url", repo.getUrl()));
+			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+
+			if (repo.getSnapshots() != null) {
+				appendEnabledConfig(doc, "snapshots", repo.getSnapshots(), repository);
+			}
+
+			if (repo.getReleases() != null) {
+				appendEnabledConfig(doc, "releases", repo.getReleases(), repository);
+			}
+
+			repository.appendChild(indent(doc, 2));
+
+			return repository;
+		}
+
+		private static void appendEnabledConfig(Document doc, String tagName, boolean value, Element repository) {
+
+			Element snapshots = doc.createElement(tagName);
+			snapshots.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+
+			snapshots.appendChild(indent(doc, 4));
+			snapshots.appendChild(createElement(doc, "enabled", Boolean.toString(value)));
+			snapshots.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			snapshots.appendChild(indent(doc, 3));
+
+			repository.appendChild(indent(doc, 3));
+			repository.appendChild(snapshots);
+			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+		}
+
+		private static Element createElement(Document doc, String name, String content) {
+			Element url = doc.createElement(name);
+			url.setTextContent(content);
+			return url;
+		}
+
+		private static Node indent(Document doc, int indentSize) {
+			return doc.createTextNode(StringUtils.repeat("\t", indentSize));
+		}
+
+		@SneakyThrows
+		static Document createDocument() {
+			return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+		}
+
 	}
 
 	public interface Artifact {

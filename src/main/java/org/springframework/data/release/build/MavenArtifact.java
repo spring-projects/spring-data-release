@@ -36,7 +36,6 @@ public class MavenArtifact {
 	private static final GroupId GROUP_ID = GroupId.of("org.springframework.data");
 
 	private final Project project;
-	private final @Getter Repository repository;
 	private final @Getter ArtifactVersion version;
 
 	/**
@@ -49,14 +48,12 @@ public class MavenArtifact {
 		Assert.notNull(module, "Module iteration must not be null!");
 
 		this.project = module.getModule().getProject();
-		this.repository = new Repository(module.getIteration());
 		this.version = ArtifactVersion.of(module);
 	}
 
 	public MavenArtifact(Project project, ArtifactVersion version) {
 
 		this.project = project;
-		this.repository = new Repository(version);
 		this.version = version;
 	}
 
@@ -80,12 +77,4 @@ public class MavenArtifact {
 		return version.getNextDevelopmentVersion();
 	}
 
-	/**
-	 * Returns the URL pointing to the artifacts.
-	 *
-	 * @return
-	 */
-	public String getRootUrl() {
-		return String.format("%s/%s/%s/%s", repository.getUrl(), GROUP_ID.asPath(), getArtifactId(), version);
-	}
 }

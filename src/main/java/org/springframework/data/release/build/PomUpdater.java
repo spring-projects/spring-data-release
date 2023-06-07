@@ -15,12 +15,14 @@
  */
 package org.springframework.data.release.build;
 
-import static org.springframework.data.release.model.Phase.*;
 import static org.springframework.data.release.model.Projects.*;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
+import org.springframework.data.release.build.Pom.RepositoryElementFactory;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.utils.Logger;
@@ -28,6 +30,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 @RequiredArgsConstructor
 class PomUpdater {
@@ -71,7 +74,7 @@ class PomUpdater {
 
 	/**
 	 * Updates the version of the parent project in the given {@link Pom}.
-	 * 
+	 *
 	 * @param pom must not be {@literal null}.
 	 */
 	public void updateParentVersion(Pom pom) {
@@ -86,29 +89,21 @@ class PomUpdater {
 
 	/**
 	 * Updates the repository section in the given {@link Pom}.
-	 * 
+	 *
 	 * @param pom must not be {@literal null}.
 	 */
 	public void updateRepository(Pom pom) {
 
 		Assert.notNull(pom, "Pom must not be null!");
 
-		String message = "Switching to Spring repository %s (%s).";
-		Repository repository = information.getRepository();
+		List<Repository> repositories = information.getRepositories();
+		pom.deleteRepositories();
 
-		if (PREPARE.equals(information.getPhase())) {
-
-			logger.log(project, message, repository.getId(), repository.getUrl());
-
-			pom.setRepositoryId(repository.getSnapshotId(), repository.getId());
-			pom.setRepositoryUrl(repository.getId(), repository.getUrl());
-
+		if (repositories.isEmpty()) {
+			logger.log(project, "Removing <repositories> declaration.");
 		} else {
-
-			logger.log(project, message, repository.getSnapshotId(), repository.getSnapshotUrl());
-
-			pom.setRepositoryId(repository.getId(), repository.getSnapshotId());
-			pom.setRepositoryUrl(repository.getSnapshotId(), repository.getSnapshotUrl());
+			logger.log(project, "Switching to Spring repositories %s.", repositories);
+			pom.setRepositories(RepositoryElementFactory.of(repositories));
 		}
 	}
 }

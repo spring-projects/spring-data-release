@@ -112,13 +112,12 @@ class MavenBuildSystem implements BuildSystem {
 		if (updater.isBuildProject()) {
 
 			if (information.isBomInBuildProject()) {
-				updateBom(information, "bom/pom.xml", BUILD);
+				updateBom(updater, information, "bom/pom.xml", BUILD);
 			}
 
-			updateParentPom(information);
-
+			updateParentPom(updater, information);
 		} else if (updater.isBomProject()) {
-			updateBom(information, "bom/pom.xml", BOM);
+			updateBom(updater, information, "bom/pom.xml", BOM);
 		} else {
 
 			doWithProjection(workspace.getFile(POM_XML, updater.getProject()), pom -> {
@@ -458,7 +457,7 @@ class MavenBuildSystem implements BuildSystem {
 		return module;
 	}
 
-	private void updateBom(UpdateInformation updateInformation, String file, Project project) {
+	private void updateBom(PomUpdater updater, UpdateInformation updateInformation, String file, Project project) {
 
 		TrainIteration iteration = updateInformation.getTrain();
 
@@ -499,10 +498,12 @@ class MavenBuildSystem implements BuildSystem {
 					throw new IllegalStateException(String.format("Found snapshot dependencies %s!", snapshotDependencies));
 				}
 			}
+
+			updater.updateRepository(pom);
 		});
 	}
 
-	private void updateParentPom(UpdateInformation information) {
+	private void updateParentPom(PomUpdater updater, UpdateInformation information) {
 
 		// Fix version of shared resources to to-be-released version.
 		doWithProjection(workspace.getFile("parent/pom.xml", BUILD), ParentPom.class, pom -> {
@@ -512,6 +513,8 @@ class MavenBuildSystem implements BuildSystem {
 
 			logger.log(BUILD, "Setting releasetrain property to %s.", information.getReleaseTrainVersion());
 			pom.setReleaseTrain(information.getReleaseTrainVersion());
+
+			updater.updateRepository(pom);
 		});
 	}
 
@@ -621,6 +624,9 @@ class MavenBuildSystem implements BuildSystem {
 		if (s.contains("standalone=\"no\"?><")) {
 			s = s.replaceAll(Pattern.quote("standalone=\"no\"?><"), "standalone=\"no\"?>" + IOUtils.LINE_SEPARATOR + "<");
 		}
+
+		s = s.replace(String.format("<repositories>%n\t\t%n\t</repositories>"),
+				String.format("<repositories>%n\t</repositories>"));
 
 		if (!s.endsWith(IOUtils.LINE_SEPARATOR)) {
 			s += IOUtils.LINE_SEPARATOR;

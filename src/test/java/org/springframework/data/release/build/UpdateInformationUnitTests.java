@@ -17,11 +17,8 @@ package org.springframework.data.release.build;
 
 import static org.assertj.core.api.Assertions.*;
 
-import java.util.Arrays;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Projects;
@@ -49,22 +46,6 @@ class UpdateInformationUnitTests {
 	}
 
 	@Test
-	void exposesMilestoneRepositoryForMilestone() {
-		assertThat(UpdateInformation.of(hopperM1, Phase.PREPARE).getRepository().getId())
-				.isEqualTo("spring-libs-milestone");
-	}
-
-	@Test
-	void exposesReleaseRepositoryForGA() {
-
-		Arrays.asList(Iteration.GA, Iteration.SR1).forEach(iteration -> {
-			TrainIteration trainIteration = new TrainIteration(ReleaseTrains.HOPPER, iteration);
-			assertThat(UpdateInformation.of(trainIteration, Phase.PREPARE).getRepository().getId())
-					.isEqualTo("spring-libs-release");
-		});
-	}
-
-	@Test
 	void calculatesProjectVersionToSetCorrectly() {
 
 		UpdateInformation updateInformation = UpdateInformation.of(hopperM1, Phase.PREPARE);
@@ -72,6 +53,32 @@ class UpdateInformationUnitTests {
 
 		updateInformation = UpdateInformation.of(hopperM1, Phase.CLEANUP);
 		assertThat(updateInformation.getProjectVersionToSet(Projects.JPA).toString()).isEqualTo("1.10.0.BUILD-SNAPSHOT");
+	}
+
+	@Test
+	void milestoneReposContainedForMilestoneRelease() {
+
+		UpdateInformation updateInformation = UpdateInformation.of(hopperM1, Phase.PREPARE);
+
+		assertThat(updateInformation.getRepositories()).containsOnly(Repository.MILESTONE);
+	}
+
+	@Test
+	void noReposContainedForGaRelease() {
+
+		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.HOPPER, Iteration.GA),
+				Phase.PREPARE);
+
+		assertThat(updateInformation.getRepositories()).isEmpty();
+	}
+
+	@Test
+	void cleanupSetsMilestoneAndSnapshotRepos() {
+
+		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.HOPPER, Iteration.GA),
+				Phase.CLEANUP);
+
+		assertThat(updateInformation.getRepositories()).contains(Repository.MILESTONE, Repository.SNAPSHOT);
 	}
 
 	@Test // #155

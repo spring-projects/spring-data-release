@@ -17,10 +17,6 @@ package org.springframework.data.release.build;
 
 import lombok.Value;
 
-import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.Iteration;
-import org.springframework.util.Assert;
-
 /**
  * @author Oliver Gierke
  */
@@ -28,49 +24,12 @@ import org.springframework.util.Assert;
 @Value
 public class Repository {
 
-	private static final String ID_BASE = "spring-libs-";
-	private static final String BASE = "https://repo.spring.io/libs-";
+	static Repository SNAPSHOT = new Repository("spring-snapshot", "https://repo.spring.io/snapshot", true, false);
+	static Repository MILESTONE = new Repository("spring-milestone", "https://repo.spring.io/milestone", null, null);
 
 	String id, url;
+	Boolean snapshots;
+	Boolean releases;
 
-	public Repository(Iteration iteration) {
 
-		Assert.notNull(iteration, "Iteration must not be null!");
-
-		this.id = ID_BASE.concat(iteration.isPublic() ? "release" : "milestone");
-		this.url = BASE.concat(iteration.isPublic() ? "release" : "milestone");
-	}
-
-	public Repository(ArtifactVersion version) {
-
-		String suffix = getSuffixFor(version);
-
-		this.id = ID_BASE.concat(suffix);
-		this.url = BASE.concat(suffix);
-	}
-
-	public String getSnapshotId() {
-		return ID_BASE.concat("snapshot");
-	}
-
-	public String getSnapshotUrl() {
-		return BASE.concat("snapshot");
-	}
-
-	private static String getSuffixFor(ArtifactVersion version) {
-
-		if (version.isSnapshotVersion()) {
-			return "snapshot";
-		}
-
-		if (version.isMilestoneVersion() || version.isReleaseCandidateVersion()) {
-			return "milestone";
-		}
-
-		if (version.isReleaseVersion()) {
-			return "release";
-		}
-
-		throw new IllegalArgumentException(String.format("Unsupported ArtifactVersion %s!", version));
-	}
 }

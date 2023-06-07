@@ -21,9 +21,8 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.core.io.ClassPathResource;
-
+import org.springframework.data.release.build.Pom.RepositoryElementFactory;
 import org.xmlbeam.XBProjector;
 
 /**
@@ -47,6 +46,36 @@ class MavenBuildSystemUnitTests {
 			assertThat(new String(bytes)).contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
 					+ IOUtils.LINE_SEPARATOR + "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" ")
 					.endsWith(IOUtils.LINE_SEPARATOR);
+		}
+	}
+
+	@Test
+	void shouldRemoveRepositories() throws Exception {
+
+		ClassPathResource resource = new ClassPathResource("sample-pom.xml");
+
+		try (InputStream is = resource.getInputStream()) {
+
+			byte[] bytes = MavenBuildSystem.doWithProjection(projector, is, Pom.class, Pom::deleteRepositories);
+
+			assertThat(new String(bytes)).contains("<repositories>").doesNotContain("<repository>");
+		}
+	}
+
+	@Test
+	void shouldAddRepositories() throws Exception {
+
+		ClassPathResource resource = new ClassPathResource("sample-pom.xml");
+
+		try (InputStream is = resource.getInputStream()) {
+
+			byte[] bytes = MavenBuildSystem.doWithProjection(projector, is, Pom.class, pom -> {
+				pom.deleteRepositories();
+				pom.setRepositories(RepositoryElementFactory.of(Repository.SNAPSHOT, Repository.MILESTONE));
+			});
+
+			assertThat(new String(bytes)).containsSubsequence("repositories", "<id>spring-snapshot</id>", "<snapshots>",
+					"<enabled>true</enabled>", "<releases>", "<enabled>false</enabled>", "spring-milestone");
 		}
 	}
 }

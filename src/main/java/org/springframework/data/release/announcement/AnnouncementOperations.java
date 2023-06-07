@@ -17,7 +17,6 @@ package org.springframework.data.release.announcement;
 
 import static org.springframework.data.release.model.Projects.*;
 
-import org.springframework.data.release.build.MavenArtifact;
 import org.springframework.data.release.cli.StaticResources;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.TrainIteration;
@@ -51,11 +50,6 @@ public class AnnouncementOperations {
 			builder.append("`");
 			builder.append(module.getShortVersionString());
 			builder.append("`");
-			builder.append(" - ");
-
-			MavenArtifact artifact = new MavenArtifact(module);
-
-			builder.append(getMarkDownLink("Artifacts", artifact.getRootUrl()));
 			builder.append(" - ");
 
 			StaticResources resources = new StaticResources(module);
