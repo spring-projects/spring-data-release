@@ -28,7 +28,7 @@ public class ReleaseTrains {
 
 	public static final List<Train> TRAINS;
 	public static final Train CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-			OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, V;
+			OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, VAUGHAN;
 
 	static {
 
@@ -82,13 +82,13 @@ public class ReleaseTrains {
 		ULLMAN = TURING.next("Ullman", Transition.MINOR) //
 				.withCalver("2023.0");
 
-		V = ULLMAN.next("V", Transition.MINOR) //
+		VAUGHAN = ULLMAN.next("Vaughan", Transition.MINOR) //
 				.withCalver("2023.1");
 
 		// Trains
 
 		TRAINS = Arrays.asList(CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-				OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, V);
+				OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, VAUGHAN);
 	}
 
 	private static Train codd() {
