@@ -60,6 +60,7 @@ class VerifyCommands extends TimedCommand {
 		if (ObjectUtils.isEmpty(module) || "build".equals(module)) {
 			// Maven interaction
 			build.verify();
+			build.verifyStagingAuthentication();
 		}
 
 		if (ObjectUtils.isEmpty(module) || "deployment".equals(module)) {
@@ -78,6 +79,24 @@ class VerifyCommands extends TimedCommand {
 		}
 
 		logger.log("Verify", "All settings are verified. You can ship a release now.");
+	}
+
+	@CliCommand("verify-local")
+	public void verifyLocalReleaseTools() {
+
+		// Git checkout build
+		git.verify();
+
+		// Maven interaction
+		build.verify();
+
+		// GitHub verification
+		github.verifyAuthentication();
+
+		// Projects Service Verification
+		projectService.verifyAuthentication();
+
+		logger.log("Verify", "All local settings are verified. You can ship a release now.");
 	}
 
 }

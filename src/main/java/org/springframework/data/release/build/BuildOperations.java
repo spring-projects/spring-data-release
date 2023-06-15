@@ -367,6 +367,17 @@ public class BuildOperations {
 	}
 
 	/**
+	 * Verifies Maven staging authentication.
+	 */
+	public void verifyStagingAuthentication() {
+
+		Project project = Projects.BUILD;
+		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
+
+		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication();
+	}
+
+	/**
 	 * Selects the build system for the module contained in the given {@link ModuleIteration} and executes the given
 	 * function with it.
 	 *

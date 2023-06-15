@@ -550,6 +550,12 @@ class MavenBuildSystem implements BuildSystem {
 				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
 		mvn.execute(BUILD, arguments);
+	}
+
+	@Override
+	public void verifyStagingAuthentication() {
+
+		logger.log(BUILD, "Verifying Maven Staging Authentication…");
 
 		mvn.execute(BUILD, CommandLine.of(goal("nexus-staging:rc-list-profiles"), //
 				profile("central")));

@@ -117,6 +117,11 @@ interface BuildSystem extends Plugin<Project> {
 	void verify();
 
 	/**
+	 * Verify general functionality and correctness of the build setup.
+	 */
+	void verifyStagingAuthentication();
+
+	/**
 	 * Prepare the build system with a Java version.
 	 *
 	 * @param javaVersion
