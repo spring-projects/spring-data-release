@@ -89,21 +89,8 @@ class ProjectServiceOperations {
 
 			// Sometimes we see 404 Not Found: [no body], sometimes
 			// 400 Bad Request: "Release '2.2.13-SNAPSHOT' already present
-			RuntimeException rethrow = null;
-			for (int i = 0; i < 5; i++) {
-
-				try {
-					client.updateProjectMetadata(entry.getKey(), entry.getValue());
-					return;
-				} catch (RuntimeException e) {
-					rethrow = e;
-					logger.warn(entry.getKey(), e.toString());
-				}
-			}
-
-			if (rethrow != null) {
-				throw rethrow;
-			}
+			// still we should fail here and report those failures to the website team
+			client.updateProjectMetadata(entry.getKey(), entry.getValue());
 		});
 	}
 
