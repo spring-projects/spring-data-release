@@ -96,7 +96,7 @@ public class UpdateInformation {
 			}
 		}
 
-		if (phase == Phase.CLEANUP) {
+		if (phase == Phase.CLEANUP || phase == Phase.MAINTENANCE) {
 			return Arrays.asList(Repository.SNAPSHOT, Repository.MILESTONE);
 		}
 

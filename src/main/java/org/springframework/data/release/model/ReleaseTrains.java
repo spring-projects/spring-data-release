@@ -68,8 +68,7 @@ public class ReleaseTrains {
 				.withCalver("2021.1");
 
 		RAJ = Q.next("Raj", Transition.MINOR) //
-				.withCalver("2021.2") //
-				.withAlwaysUseBranch(true);
+				.withCalver("2021.2");
 
 		TURING = PASCAL.next("Turing", Transition.MAJOR, //
 				new Module(RELATIONAL, "3.0")) //
