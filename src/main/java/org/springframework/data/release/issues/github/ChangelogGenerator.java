@@ -138,7 +138,7 @@ public class ChangelogGenerator {
 	}
 
 	private String formatContributors(GitHubUser c) {
-		return String.format("- [@%s](%s)%n", c.getName(), c.getUrl());
+		return String.format("- @%s%n", c.getName());
 	}
 
 }
