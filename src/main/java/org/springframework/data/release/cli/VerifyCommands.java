@@ -50,53 +50,53 @@ class VerifyCommands extends TimedCommand {
 	@NonNull Logger logger;
 
 	@CliCommand("verify")
-	public void verifyReleaseTools(@CliOption(key = "", mandatory = false) String module) {
+	public void verifyReleaseTools(@CliOption(key = "", mandatory = false) String mode) {
 
-		if (ObjectUtils.isEmpty(module) || "git".equals(module)) {
+		if ("local".equals(mode)) {
+
+			// Git checkout build
+			git.verify();
+
+			// Maven interaction
+			build.verify();
+
+			// GitHub verification
+			github.verifyAuthentication();
+
+			// Projects Service Verification
+			projectService.verifyAuthentication();
+
+			logger.log("Verify", "All local settings are verified. You can ship a release now.");
+			return;
+		}
+
+		if (ObjectUtils.isEmpty(mode) || "git".equals(mode)) {
 			// Git checkout build
 			git.verify();
 		}
 
-		if (ObjectUtils.isEmpty(module) || "build".equals(module)) {
+		if (ObjectUtils.isEmpty(mode) || "build".equals(mode)) {
 			// Maven interaction
 			build.verify();
 			build.verifyStagingAuthentication();
 		}
 
-		if (ObjectUtils.isEmpty(module) || "deployment".equals(module)) {
+		if (ObjectUtils.isEmpty(mode) || "deployment".equals(mode)) {
 			// Artifactory verification
 			deployment.verifyAuthentication();
 		}
 
-		if (ObjectUtils.isEmpty(module) || "github".equals(module)) {
+		if (ObjectUtils.isEmpty(mode) || "github".equals(mode)) {
 			// GitHub verification
 			github.verifyAuthentication();
 		}
 
-		if (ObjectUtils.isEmpty(module) || "projects".equals(module)) {
+		if (ObjectUtils.isEmpty(mode) || "projects".equals(mode)) {
 			// Projects Service Verification
 			projectService.verifyAuthentication();
 		}
 
 		logger.log("Verify", "All settings are verified. You can ship a release now.");
-	}
-
-	@CliCommand("verify-local")
-	public void verifyLocalReleaseTools() {
-
-		// Git checkout build
-		git.verify();
-
-		// Maven interaction
-		build.verify();
-
-		// GitHub verification
-		github.verifyAuthentication();
-
-		// Projects Service Verification
-		projectService.verifyAuthentication();
-
-		logger.log("Verify", "All local settings are verified. You can ship a release now.");
 	}
 
 }
