@@ -28,26 +28,23 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 |Action
 |Command
 
-|Check out this repository from GitHub
-|`$ git clone git@github.com:spring-projects/spring-data-release.git`
-
-|Checkout the `main` branch
-|`$ git checkout main`
-
-|Edit `ci/release.properties` and assign the version number of the release train you wish to release to `release.version`. (Make sure it's NOT commented out!)
+|Open a terminal pointing to the release tools directory
 |
 
-|Commit the change to this repository
-|`$ git add ci/release.properties && git commit`
-
-|Switch to the `release` branch
+|Checkout the `release` branch
 |`$ git checkout release`
 
 |Set the `HEAD` to `main` to point the content to what is on `main`
 |`$ git reset --hard main`
 
+|Edit `ci/release.properties` and assign the version number of the release train you wish to release to `release.version`.
+|
+
+|Commit the change to this repository
+|`$ git add ci/release.properties && git commit`
+
 |🚨 *To trigger 🛣 the release* `git push` the `release` branch
-|`$ git push origin release`
+|`$ git push -f origin release`
 
 |Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/release, Navigate to the `release` branch.
 A job should have started. Click on the active job, and then click on *Open Blue Ocean*.
@@ -118,7 +115,7 @@ or `/usr/local/bin/gpg`.
 * `project-service.key` - Project Service authentication token.Must be a valid GitHub token.Can be the same
 as `git.password` when using a GitHub token as password.
 
-After that, run the `verify-local` command (`$ verify-local`) to verify your local settings (authentication, correct Maven, Java, and GPG setup).
+After that, run the `verify local` command (`$ verify local`) to verify your local settings (authentication, correct Maven, Java, and GPG setup).
 
 See `application-local.template` for details.
 
