@@ -51,6 +51,7 @@ import com.dd.plist.XMLPropertyListParser;
  * Utility to detect a Java runtime version.
  *
  * @author Mark Paluch
+ * @author Christoph Strobl
  */
 public class JavaRuntimes {
 
@@ -185,9 +186,20 @@ public class JavaRuntimes {
 	 */
 	static class SDKmanJdkDetector implements JdkDetector {
 
-		private static final File sdkManJavaHome = new File(FileUtils.getUserDirectoryPath(), ".sdkman/candidates/java");
+		private static final File sdkManJavaHome;
 
 		private static final Pattern CANDIDATE = Pattern.compile("(\\d+[\\.\\d+]+)[.-][-a-zA-Z]*");
+
+		static {
+
+			if (System.getenv().containsKey("SDKMAN_CANDIDATES_DIR")) {
+				sdkManJavaHome = new File(System.getenv().get("SDKMAN_CANDIDATES_DIR"), "java");
+			} else if (System.getenv().containsKey("SDKMAN_DIR")) {
+				sdkManJavaHome = new File(System.getenv().get("SDKMAN_DIR"), "candidates/java");
+			} else {
+				sdkManJavaHome = new File(FileUtils.getUserDirectoryPath(), ".sdkman/candidates/java");
+			}
+		}
 
 		@Override
 		public boolean isAvailable() {
