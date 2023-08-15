@@ -173,6 +173,20 @@ Removing a line will omit that dependency upgrade.
 * Report store-specific dependencies to Spring Boot's current upgrade
  ticket (https://github.com/spring-projects/spring-boot/issues/24036[sample]) `$ dependency report $trainIteration`
 
+===== Maven Upgrade across Modules
+
+To upgrade Maven across all modules:
+
+1. Check for the latest stable Maven version.
+
+ $ infra maven check $trainIteration
+
+ ** This generates a `dependency-upgrade-maven.properties` file that reports an upgradable version of Maven Wrapper, if it exists.
+
+1. Apply Maven upgrade across all modules.
+
+ $ infra maven upgrade $trainIteration
+
 ===== CI Properties Distribution
 
 To distribute `ci/pipeline.properties` across all modules use:
