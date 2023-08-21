@@ -15,10 +15,16 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 
 . Ensure all work on CVEs potentially contained in the release is done (incl. backports etc.).
 . Upgrade dependencies in Spring Data Build parent pom (mind minor/major version rules).
-. Review open tickets for release (CLI: `$ tracker open-tickets $trainIteration`).
+. Review open tickets for release:
+
+ $ tracker open-tickets $trainIteration
+
 . Announce release preparations to mailing list (https://groups.google.com/forum/#!forum/spring-data-dev)
-. Create release tag, verify the release can be built, and publish tags (CLI: `$ prepare-it $trainIteration`)
-. 🚥 Continue with `Build and distribute the release`
+. Create release tag, verify the release can be built, and publish tags:
+
+ $ prepare-it $trainIteration
+
+. 🚥 Continue with <<build,*Build and distribute the release*>>.
 
 [[build]]
 === 🌿 Build and distribute the release
@@ -54,7 +60,7 @@ A job should have started. Click on the active job, and then click on *Open Blue
 
 * For a Maven central release, if the smoke test has passed, the repository will already have been released, so there is nothing more to do.
 * For an Artifactory release, if the smoke test has passed, the release will already have been staged and promoted, so there is nothing more to do.
-* 🚥 Continue with `Post-release tasks`
+* 🚥 Continue with <<post-release,*Post-Release tasks*>>.
 
 [[post-release]]
 === 🍀 Post-Release tasks
@@ -73,8 +79,8 @@ A job should have started. Click on the active job, and then click on *Open Blue
 |Create new release versions and tickets for upcoming version
 |`$ tracker setup-next $trainIteration.next`
 
-|Update versions in the Projects Service. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann`
-|`$ projects update $releasetrains`
+|Update versions in the Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann`
+|`$ projects update $releaseTrains`
 
 |Create list of docs for release announcements
 |`$ announcement $trainIteration`
@@ -88,7 +94,7 @@ Congratulations 🥳 You completed the release ❤️.
 === Appendix
 
 [[setup]]
-==== One Time Setup
+==== One-Time Setup
 
 ===== Infrastructure requirements
 
@@ -98,26 +104,29 @@ Both are available in the Spring/Pivotal Last Pass repository.
 
 ===== Prepare local configuration and credentials
 
-Add an `application-local.properties` to the project root and add the following properties:
+1. Add an `application-local.properties` to the project root and add the following properties:
 
-* `git.username` - Your GitHub username.
-* `git.password` - Your GitHub Password (or API key with scopes: `public_repo, read:org, repo:status, repo_deployment, user` when using 2FA).
-* `git.author` - Your full name (used for preparing commits).
-* `git.email` - Your email (used for preparing commits).
-* `maven.mavenHome` - Pointing to the location of your Maven installation.
-* `deployment.username` - Your Artifactory user.
-* `deployment.api-key` - The Artifactory API key to use for artifact promotion.
-* `deployment.password` - The encrypted Artifactory password..
-* `gpg.keyname` - The GPG key name.
-* `gpg.passphrase` - The password of your GPG key.
-* `gpg.executable` - Path to your GPG executable, typically `/usr/local/MacGPG2/bin/gpg2`
-or `/usr/local/bin/gpg`.
-* `project-service.key` - Project Service authentication token.Must be a valid GitHub token.Can be the same
-as `git.password` when using a GitHub token as password.
+ * `git.username` - Your GitHub username.
+ * `git.password` - Your GitHub Password (or API key with scopes: `public_repo, read:org, repo:status, repo_deployment, user` when using 2FA).
+ * `git.author` - Your full name (used for preparing commits).
+ * `git.email` - Your email (used for preparing commits).
+ * `maven.mavenHome` - Pointing to the location of your Maven installation.
+ * `deployment.username` - Your Artifactory user.
+ * `deployment.api-key` - The Artifactory API key to use for artifact promotion.
+ * `deployment.password` - The encrypted Artifactory password..
+ * `gpg.keyname` - The GPG key name.
+ * `gpg.passphrase` - The password of your GPG key.
+ * `gpg.executable` - Path to your GPG executable, typically `/usr/local/MacGPG2/bin/gpg2`
+ or `/usr/local/bin/gpg`.
+ * `project-service.key` - Project Service authentication token. Must be a valid GitHub token. Can be the same
+ as `git.password` when using a GitHub token as password.
 
-After that, run the `verify local` command (`$ verify local`) to verify your local settings (authentication, correct Maven, Java, and GPG setup).
+(See link:application-local.template[`application-local.template`] for details)
 
-See `application-local.template` for details.
+1. Verify your local settings (authentication, correct Maven, Java, and GPG setup):
+
+ $ verify local
+
 
 ==== Detailed commands performed by `spring-data-release-cli`
 
@@ -137,7 +146,7 @@ See `application-local.template` for details.
 2+| *Post-release tasks*
 |Close JIRA tickets and GitHub release tickets. |`$ tracker close $trainIteration`
 |Create new release versions and tickets for upcoming version |`$ tracker setup-next $trainIteration.next`
-|Update versions in Projects Service. `$targets` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ projects update $releasetrains`
+|Update versions in Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ projects update $releaseTrains`
 |Create list of docs for release announcements |`$ announcement $trainIteration`
 |===
 
@@ -149,7 +158,7 @@ Java and Maven versions are installed via https://sdkman.io/[SDKman] during the 
 
 ===== GitHub Labels
 
-`ProjectLabelConfiguration` contains a per-project configuration which labels should be present in a project. To apply that configuration (create or update), use:
+link:src/main/java/org/springframework/data/release/issues/github/ProjectLabelConfiguration.java[`ProjectLabelConfiguration`] contains a per-project configuration which labels should be present in a project. To apply that configuration (create or update), use:
 
 ----
 $ github update labels $project
@@ -157,21 +166,37 @@ $ github update labels $project
 
 ===== Dependency Upgrade
 
-`ProjectDependencies` contains a per-project configuration of dependencies.
+link:src/main/java/org/springframework/data/release/infra/ProjectDependencies.java[`ProjectDependencies`] contains a per-project configuration of dependencies.
 
-Workflow:
+To check for dependency upgrades:
+----
+$ dependency check $trainIteration
+----
 
-* Check for dependency upgrades `$ dependency check $trainIteration`
+This generates two files that report upgradable dependencies for Spring Data Build and Spring Data modules, respectively:
 
-Reports upgradable dependencies for Build and Modules and
-creates `dependency-upgrade-build.properties` file.
-Edit `dependency-upgrade-build.properties` to specify the dependency version to upgrade.
-Removing a line will omit that dependency upgrade.
+* `dependency-upgrade-build.properties`
 
-* Apply dependency upgrade with `$ dependency upgrade $trainIteration`. Applies dependency
- upgrades currently only to Spring Data Build.
-* Report store-specific dependencies to Spring Boot's current upgrade
- ticket (https://github.com/spring-projects/spring-boot/issues/24036[sample]) `$ dependency report $trainIteration`
+ 1. Edit this file to specify the dependencies and their corresponding version to upgrade. Removing a line will omit that dependency upgrade.
+ 1. Update `dependency.upgrade.count` value.
+ 1. Apply dependency upgrades to Spring Data Build:
+
+ $ dependency upgrade $trainIteration
+
+* `dependency-upgrade-modules.properties`
+
+ 1. Open a ticket for each dependency upgrade in the corresponding module (https://github.com/spring-projects/spring-data-redis/issues/2660[sample]).
+
+
+===== Dependency Report
+
+Report store-specific dependencies to Spring Boot's current upgrade
+ticket (https://github.com/spring-projects/spring-boot/issues/24036[sample]).
+
+To generate a dependency report:
+----
+$ dependency report $trainIteration
+----
 
 ===== Maven Upgrade across Modules
 
@@ -189,15 +214,19 @@ To upgrade Maven across all modules:
 
 ===== CI Properties Distribution
 
-To distribute `ci/pipeline.properties` across all modules use:
+To distribute `ci/pipeline.properties` from Spring Data Build across all modules:
+----
+$ infra distribute ci-properties $trainIteration
+----
 
-`$ infra distribute ci-properties $trainIteration`
 
 ===== Broken Link Report
 
 Resolve external links in reference documentation and print their status.
 
-`$ docs check-links $trainIteration`
+----
+$ docs check-links $trainIteration
+----
 
 |===
 |Flag |Description
@@ -223,7 +252,9 @@ $ docs check-links Turing SR1 --local true --project redis
 
 Resolve external links of any web page (remote/local) and print their status.
 
-`$ check-links $url`
+----
+$ check-links $url
+----
 
 |===
 |Flag |Description
