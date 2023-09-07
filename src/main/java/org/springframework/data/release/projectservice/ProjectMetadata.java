@@ -47,8 +47,8 @@ class ProjectMetadata {
 
 		this.version = version;
 		this.versions = versions;
-		this.documentation = DocumentationMetadata.of(version.getProject(), version.getVersion(),
-				versions.isMainVersion(version));
+		this.documentation = DocumentationMetadata.of(version.getTrain().getDocumentationFormat(), version.getProject(),
+				version.getVersion(), versions.isMainVersion(version));
 	}
 
 	/**

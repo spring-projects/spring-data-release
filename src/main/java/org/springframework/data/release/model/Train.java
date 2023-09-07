@@ -55,12 +55,15 @@ public class Train implements Streamable<Module> {
 	private @With boolean alwaysUseBranch;
 	private JavaVersion javaVersion;
 
+	private @With DocumentationFormat documentationFormat;
+
 	public Train(String name, Module... modules) {
 		this(name, Arrays.asList(modules));
 	}
 
 	public Train(String name, Collection<Module> modules) {
-		this(name, Modules.of(modules), null, Iterations.DEFAULT, false, JavaVersion.VERSION_1_8);
+		this(name, Modules.of(modules), null, Iterations.DEFAULT, false, JavaVersion.VERSION_1_8,
+				DocumentationFormat.ASCIIDOC);
 	}
 
 	/*
@@ -124,12 +127,12 @@ public class Train implements Streamable<Module> {
 								(it, additionalModule) -> it.hasSameProjectAs(additionalModule) ? additionalModule : it))
 				.collect(Collectors.toSet());
 
-		return new Train(name, Modules.of(modules), calver, iterations, false, javaVersion);
+		return new Train(name, Modules.of(modules), calver, iterations, false, javaVersion, documentationFormat);
 	}
 
 	public Train filterModules(Predicate<Module> filterPredicate) {
 		return new Train(name, Modules.of(getModules().stream().filter(filterPredicate).collect(Collectors.toList())),
-				calver, iterations, alwaysUseBranch, javaVersion);
+				calver, iterations, alwaysUseBranch, javaVersion, documentationFormat);
 	}
 
 	/**
@@ -190,7 +193,7 @@ public class Train implements Streamable<Module> {
 
 		}).collect(Collectors.toSet());
 
-		return new Train(name, Modules.of(modules), calver, iterations, alwaysUseBranch, javaVersion);
+		return new Train(name, Modules.of(modules), calver, iterations, alwaysUseBranch, javaVersion, documentationFormat);
 	}
 
 	/**
@@ -316,5 +319,9 @@ public class Train implements Streamable<Module> {
 		public Iterator<Iteration> iterator() {
 			return iterations.iterator();
 		}
+	}
+
+	public enum DocumentationFormat {
+		ASCIIDOC, ANTORA;
 	}
 }

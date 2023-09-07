@@ -20,6 +20,8 @@ import static org.springframework.data.release.model.Projects.*;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.data.release.model.Train.DocumentationFormat;
+
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
@@ -82,6 +84,7 @@ public class ReleaseTrains {
 				.withCalver("2023.0");
 
 		VAUGHAN = ULLMAN.next("Vaughan", Transition.MINOR) //
+				.withDocumentationFormat(DocumentationFormat.ANTORA) //
 				.withCalver("2023.1");
 
 		// Trains

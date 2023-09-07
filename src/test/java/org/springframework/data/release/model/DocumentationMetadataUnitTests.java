@@ -18,6 +18,7 @@ package org.springframework.data.release.model;
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.data.release.model.Train.DocumentationFormat;
 
 /**
  * Unit tests for {@link DocumentationMetadata}.
@@ -27,9 +28,10 @@ import org.junit.jupiter.api.Test;
 class DocumentationMetadataUnitTests {
 
 	@Test // gh-167
-	void shouldReportCorrectDocumentationUrls() {
+	void shouldReportCorrectAsciidocDocumentationUrls() {
 
-		DocumentationMetadata metadata = DocumentationMetadata.of(Projects.MONGO_DB, ArtifactVersion.of("3.1.0"), false);
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.MONGO_DB,
+				ArtifactVersion.of("3.1.0"), false);
 
 		assertThat(metadata.getApiDocUrl())
 				.isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/api/");
@@ -37,10 +39,21 @@ class DocumentationMetadataUnitTests {
 				.isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/reference/html/");
 	}
 
+	@Test // gh-167
+	void shouldReportCorrectAntoraDocumentationUrls() {
+
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ANTORA, Projects.MONGO_DB,
+				ArtifactVersion.of("3.1.0"), false);
+
+		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/api/");
+		assertThat(metadata.getReferenceDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/");
+	}
+
 	@Test // gh-197
 	void shouldReportCorrectCurrentDocumentationUrls() {
 
-		DocumentationMetadata metadata = DocumentationMetadata.of(Projects.MONGO_DB, ArtifactVersion.of("3.1.0"), true);
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.MONGO_DB,
+				ArtifactVersion.of("3.1.0"), true);
 
 		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/current/api/");
 		assertThat(metadata.getReferenceDocUrl())
@@ -50,7 +63,8 @@ class DocumentationMetadataUnitTests {
 	@Test // gh-167
 	void shouldReportCorrectCommonsDocumentationUrlsForBuildProject() {
 
-		DocumentationMetadata metadata = DocumentationMetadata.of(Projects.BUILD, ArtifactVersion.of("3.1.0"), false);
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.BUILD,
+				ArtifactVersion.of("3.1.0"), false);
 
 		assertThat(metadata.getApiDocUrl())
 				.isEqualTo("https://docs.spring.io/spring-data/commons/docs/3.1.0/api/");
@@ -61,7 +75,8 @@ class DocumentationMetadataUnitTests {
 	@Test // gh-197
 	void shouldReportCorrectCurrentCommonsDocumentationUrlsForBuildProject() {
 
-		DocumentationMetadata metadata = DocumentationMetadata.of(Projects.BUILD, ArtifactVersion.of("3.1.0"), true);
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.BUILD,
+				ArtifactVersion.of("3.1.0"), true);
 
 		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/commons/docs/current/api/");
 		assertThat(metadata.getReferenceDocUrl())
@@ -71,11 +86,13 @@ class DocumentationMetadataUnitTests {
 	@Test // gh-197
 	void shouldReportVersionLabels() {
 
-		DocumentationMetadata metadata = DocumentationMetadata.of(Projects.BUILD, ArtifactVersion.of("3.1.0"), true);
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.BUILD,
+				ArtifactVersion.of("3.1.0"), true);
 
 		assertThat(metadata.getVersionOrTrainName(ReleaseTrains.OCKHAM)).isEqualTo("2020.0.0");
 
-		metadata = DocumentationMetadata.of(Projects.COMMONS, ArtifactVersion.of("3.1.0"), true);
+		metadata = DocumentationMetadata.of(DocumentationFormat.ASCIIDOC, Projects.COMMONS, ArtifactVersion.of("3.1.0"),
+				true);
 
 		assertThat(metadata.getVersionOrTrainName(ReleaseTrains.OCKHAM)).isEqualTo("3.1.0");
 	}

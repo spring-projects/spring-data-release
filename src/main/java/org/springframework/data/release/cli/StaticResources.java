@@ -38,7 +38,7 @@ public class StaticResources {
 
 	public StaticResources(ModuleIteration module) {
 
-		this.metadata = DocumentationMetadata.of(module.getProject(), ArtifactVersion.of(module), false);
+		this.metadata = DocumentationMetadata.of(module, ArtifactVersion.of(module), false);
 
 		Project project = module.getProject();
 		GitProject gitProject = GitProject.of(project);

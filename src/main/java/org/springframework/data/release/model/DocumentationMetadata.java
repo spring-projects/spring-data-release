@@ -19,6 +19,8 @@ import lombok.Value;
 
 import java.util.Locale;
 
+import org.springframework.data.release.model.Train.DocumentationFormat;
+
 /**
  * Value object providing documentation links.
  *
@@ -28,12 +30,19 @@ import java.util.Locale;
 public class DocumentationMetadata {
 
 	private static String DOCS_BASE = "https://docs.spring.io/spring-data/%s/docs/%s";
+
+	private static String ANTORA_BASE = "https://docs.spring.io/spring-data/%s/reference/";
 	private static String DOCS = DOCS_BASE.concat("/reference/html/");
 	private static String JAVADOC = DOCS_BASE.concat("/api/");
 
+	DocumentationFormat documentationFormat;
 	Project project;
 	ArtifactVersion version;
 	boolean isCurrent;
+
+	public static DocumentationMetadata of(ModuleIteration module, ArtifactVersion version, boolean isCurrent) {
+		return of(module.getTrain().getDocumentationFormat(), module.getProject(), version, isCurrent);
+	}
 
 	/**
 	 * Returns the JavaDoc URL for non-snapshot versions and not the build project.
@@ -55,8 +64,18 @@ public class DocumentationMetadata {
 
 	private String getProjectName(Project project) {
 
-		if (project == Projects.RELATIONAL) {
-			return "jdbc";
+		// With Asciidoctor, JDBC had its own docs path
+		if (documentationFormat == DocumentationFormat.ASCIIDOC) {
+			if (project == Projects.RELATIONAL) {
+				return "jdbc";
+			}
+		}
+
+		// With Antora, JDBC and R2DBC use a shared site
+		if (documentationFormat == DocumentationFormat.ANTORA) {
+			if (project == Projects.R2DBC || project == Projects.JDBC) {
+				return "relational";
+			}
 		}
 
 		return project.getName().toLowerCase(Locale.US);
@@ -69,15 +88,22 @@ public class DocumentationMetadata {
 	 */
 	public String getReferenceDocUrl() {
 
-		if (version.isSnapshotVersion()) {
-			return "";
+		if (documentationFormat == DocumentationFormat.ASCIIDOC) {
+
+			if (version.isSnapshotVersion()) {
+				return "";
+			}
+
+			Project project = this.project;
+
+			if (Projects.BUILD.equals(project)) { // Report Commons Docs for Spring Data Build
+				project = Projects.COMMONS;
+			}
+
+			return String.format(DOCS, getProjectName(project), getDocumentationVersion());
 		}
 
-		if (Projects.BUILD.equals(project)) { // Report Commons Docs for Spring Data Build
-			return String.format(DOCS, getProjectName(Projects.COMMONS), getDocumentationVersion());
-		}
-
-		return String.format(DOCS, getProjectName(project), getDocumentationVersion());
+		return String.format(ANTORA_BASE, getProjectName(project));
 	}
 
 	public String getVersionOrTrainName(Train train) {
