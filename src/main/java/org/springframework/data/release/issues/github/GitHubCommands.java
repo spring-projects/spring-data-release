@@ -20,7 +20,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,7 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -88,6 +92,28 @@ public class GitHubCommands extends TimedCommand {
 				gitHub.createOrUpdateRelease(iteration, it, ticketReferences);
 			}
 		});
+	}
+
+	@CliCommand(value = "github trigger documentation")
+	public void triggerDocumentation(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "module", mandatory = false) String module) {
+
+		Set<Project> skip = new HashSet<>(Arrays.asList(Projects.BOM, Projects.BUILD, Projects.R2DBC, Projects.JDBC,
+				Projects.SOLR, Projects.GEODE, Projects.SMOKE_TESTS));
+
+		iteration.forEach(it -> {
+
+			Project project = it.getProject();
+
+			if (skip.contains(project)) {
+				return;
+			}
+
+			if (module == null || module.equalsIgnoreCase(project.getName())) {
+				gitHub.triggerAntoraWorkflow(project);
+			}
+		});
+
 	}
 
 }

@@ -15,15 +15,7 @@
  */
 package org.springframework.data.release.issues.github;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -43,6 +35,7 @@ import org.springframework.data.release.issues.Changelog;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.Tickets;
+import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.DocumentationMetadata;
 import org.springframework.data.release.model.Iteration;
@@ -79,10 +72,14 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private static final String RELEASE_URI_TEMPLATE = "/repos/spring-projects/{repoName}/releases";
 	private static final String RELEASE_BY_ID_URI_TEMPLATE = "/repos/spring-projects/{repoName}/releases/{id}";
 
+	private static final String WORKFLOWS = "/repos/spring-projects/spring-data-dev-tools/actions/workflows";
+
+	private static final String WORKFLOW_DISPATCH = "/repos/spring-projects/spring-data-dev-tools/actions/workflows/{workflow_id}/dispatches";
+
 	private static final ParameterizedTypeReference<List<Milestone>> MILESTONES_TYPE = new ParameterizedTypeReference<List<Milestone>>() {};
 	private static final ParameterizedTypeReference<List<GitHubReadIssue>> ISSUES_TYPE = new ParameterizedTypeReference<List<GitHubReadIssue>>() {};
 	private static final ParameterizedTypeReference<GitHubReadIssue> ISSUE_TYPE = new ParameterizedTypeReference<GitHubReadIssue>() {};
-
+	private static final ParameterizedTypeReference<GitHubWorkflows> WORKFLOWS_TYPE = new ParameterizedTypeReference<GitHubWorkflows>() {};
 	private static final Map<TicketType, Label> TICKET_LABELS = new HashMap<>();
 
 	static {
@@ -548,9 +545,9 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	}
 
 	/**
-	 * @param ticketReferences
 	 * @param iteration
 	 * @param module
+	 * @param ticketIds
 	 */
 	public void createOrUpdateRelease(TrainIteration iteration, ModuleIteration module, List<String> ticketIds) {
 
@@ -559,7 +556,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		List<GitHubReadIssue> gitHubIssues = findGitHubIssues(module, ticketIds);
 
 		ArtifactVersion version = ArtifactVersion.of(module);
-		DocumentationMetadata documentation = DocumentationMetadata.of(module.getProject(), version, false);
+		DocumentationMetadata documentation = DocumentationMetadata.of(module, version, false);
 
 		ChangelogGenerator generator = new ChangelogGenerator();
 		generator.getExcludeContributors().addAll(properties.getTeam());
@@ -617,6 +614,57 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		}
 
 		logger.log("GitHub", "Authentication verified.");
+	}
+
+	/**
+	 * Trigger the Antora workflow for the given module.
+	 */
+	public void triggerAntoraWorkflow(Project project) {
+
+		logger.log("GitHub", "Triggering Antora workflow for %s…", project.getName());
+
+		GitHubWorkflow workflow = getWorkflow();
+
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("ref", "main");
+		body.put("inputs", Collections.singletonMap("module", project.getName().toLowerCase(Locale.ROOT)));
+
+		Map<String, Object> parameters = newUrlTemplateVariables();
+		parameters.put("workflow_id", workflow.getId());
+
+		ResponseEntity<Map> entity = operations.exchange(WORKFLOW_DISPATCH, HttpMethod.POST, new HttpEntity<>(body),
+				Map.class, parameters);
+
+		if (!entity.getStatusCode().is2xxSuccessful()) {
+			throw new IllegalStateException("Cannot trigger Antora workflow. Status: " + entity.getStatusCode());
+		}
+
+		logger.log("GitHub", "Antora workflow for %s started…", project.getName());
+	}
+
+	@Cacheable("get-workflow")
+	public GitHubWorkflow getWorkflow() {
+
+		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE);
+
+		if (!entity.getStatusCode().is2xxSuccessful()) {
+			throw new IllegalStateException(String.format("Cannot obtain Workflows. Status: %s", entity.getStatusCode()));
+		}
+		GitHubWorkflows workflows = entity.getBody();
+		for (GitHubWorkflow workflow : workflows.getWorkflows()) {
+
+			if (workflow.getPath().endsWith("antora-site.yml")) {
+
+				if (!workflow.getState().equals("active")) {
+					throw new IllegalStateException("Antora workflow is not active");
+				}
+
+				return workflow;
+			}
+
+		}
+
+		throw new NoSuchElementException("Cannot resolve Antora workflow");
 	}
 
 	private String getDocumentationLinks(ModuleIteration module, DocumentationMetadata documentation) {

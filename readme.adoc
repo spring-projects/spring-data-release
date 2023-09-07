@@ -146,6 +146,7 @@ Both are available in the Spring/Pivotal Last Pass repository.
 2+| *Post-release tasks*
 |Close JIRA tickets and GitHub release tickets. |`$ tracker close $trainIteration`
 |Create new release versions and tickets for upcoming version |`$ tracker setup-next $trainIteration.next`
+|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository) |`$ github trigger documentation $trainIteration`
 |Update versions in Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ projects update $releaseTrains`
 |Create list of docs for release announcements |`$ announcement $trainIteration`
 |===
