@@ -44,6 +44,7 @@ import org.eclipse.jgit.api.errors.EmptyCommitException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -64,7 +65,6 @@ import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
 import org.springframework.data.release.model.*;
-import org.springframework.data.release.model.Module;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
@@ -182,7 +182,7 @@ public class GitOperations {
 
 	private void checkoutBranch(Project project, Git git, Branch branch) throws GitAPIException {
 
-		CheckoutCommand command = git.checkout().setName(branch.toString());
+		CheckoutCommand command = git.checkout().setName(branch.toString()).setForced(true);
 
 		if (!branchExists(project, branch)) {
 
@@ -1003,7 +1003,14 @@ public class GitOperations {
 	}
 
 	private Repository getRepository(Project project) throws IOException {
-		return FileRepositoryBuilder.create(workspace.getFile(".git", project));
+
+		Repository repository = FileRepositoryBuilder.create(workspace.getFile(".git", project));
+
+		// ensure symlink usage to avoid plain text checkouts that would break Git commits from the tooling.
+		repository.getConfig().setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_SYMLINKS,
+				true);
+
+		return repository;
 	}
 
 	private void clone(Project project) throws Exception {
