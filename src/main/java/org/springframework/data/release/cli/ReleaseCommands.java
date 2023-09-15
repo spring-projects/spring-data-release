@@ -22,6 +22,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.build.BuildOperations;
@@ -217,6 +221,28 @@ class ReleaseCommands extends TimedCommand {
 				setupMaintenanceVersions(iteration);
 			}
 		}
+	}
+
+	@CliCommand(value = "release documentation")
+	public void triggerDocumentation(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "module", mandatory = false) String module) {
+
+		Set<Project> skip = new HashSet<>(Arrays.asList(Projects.BOM, Projects.BUILD, Projects.R2DBC, Projects.JDBC,
+				Projects.SOLR, Projects.GEODE, Projects.SMOKE_TESTS));
+
+		iteration.forEach(it -> {
+
+			Project project = it.getProject();
+
+			if (skip.contains(project)) {
+				return;
+			}
+
+			if (module == null || module.equalsIgnoreCase(project.getName())) {
+				gitHub.triggerAntoraWorkflow(project);
+			}
+		});
+
 	}
 
 	private void setupMaintenanceVersions(TrainIteration iteration) throws Exception {

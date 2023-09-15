@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.TrainIteration;
@@ -91,7 +92,8 @@ public class UpdateInformation {
 
 		if (phase == Phase.PREPARE) {
 
-			if (train.getIteration().isMilestone()) {
+			Iteration iteration = train.getIteration();
+			if (iteration.isMilestone() || iteration.isReleaseCandidate()) {
 				return Collections.singletonList(Repository.MILESTONE);
 			}
 		}
