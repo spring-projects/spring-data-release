@@ -43,12 +43,8 @@ class DummyProjectClient implements ProjectService {
 	Logger logger;
 	ObjectWriter mapper;
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.sagan.SaganClient#updateProjectMetadata(org.springframework.data.release.model.Project, org.springframework.data.release.sagan.MaintainedVersions)
-	 */
 	@Override
-	public void updateProjectMetadata(Project project, MaintainedVersions versions) {
+	public void updateProjectMetadata(Project project, MaintainedVersions versions, boolean delete, boolean update) {
 
 		logger.log(project, "Updating released version on Sagan to %s!", versions);
 

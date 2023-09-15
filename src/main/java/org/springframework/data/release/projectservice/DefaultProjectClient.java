@@ -78,12 +78,8 @@ class DefaultProjectClient implements ProjectService {
 		return operations.getForObject(resource, String.class);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.sagan.SaganClient#updateProjectMetadata(org.springframework.data.release.model.Project, java.util.List)
-	 */
 	@Override
-	public void updateProjectMetadata(Project project, MaintainedVersions versions) {
+	public void updateProjectMetadata(Project project, MaintainedVersions versions, boolean delete, boolean update) {
 
 		URI resource = configuration.getProjectReleasesResource(project);
 
@@ -100,17 +96,17 @@ class DefaultProjectClient implements ProjectService {
 		boolean requiresDelete = requiresDeleteVersions(project, versionsToRetain, versionsInSagan);
 		boolean requiresWrite = requiresWriteVersions(versions, versionsInSagan);
 
-		if (requiresDelete || requiresWrite) {
+		if ((requiresDelete) && delete || (requiresWrite && update)) {
 			logger.log(project, "Updating project versions at %s…", resource);
 		}
 
-		if (requiresDelete) {
+		if (requiresDelete && delete) {
 
 			logger.log(project, "Deleting outdated project versions…", versionsString);
 			deleteExistingVersions(project, versionsToRetain);
 		}
 
-		if (requiresWrite) {
+		if (requiresWrite && update) {
 
 			logger.log(project, "Writing project versions %s.", versionsString);
 			createVersions(project, versions, resource, versionsInSagan);

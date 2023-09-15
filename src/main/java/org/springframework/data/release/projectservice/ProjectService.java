@@ -47,7 +47,19 @@ public interface ProjectService {
 	 * @param project must not be {@literal null}.
 	 * @param versions must not be {@literal null}.
 	 */
-	void updateProjectMetadata(Project project, MaintainedVersions versions);
+	default void updateProjectMetadata(Project project, MaintainedVersions versions) {
+		updateProjectMetadata(project, versions, true, true);
+	}
+
+	/**
+	 * Updates the project metadata for the given {@link Project} to the given {@link MaintainedVersions}.
+	 *
+	 * @param project must not be {@literal null}.
+	 * @param versions must not be {@literal null}.
+	 * @param delete
+	 * @param update
+	 */
+	void updateProjectMetadata(Project project, MaintainedVersions versions, boolean delete, boolean update);
 
 	/**
 	 * Verify correct authentication setup.

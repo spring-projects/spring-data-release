@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -77,20 +78,25 @@ class ProjectServiceOperations {
 
 		Map<Project, MaintainedVersions> versions = findVersions(trains);
 
-		Streamable.of(versions.entrySet()).forEach(entry -> {
+		Streamable<Entry<Project, MaintainedVersions>> stream = Streamable.of(versions.entrySet()) //
+				.filter(entry -> {
+					return entry.getKey() != Projects.BOM && entry.getKey() != Projects.JDBC;
+				});
 
-			if (entry.getKey() == Projects.BOM) {
-				return;
-			}
-
-			if(entry.getKey() == Projects.JDBC){
-				return;
-			}
+		ExecutionUtils.run(executor, stream, entry -> {
 
 			// Sometimes we see 404 Not Found: [no body], sometimes
 			// 400 Bad Request: "Release '2.2.13-SNAPSHOT' already present
 			// still we should fail here and report those failures to the website team
-			client.updateProjectMetadata(entry.getKey(), entry.getValue());
+			client.updateProjectMetadata(entry.getKey(), entry.getValue(), true, false);
+		});
+
+		ExecutionUtils.run(executor, stream, entry -> {
+
+			// Sometimes we see 404 Not Found: [no body], sometimes
+			// 400 Bad Request: "Release '2.2.13-SNAPSHOT' already present
+			// still we should fail here and report those failures to the website team
+			client.updateProjectMetadata(entry.getKey(), entry.getValue(), false, true);
 		});
 	}
 
