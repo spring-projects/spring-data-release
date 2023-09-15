@@ -18,6 +18,7 @@ package org.springframework.data.release;
 import java.util.logging.Logger;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.shell.core.ExitShellRequest;
@@ -29,9 +30,10 @@ import org.springframework.shell.support.logging.HandlerUtils;
 @SpringBootApplication
 public class Application {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 
 		SpringApplication application = new SpringApplication(Application.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
 		application.setAdditionalProfiles("local");
 		ExitShellRequest exitShellRequest = null;
 

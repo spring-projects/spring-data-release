@@ -21,17 +21,23 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
+import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationRequest;
@@ -44,6 +50,7 @@ import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.lang.Nullable;
 import org.springframework.shell.support.util.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -90,6 +97,41 @@ public class MavenRuntime {
 	@SneakyThrows
 	public String getVersion() throws IllegalStateException {
 
+		String version = detectBuildPropertiesVersion();
+
+		return version != null ? version : runVersionCommand();
+	}
+
+	@Nullable
+	@SneakyThrows
+	private String detectBuildPropertiesVersion() {
+
+		File libs = new File(properties.getMavenHome(), "lib");
+		File[] files = libs.listFiles((FileFilter) new PrefixFileFilter("maven-core-"));
+
+		if (files == null || files.length != 1) {
+			return null;
+		}
+
+		try (ZipFile zipFile = new ZipFile(files[0])) {
+
+			ZipEntry entry = zipFile.getEntry("org/apache/maven/messages/build.properties");
+
+			if (entry == null) {
+				return null;
+			}
+
+			Properties properties = new Properties();
+			try (InputStream inputStream = zipFile.getInputStream(entry)) {
+				properties.load(inputStream);
+			}
+
+			return properties.getProperty("version");
+		}
+	}
+
+	private String runVersionCommand() throws MavenInvocationException {
+
 		StringBuilder builder = new StringBuilder();
 		Invoker invoker = new DefaultInvoker();
 		invoker.setMavenHome(properties.getMavenHome());
@@ -104,7 +146,7 @@ public class MavenRuntime {
 		Matcher matcher = versionPattern.matcher(builder);
 		boolean foundVersion = matcher.find();
 
-		if(!foundVersion){
+		if (!foundVersion) {
 			throw new IllegalStateException("Cannot determine Maven Version: " + builder);
 		}
 
