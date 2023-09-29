@@ -59,7 +59,8 @@ public class DocumentationMetadata {
 			return String.format(JAVADOC, getProjectName(Projects.COMMONS), getDocumentationVersion());
 		}
 
-		return String.format(JAVADOC, getProjectName(project), getDocumentationVersion());
+		return String.format(JAVADOC, project == Projects.R2DBC ? "r2dbc" : getProjectName(project),
+				getDocumentationVersion());
 	}
 
 	private String getProjectName(Project project) {
