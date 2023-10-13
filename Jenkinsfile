@@ -31,7 +31,7 @@ pipeline {
 
 			steps {
 				script {
-					def image = docker.build("springci/spring-data-release-tools:0.12", "ci")
+					def image = docker.build("springci/spring-data-release-tools:0.13", "ci")
 					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
 						image.push()
 					}
@@ -45,7 +45,7 @@ pipeline {
 			}
 			agent {
 				docker {
-					image 'springci/spring-data-release-tools:0.12'
+					image 'springci/spring-data-release-tools:0.13'
 				}
 			}
 			options { timeout(time: 4, unit: 'HOURS') }

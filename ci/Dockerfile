@@ -1,6 +1,7 @@
 FROM ubuntu:23.04
 
 # Bake a container using sdkman to get all the needed JDKs.
+#
 
 ARG USER_UID="1001"
 ARG USER_GID="1001"
