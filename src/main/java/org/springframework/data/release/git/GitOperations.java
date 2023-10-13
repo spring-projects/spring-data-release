@@ -216,7 +216,7 @@ public class GitOperations {
 			doWithGit(project, git -> {
 
 				logger.log(module, "git checkout %s", tag);
-				git.checkout().setName(tag.toString()).call();
+				git.checkout().setName(tag.toString()).setForced(true).call();
 			});
 		});
 
@@ -788,7 +788,7 @@ public class GitOperations {
 		doWithGit(project, git -> {
 
 			Optional<Ref> ref = Optional.ofNullable(git.getRepository().findRef(branch.toString()));
-			CheckoutCommand checkout = git.checkout().setName(branch.toString());
+			CheckoutCommand checkout = git.checkout().setName(branch.toString()).setForced(true);
 
 			if (ref.isPresent()) {
 
