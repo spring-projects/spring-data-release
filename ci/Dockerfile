@@ -1,4 +1,4 @@
-FROM ubuntu:22.10
+FROM ubuntu:23.04
 
 # Bake a container using sdkman to get all the needed JDKs.
 
