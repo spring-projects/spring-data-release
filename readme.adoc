@@ -1,4 +1,4 @@
-== General Notes
+== General Notes image:https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?logo=Gradle&labelColor=02303A["Revved up by Gradle Enterprise", link="https://ge.spring.io/scans?search.rootProjectNames=spring-data-release-cli"]
 
 * Make sure to <<setup,initially set-up your environment>>.
 * Use the command `help` to get a list of all commands in the release tools.
