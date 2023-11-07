@@ -10,3 +10,4 @@ spring-shell.log
 logs/
 *.iml
 dependency-upgrade-*.properties
+**/.mvn/.gradle-enterprise
