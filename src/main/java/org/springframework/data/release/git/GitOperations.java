@@ -436,7 +436,7 @@ public class GitOperations {
 
 		Assert.notNull(trainIteration, "TrainIteration must not be null!");
 
-		if (trainIteration.getIteration().isMilestone() && trainIteration.getIteration().getIterationValue() == 1) {
+		if (isGaOrFirstMilestone(trainIteration.getIteration())) {
 
 			Train trainToUse = getPreviousTrain(trainIteration);
 			return trainToUse.getIteration(Iteration.GA);
@@ -544,6 +544,10 @@ public class GitOperations {
 			}
 		}
 		return trainToUse;
+	}
+
+	private static boolean isGaOrFirstMilestone(Iteration iteration) {
+		return iteration.isGAIteration() || (iteration.isMilestone() && iteration.getIterationValue() == 1);
 	}
 
 	private Stream<Branch> getRemoteBranches(Project project) {
