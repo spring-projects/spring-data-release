@@ -84,8 +84,8 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 
 		TrainIteration hopperRc1 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.GA));
 
-		assertThat(hopperRc1.getTrain()).isEqualTo(ReleaseTrains.HOPPER);
-		assertThat(hopperRc1.getIteration()).isEqualTo(Iteration.RC1);
+		assertThat(hopperRc1.getTrain()).isEqualTo(ReleaseTrains.GOSLING);
+		assertThat(hopperRc1.getIteration()).isEqualTo(Iteration.GA);
 
 		TrainIteration hopperM1 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.RC1));
 
