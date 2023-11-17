@@ -79,6 +79,7 @@ public class Iteration implements Comparable<Iteration> {
 	 * The name of the iteration.
 	 */
 	private final @NonNull String name;
+	private final int iterationValue;
 	private final Iteration next;
 
 	Iteration(String name, Iteration next) {
@@ -87,6 +88,14 @@ public class Iteration implements Comparable<Iteration> {
 
 		this.name = name;
 		this.next = next;
+
+		if (isMilestone()) {
+			this.iterationValue = Integer.parseInt(name.substring(1));
+		} else if (isReleaseCandidate() || isServiceIteration()) {
+			this.iterationValue = Integer.parseInt(name.substring(2));
+		} else {
+			this.iterationValue = EQUAL;
+		}
 	}
 
 	/**
@@ -150,25 +159,28 @@ public class Iteration implements Comparable<Iteration> {
 		return name.startsWith("M");
 	}
 
+	public boolean isMilestone(int iterationValue) {
+		return isMilestone() && isIteration(iterationValue);
+	}
+
 	public boolean isReleaseCandidate() {
 		return name.startsWith("RC");
 	}
 
+	public boolean isReleaseCandidate(int iterationValue) {
+		return isReleaseCandidate() && isIteration(iterationValue);
+	}
+
+	public boolean isIteration(int iterationValue) {
+		return getIterationValue() == iterationValue;
+	}
+
 	public int getIterationValue() {
-
-		if (isMilestone()) {
-			return Integer.parseInt(name.substring(1));
-		}
-
-		if (isReleaseCandidate() || isServiceIteration()) {
-			return Integer.parseInt(name.substring(2));
-		}
-
-		return EQUAL;
+		return iterationValue;
 	}
 
 	public int getBugfixValue() {
-		return name.startsWith("SR") ? Integer.parseInt(name.substring(2)) : 0;
+		return isServiceIteration() ? getIterationValue() : EQUAL;
 	}
 
 	/*

@@ -685,7 +685,7 @@ public class GitOperations {
 	}
 
 	private static boolean isGaOrFirstMilestone(Iteration iteration) {
-		return iteration.isGAIteration() || iteration.isMilestone() && iteration.getIterationValue() == 1;
+		return iteration.isGAIteration() || iteration.isMilestone(1);
 	}
 
 	private Stream<Branch> getRemoteBranches(SupportedProject project) {
@@ -933,9 +933,7 @@ public class GitOperations {
 			CheckoutCommand checkout = git.checkout().setName(branch.toString()).setForced(true);
 
 			if (ref.isPresent()) {
-
 				logger.log(project, "git checkout %s", branch);
-
 			} else {
 
 				logger.log(project, "git checkout --track -b %s origin/%s", branch, branch);
