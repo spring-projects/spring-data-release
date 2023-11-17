@@ -52,6 +52,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.web.client.HttpStatusCodeException;
 
 /**
@@ -81,6 +82,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private static final ParameterizedTypeReference<GitHubReadIssue> ISSUE_TYPE = new ParameterizedTypeReference<GitHubReadIssue>() {};
 	private static final ParameterizedTypeReference<GitHubWorkflows> WORKFLOWS_TYPE = new ParameterizedTypeReference<GitHubWorkflows>() {};
 	private static final Map<TicketType, Label> TICKET_LABELS = new HashMap<>();
+
+	private final Map<ModuleIteration, Optional<Milestone>> milestoneCache = new ConcurrentReferenceHashMap<>();
 
 	static {
 
@@ -210,7 +213,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Assert.notNull(moduleIteration, "ModuleIteration must not be null.");
 
 		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
-		Optional<Milestone> milestone = findMilestone(moduleIteration, repositoryName);
+		Optional<Milestone> milestone = findMilestone(moduleIteration);
 
 		if (milestone.isPresent()) {
 			return;
@@ -269,7 +272,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 			boolean assignToCurrentUser) {
 
 		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
-		Milestone milestone = getMilestone(moduleIteration, repositoryName);
+		Milestone milestone = getMilestone(moduleIteration);
 
 		Label label = TICKET_LABELS.get(ticketType);
 
@@ -381,8 +384,22 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return parameters;
 	}
 
-	private Optional<Milestone> findMilestone(ModuleIteration moduleIteration, String repositoryName) {
-		return doFindMilestone(moduleIteration, repositoryName, m -> m.matches(moduleIteration));
+	private Optional<Milestone> findMilestone(ModuleIteration moduleIteration) {
+
+		// we're inside a cacheable object, so we cannot reuse Spring Caching for inner method calls.
+		Optional<Milestone> milestone = milestoneCache.get(moduleIteration);
+		if (milestone == null) {
+
+			String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+			milestone = doFindMilestone(moduleIteration, repositoryName, m -> m.matches(moduleIteration));
+
+			if(milestone.isPresent()) {
+				milestoneCache.put(moduleIteration, milestone);
+			}
+		}
+
+		return milestone;
+
 	}
 
 	private Optional<Milestone> doFindMilestone(ModuleIteration moduleIteration, String repositoryName,
@@ -445,7 +462,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		GitProject project = GitProject.of(module.getProject());
 
-		findMilestone(module, project.getRepositoryName()) //
+		findMilestone(module) //
 				.filter(Milestone::isOpen) //
 				.map(Milestone::markReleased) //
 				.ifPresent(milestone -> {
@@ -749,7 +766,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
 
-		Optional<Milestone> optionalMilestone = findMilestone(moduleIteration, repositoryName);
+		Optional<Milestone> optionalMilestone = findMilestone(moduleIteration);
 
 		if (ignoreMissingMilestone && !optionalMilestone.isPresent()) {
 			return Stream.empty();
@@ -781,9 +798,9 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return issues.stream();
 	}
 
-	private Milestone getMilestone(ModuleIteration moduleIteration, String repositoryName) {
+	private Milestone getMilestone(ModuleIteration moduleIteration) {
 
-		Optional<Milestone> milestone = findMilestone(moduleIteration, repositoryName);
+		Optional<Milestone> milestone = findMilestone(moduleIteration);
 
 		return milestone.orElseThrow(() -> noSuchMilestone(moduleIteration));
 	}
