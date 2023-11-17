@@ -15,6 +15,8 @@
  */
 package org.springframework.data.release.build;
 
+import static org.springframework.data.release.build.CommandLine.Argument.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -155,6 +157,7 @@ public class MavenRuntime {
 
 	public MavenInvocationResult execute(Project project, CommandLine arguments) {
 
+
 		logger.log(project, "📦 Executing mvn %s", arguments.toString());
 
 		try (MavenLogger mavenLogger = getLogger(project, arguments.getGoals())) {
@@ -170,7 +173,9 @@ public class MavenRuntime {
 				mavenLogger.info(String.format("Java Home: %s", jdk));
 				mavenLogger.info(String.format("Executing: mvn %s", arguments));
 
-				mvn.setGoals(arguments.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
+				CommandLine disabledGradleBuildCache = arguments.and(arg("gradle.cache.local.enabled=false")).and(arg("gradle.cache.remote.enabled=false"));
+
+				mvn.setGoals(disabledGradleBuildCache.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
 			});
 
 			if (result.getExitCode() != 0) {
