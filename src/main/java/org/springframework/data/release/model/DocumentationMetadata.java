@@ -89,16 +89,16 @@ public class DocumentationMetadata {
 	 */
 	public String getReferenceDocUrl() {
 
+		Project project = this.project;
+
+		if (Projects.BUILD.equals(project)) { // Report Commons Docs for Spring Data Build
+			project = Projects.COMMONS;
+		}
+
 		if (documentationFormat == DocumentationFormat.ASCIIDOC) {
 
 			if (version.isSnapshotVersion()) {
 				return "";
-			}
-
-			Project project = this.project;
-
-			if (Projects.BUILD.equals(project)) { // Report Commons Docs for Spring Data Build
-				project = Projects.COMMONS;
 			}
 
 			return String.format(DOCS, getProjectName(project), getDocumentationVersion());
