@@ -36,7 +36,7 @@ import org.springframework.web.client.RestOperations;
 import com.jayway.jsonpath.JsonPath;
 
 /**
- * Sagan client to interact with the Sagan instance defined through {@link SaganProperties}.
+ * Project Service client to interact with the Website API instance defined through {@link ProjectServiceProperties}.
  *
  * @author Oliver Gierke
  * @author Mark Paluch
@@ -49,10 +49,6 @@ class DefaultProjectClient implements ProjectService {
 	ProjectServiceResources configuration;
 	Logger logger;
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.sagan.SaganClient#getProjectMetadata(org.springframework.data.release.sagan.MaintainedVersion)
-	 */
 	@Override
 	public String getProjectMetadata(MaintainedVersion version) {
 
@@ -64,10 +60,6 @@ class DefaultProjectClient implements ProjectService {
 		return operations.getForObject(resource, String.class);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.sagan.SaganClient#getProjectMetadata(org.springframework.data.release.model.Project)
-	 */
 	@Override
 	public String getProjectMetadata(Project project) {
 
@@ -89,12 +81,12 @@ class DefaultProjectClient implements ProjectService {
 				.collect(Collectors.joining(", "));
 		List<String> versionsToRetain = getVersionsToWrite(versions).map(ProjectMetadata::getVersion)
 				.collect(Collectors.toList());
-		List<String> versionsInSagan = new ArrayList<>();
+		List<String> versionsInWebsite = new ArrayList<>();
 
 		// Delete all existing versions first
 
-		boolean requiresDelete = requiresDeleteVersions(project, versionsToRetain, versionsInSagan);
-		boolean requiresWrite = requiresWriteVersions(versions, versionsInSagan);
+		boolean requiresDelete = requiresDeleteVersions(project, versionsToRetain, versionsInWebsite);
+		boolean requiresWrite = requiresWriteVersions(versions, versionsInWebsite);
 
 		if ((requiresDelete) && delete || (requiresWrite && update)) {
 			logger.log(project, "Updating project versions at %s…", resource);
@@ -109,22 +101,18 @@ class DefaultProjectClient implements ProjectService {
 		if (requiresWrite && update) {
 
 			logger.log(project, "Writing project versions %s.", versionsString);
-			createVersions(project, versions, resource, versionsInSagan);
+			createVersions(project, versions, resource, versionsInWebsite);
 		}
 
 		logger.log(project, "Project versions up to date: %s", versionsString);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.sagan.SaganClient#verifyAuthentication()
-	 */
 	@Override
 	public void verifyAuthentication() {
 
 		URI resource = configuration.getProjectReleasesResource(Projects.BUILD);
 
-		logger.log("Sagan", "Verifying Sagan Authentication…");
+		logger.log("Website API", "Verifying Website API Authentication…");
 
 		ResponseEntity<String> entity = operations.getForEntity(resource, String.class);
 
@@ -132,21 +120,21 @@ class DefaultProjectClient implements ProjectService {
 			throw new IllegalStateException("Cannot access Jira user profile");
 		}
 
-		logger.log("Sagan", "Authentication verified!");
+		logger.log("Website API", "Authentication verified!");
 	}
 
 	private void createVersions(Project project, MaintainedVersions versions, URI resource,
-			List<String> versionsInSagan) {
+			List<String> versionsInWebsite) {
 
 		getVersionsToWrite(versions) //
-				.filter(version -> !versionsInSagan.contains(version.getVersion())) //
+				.filter(version -> !versionsInWebsite.contains(version.getVersion())) //
 				.peek(metadata -> logger.log(project, "Creating project version %s…", metadata.getVersion())) //
 				.forEach(payload -> operations.postForObject(resource, payload, String.class));
 	}
 
-	private static boolean requiresWriteVersions(MaintainedVersions versions, List<String> versionsInSagan) {
+	private static boolean requiresWriteVersions(MaintainedVersions versions, List<String> versionsInWebsite) {
 		return getVersionsToWrite(versions) //
-				.anyMatch(version -> !versionsInSagan.contains(version.getVersion()));
+				.anyMatch(version -> !versionsInWebsite.contains(version.getVersion()));
 	}
 
 	private static Stream<ProjectMetadata> getVersionsToWrite(MaintainedVersions versions) {
@@ -154,9 +142,10 @@ class DefaultProjectClient implements ProjectService {
 				.map(it -> new ProjectMetadata(it, versions));
 	}
 
-	private boolean requiresDeleteVersions(Project project, List<String> versionsToRetain, List<String> versionsInSagan) {
+	private boolean requiresDeleteVersions(Project project, List<String> versionsToRetain,
+			List<String> versionsInWebsite) {
 		return getVersionsToDelete(project) //
-				.peek(versionsInSagan::add) //
+				.peek(versionsInWebsite::add) //
 				.anyMatch(version -> !versionsToRetain.contains(version));
 	}
 
