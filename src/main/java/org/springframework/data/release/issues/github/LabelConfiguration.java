@@ -140,6 +140,9 @@ class LabelConfiguration implements Streamable<Label> {
 			configurer.register(LabelFactories.TYPE_LABEL, "documentation", "A documentation update");
 			configurer.register(LabelFactories.TYPE_LABEL, "enhancement", "A general enhancement");
 			configurer.register(LabelFactories.TYPE_LABEL, "regression", "A regression from a previous release");
+
+			configurer.register(LabelFactories.HAS_LABEL, "design-decision",
+					"An issue that contains a design decision about its topic");
 			configurer.register(TYPE_TASK);
 		});
 
