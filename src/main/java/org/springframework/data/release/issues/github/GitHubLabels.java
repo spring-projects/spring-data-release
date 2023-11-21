@@ -82,10 +82,6 @@ public class GitHubLabels extends GitHubSupport {
 			});
 		}
 
-		newLabels.forEach(it -> {
-			operations.postForObject(LABELS_URI, it, String.class, parameters);
-		});
-
 		existingLabels.stream().filter(it -> {
 
 			Label existing = existsOnGitHub.get(existsOnGitHub.indexOf(it));
