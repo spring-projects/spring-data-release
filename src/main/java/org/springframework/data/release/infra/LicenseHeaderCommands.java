@@ -26,9 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
@@ -98,26 +100,34 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 		ExecutionUtils.run(executor, modules, module -> {
 
-			String summary = String.format("Extend license header copyright years to %d", year);
-
-			int updated = replaceInFiles(module.getProject(), content -> {
-
-				String contentToUse = content;
-
-				contentToUse = contentToUse.replaceAll("(C) ([\\d]{4})-([\\d]{4})", "(C) $1-" + year);
-
-				contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4}) the original author or authors",
-						"Copyright $1-" + year + " the original author or authors");
-
-				contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4})-([\\d]{4}) the original author or authors",
-						"Copyright $1-" + year + " the original author or authors");
-
-				return contentToUse;
-			});
+			int updated = updateLicense(year, module);
 
 			if (updated > 0) {
-				commitAndPushWithTicket(module, summary);
+				commitAndPushWithTicket(module, String.format("Extend license header copyright years to %d", year));
 			}
+		});
+	}
+
+	private int updateLicense(int year, ModuleIteration module) {
+
+		return replaceInFiles(module.getProject(), (file, content) -> {
+
+			String contentToUse = content;
+
+			String filename = file.getName().toLowerCase(Locale.ROOT);
+			if (filename.endsWith(".adoc")) {
+				return content.replaceAll("([\\d]{4})-([\\d]{4})", "$1-" + year);
+			}
+
+			contentToUse = contentToUse.replaceAll("(C) ([\\d]{4})-([\\d]{4})", "(C) $1-" + year);
+
+			contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4}) the original author or authors",
+					"Copyright $1-" + year + " the original author or authors");
+
+			contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4})-([\\d]{4}) the original author or authors",
+					"Copyright $1-" + year + " the original author or authors");
+
+			return contentToUse;
 		});
 	}
 
@@ -145,6 +155,17 @@ public class LicenseHeaderCommands extends TimedCommand {
 	 * @return
 	 */
 	private int replaceInFiles(Project project, Function<String, String> contentFunction) {
+		return replaceInFiles(project, (file, s) -> contentFunction.apply(s));
+	}
+
+	/**
+	 * Replace content in files by applying {@link Function contentFunction} and return the number of updated files.
+	 *
+	 * @param project
+	 * @param contentFunction
+	 * @return
+	 */
+	private int replaceInFiles(Project project, BiFunction<File, String, String> contentFunction) {
 
 		File projectDirectory = workspace.getProjectDirectory(project);
 		IOFileFilter fileFilter = new AntPathFileFilter(projectDirectory, filePatterns);
@@ -173,12 +194,13 @@ public class LicenseHeaderCommands extends TimedCommand {
 		return modified;
 	}
 
-	private boolean doReplace(File file, Function<String, String> modifyFunction) throws IOException {
+	private boolean doReplace(File file, BiFunction<File, String, String> modifyFunction) throws IOException {
 
 		String content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-		String modified = modifyFunction.apply(content);
+		String modified = modifyFunction.apply(file, content);
 
-		if (!content.equals(modified)) {
+		// shortcut: same instance check
+		if (modified != content && !content.equals(modified)) {
 
 			FileUtils.write(file, modified, StandardCharsets.UTF_8);
 			return true;
