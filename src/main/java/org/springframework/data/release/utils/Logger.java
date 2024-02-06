@@ -16,7 +16,9 @@
 package org.springframework.data.release.utils;
 
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Named;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.support.logging.HandlerUtils;
@@ -34,7 +36,11 @@ public class Logger {
 	private final java.util.logging.Logger LOGGER = HandlerUtils.getLogger(getClass());
 
 	public void log(ModuleIteration module, Object template, Object... args) {
-		log(module.getProject(), template, args);
+		log(module.getSupportedProject(), template, args);
+	}
+
+	public void log(SupportedProject project, Object template, Object... args) {
+		log(project.getProject(), template, args);
 	}
 
 	public void log(Project project, Object template, Object... args) {
@@ -54,10 +60,10 @@ public class Logger {
 	}
 
 	public void warn(ModuleIteration module, Object template, Object... args) {
-		warn(module.getProject(), template, args);
+		warn(module.getSupportedProject(), template, args);
 	}
 
-	public void warn(Project project, Object template, Object... args) {
+	public void warn(Named project, Object template, Object... args) {
 		warn(project.getName(), template, args);
 	}
 

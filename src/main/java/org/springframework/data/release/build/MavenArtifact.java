@@ -47,7 +47,7 @@ public class MavenArtifact {
 
 		Assert.notNull(module, "Module iteration must not be null!");
 
-		this.project = module.getModule().getProject();
+		this.project = module.getProject();
 		this.version = ArtifactVersion.of(module);
 	}
 

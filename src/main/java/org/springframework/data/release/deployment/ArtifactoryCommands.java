@@ -18,8 +18,11 @@ package org.springframework.data.release.deployment;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.util.stream.Stream;
+
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.shell.core.annotation.CliCommand;
 
 /**
@@ -35,6 +38,8 @@ class ArtifactoryCommands extends TimedCommand {
 
 	@CliCommand(value = "artifactory verify", help = "Verifies authentication at Artifactory.")
 	public void verify() {
-		deployment.verifyAuthentication();
+
+		Stream.of(SupportStatus.OSS, SupportStatus.COMMERCIAL)
+				.forEach(deployment::verifyAuthentication);
 	}
 }

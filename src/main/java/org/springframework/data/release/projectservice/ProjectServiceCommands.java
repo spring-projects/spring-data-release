@@ -19,9 +19,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,7 +27,6 @@ import java.util.stream.Stream;
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -63,15 +60,10 @@ class ProjectServiceCommands extends TimedCommand {
 	public void updateProjectInformation(@CliOption(key = "", mandatory = true) String trainNames) {
 
 		List<Train> trains = Stream.of(trainNames.split(","))//
-				.map(ReleaseTrains::getTrainByName) //
+				.map(ReleaseTrains::getTrainByName)
 				.collect(Collectors.toList());
 
-		// ensure we have all git repositories available
-		Set<Project> affectedProjects = new HashSet<>();
-		trains.stream() //
-				.flatMap(Streamable::stream) //
-				.forEach(it -> affectedProjects.add(it.getProject()));
-		ExecutionUtils.run(executor, Streamable.of(affectedProjects), git::update);
+		ExecutionUtils.run(executor, Streamable.of(trains), git::update);
 
 		projects.updateProjectMetadata(trains);
 	}

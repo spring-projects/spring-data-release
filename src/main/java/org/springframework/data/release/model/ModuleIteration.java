@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @EqualsAndHashCode
-public class ModuleIteration implements IterationVersion, ProjectAware {
+public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycle {
 
 	private final @Getter Module module;
 	private final @Getter TrainIteration trainIteration;
@@ -42,8 +42,8 @@ public class ModuleIteration implements IterationVersion, ProjectAware {
 	}
 
 	@Override
-	public Project getProject() {
-		return module.getProject();
+	public SupportedProject getSupportedProject() {
+		return trainIteration.getSupportedProject(module);
 	}
 
 	/*
@@ -150,6 +150,10 @@ public class ModuleIteration implements IterationVersion, ProjectAware {
 
 		String result = ArtifactVersion.of(this).toString();
 		return result.concat(" (").concat(trainIteration.toString()).concat(")");
+	}
+
+	public SupportStatus getSupportStatus() {
+		return getTrain().getSupportStatus();
 	}
 
 	/*

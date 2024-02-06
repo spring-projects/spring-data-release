@@ -26,13 +26,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.Train;
 
 /**
  * Integration tests for {@link DependencyOperations}.
@@ -41,6 +41,8 @@ import org.springframework.data.release.model.ReleaseTrains;
  */
 @Disabled
 class DependencyOperationsIntegrationTests extends AbstractIntegrationTests {
+
+	private static final Train LATEST = ReleaseTrains.latest();
 
 	@Autowired GitOperations git;
 	@Autowired DependencyOperations operations;
@@ -69,19 +71,22 @@ class DependencyOperationsIntegrationTests extends AbstractIntegrationTests {
 
 	@Test
 	void shouldReportExistingDependencyVersions() {
-		assertThat(operations.getCurrentDependencies(Projects.BUILD).isEmpty()).isFalse();
+		assertThat(operations.getCurrentDependencies(LATEST.getSupportedProject(Projects.BUILD)).isEmpty()).isFalse();
 	}
 
 	@Test
 	void shouldReportExistingOptionalDependencies() {
 
-		assertThat(operations.getCurrentDependencies(Projects.CASSANDRA).getVersions()).hasSize(1);
-		assertThat(operations.getCurrentDependencies(Projects.MONGO_DB).getVersions()).hasSize(2);
-		assertThat(operations.getCurrentDependencies(Projects.NEO4J).getVersions()).hasSize(1);
+		assertThat(operations.getCurrentDependencies(LATEST.getSupportedProject(Projects.CASSANDRA)).getVersions())
+				.hasSize(1);
+		assertThat(operations.getCurrentDependencies(LATEST.getSupportedProject(Projects.MONGO_DB)).getVersions())
+				.hasSize(2);
+		assertThat(operations.getCurrentDependencies(LATEST.getSupportedProject(Projects.NEO4J)).getVersions()).hasSize(1);
 	}
 
 	@Test
 	void getUpgradeProposals() {
-		System.out.println(operations.getDependencyUpgradeProposals(Projects.BUILD, Iteration.M1));
+		System.out
+				.println(operations.getDependencyUpgradeProposals(LATEST.getSupportedProject(Projects.BUILD), Iteration.M1));
 	}
 }

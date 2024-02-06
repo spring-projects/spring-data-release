@@ -27,9 +27,12 @@ public class Repository {
 	static Repository SNAPSHOT = new Repository("spring-snapshot", "https://repo.spring.io/snapshot", true, false);
 	static Repository MILESTONE = new Repository("spring-milestone", "https://repo.spring.io/milestone", null, null);
 
+	static Repository COMMERCIAL_SNAPSHOT = new Repository("spring-commercial-snapshot",
+			"https://repo.spring.vmware.com/artifactory/spring-commercial-snapshot-local", true, false);
+	static Repository COMMERCIAL_RELEASE = new Repository("spring-commercial-release",
+			"https://repo.spring.vmware.com/artifactory/spring-commercial", false, true);
+
 	String id, url;
 	Boolean snapshots;
 	Boolean releases;
-
-
 }

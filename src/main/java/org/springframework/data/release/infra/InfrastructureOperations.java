@@ -30,16 +30,15 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.io.FileUtils;
-
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.Branch;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.Tickets;
-import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -72,7 +71,7 @@ public class InfrastructureOperations extends TimedCommand {
 	 */
 	void distributeCiProperties(TrainIteration iteration) {
 
-		File master = workspace.getFile(CI_PROPERTIES, Projects.BUILD);
+		File master = workspace.getFile(CI_PROPERTIES, iteration.getSupportedProject(Projects.BUILD));
 
 		if (!master.exists()) {
 			throw new IllegalStateException(String.format("CI Properties file %s does not exist", master));
@@ -80,7 +79,7 @@ public class InfrastructureOperations extends TimedCommand {
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = module.getSupportedProject();
 			Branch branch = Branch.from(module);
 
 			git.update(project);
@@ -91,12 +90,12 @@ public class InfrastructureOperations extends TimedCommand {
 
 		ExecutionUtils.run(executor, Streamable.of(iteration.getModulesExcept(Projects.BUILD)), module -> {
 
-			File target = workspace.getFile(CI_PROPERTIES, module.getProject());
+			File target = workspace.getFile(CI_PROPERTIES, module.getSupportedProject());
 			target.delete();
 
 			FileUtils.copyFile(master, target);
 
-			git.add(module.getProject(), CI_PROPERTIES);
+			git.add(module.getSupportedProject(), CI_PROPERTIES);
 			git.commit(module, "Update CI properties.", Optional.empty(), false);
 			git.push(module);
 		});
@@ -104,8 +103,9 @@ public class InfrastructureOperations extends TimedCommand {
 
 	private void verifyExistingPropertyFiles(Train train, File master) {
 
-		for (Module module : train) {
-			File target = workspace.getFile(CI_PROPERTIES, module.getProject());
+		for (SupportedProject project : train) {
+
+			File target = workspace.getFile(CI_PROPERTIES, project);
 
 			if (!target.exists()) {
 				throw new IllegalStateException(String.format("CI Properties file %s does not exist", master));

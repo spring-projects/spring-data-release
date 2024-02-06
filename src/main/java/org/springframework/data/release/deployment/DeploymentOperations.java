@@ -17,6 +17,7 @@ package org.springframework.data.release.deployment;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -34,8 +35,8 @@ public class DeploymentOperations {
 	private final ArtifactoryClient client;
 	private final Logger logger;
 
-	public void verifyAuthentication() {
-		client.verify();
+	public void verifyAuthentication(SupportStatusAware status) {
+		client.verify(status);
 	}
 
 	/**
@@ -47,7 +48,7 @@ public class DeploymentOperations {
 
 		Assert.notNull(information, "DeploymentInformation must not be null!");
 
-		if (information.getModule().getIteration().isPublic()) {
+		if (information.isMavenCentral()) {
 			logger.log(information.getModule(),
 					"Skipping build promotion as it's a public version and was staged to OSS Sonatype.");
 			return;

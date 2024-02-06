@@ -46,7 +46,7 @@ import org.springframework.util.Assert;
 @Value
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(of = "name")
-public class Train implements Streamable<Module> {
+public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 
 	private final String name;
 	private final Modules modules;
@@ -54,7 +54,7 @@ public class Train implements Streamable<Module> {
 	private @With Iterations iterations;
 	private @With boolean alwaysUseBranch;
 	private JavaVersion javaVersion;
-
+	private @With SupportStatus supportStatus;
 	private @With DocumentationFormat documentationFormat;
 
 	public Train(String name, Module... modules) {
@@ -63,16 +63,7 @@ public class Train implements Streamable<Module> {
 
 	public Train(String name, Collection<Module> modules) {
 		this(name, Modules.of(modules), null, Iterations.DEFAULT, false, JavaVersion.VERSION_1_8,
-				DocumentationFormat.ASCIIDOC);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see java.lang.Iterable#iterator()
-	 */
-	@Override
-	public Iterator<Module> iterator() {
-		return modules.iterator();
+				SupportStatus.OSS, DocumentationFormat.ASCIIDOC);
 	}
 
 	public boolean contains(Project project) {
@@ -107,7 +98,9 @@ public class Train implements Streamable<Module> {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		return modules.stream().filter(module -> module.getProject().equals(project)).findFirst();
+		return modules.stream() //
+				.filter(module -> module.getProject().equals(project)) //
+				.findFirst();
 	}
 
 	/**
@@ -127,12 +120,13 @@ public class Train implements Streamable<Module> {
 								(it, additionalModule) -> it.hasSameProjectAs(additionalModule) ? additionalModule : it))
 				.collect(Collectors.toSet());
 
-		return new Train(name, Modules.of(modules), calver, iterations, false, javaVersion, documentationFormat);
+		return new Train(name, Modules.of(modules), calver, iterations, false, javaVersion, SupportStatus.OSS,
+				documentationFormat);
 	}
 
 	public Train filterModules(Predicate<Module> filterPredicate) {
 		return new Train(name, Modules.of(getModules().stream().filter(filterPredicate).collect(Collectors.toList())),
-				calver, iterations, alwaysUseBranch, javaVersion, documentationFormat);
+				calver, iterations, alwaysUseBranch, javaVersion, supportStatus, documentationFormat);
 	}
 
 	/**
@@ -193,7 +187,8 @@ public class Train implements Streamable<Module> {
 
 		}).collect(Collectors.toSet());
 
-		return new Train(name, Modules.of(modules), calver, iterations, alwaysUseBranch, javaVersion, documentationFormat);
+		return new Train(name, Modules.of(modules), calver, iterations, alwaysUseBranch, javaVersion, supportStatus,
+				documentationFormat);
 	}
 
 	/**
@@ -256,8 +251,34 @@ public class Train implements Streamable<Module> {
 		return doGetTrainIteration(iteration);
 	}
 
+	public SupportedProject getSupportedProject(Project project) {
+		return SupportedProject.of(project, supportStatus);
+	}
+
+	public SupportedProject getSupportedProject(Module module) {
+		return SupportedProject.of(module.getProject(), supportStatus);
+	}
+
 	protected TrainIteration doGetTrainIteration(Iteration iteration) {
 		return new TrainIteration(this, iteration);
+	}
+
+	/**
+	 * Returns all {@link SupportedProject} instances part of the current {@link Train}.
+	 *
+	 * @return will never be {@literal null}.
+	 */
+	public Streamable<SupportedProject> allProjects() {
+		return modules.map(this::getSupportedProject);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Iterable#iterator()
+	 */
+	@Override
+	public Iterator<SupportedProject> iterator() {
+		return modules.map(this::getSupportedProject).iterator();
 	}
 
 	/**

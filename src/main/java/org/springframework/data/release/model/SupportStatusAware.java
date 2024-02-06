@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,21 @@
 package org.springframework.data.release.model;
 
 /**
- * An object that is aware of a {@link Project}. Typically implemented by {@link Module} or {@link ModuleIteration}.
- *
- * @author Mark Paluch
  * @author Oliver Drotbohm
  */
-public interface ProjectAware extends SupportStatusAware {
+public interface SupportStatusAware {
 
-	SupportedProject getSupportedProject();
+	SupportStatus getSupportStatus();
 
-	default Project getProject() {
-		return getSupportedProject().getProject();
+	default boolean isOpenSource() {
+		return getSupportStatus().isOpenSource();
+	}
+
+	default boolean isCommercial() {
+		return getSupportStatus().isCommercial();
+	}
+
+	default boolean isEndOfLife() {
+		return getSupportStatus().isEndOfLife();
 	}
 }

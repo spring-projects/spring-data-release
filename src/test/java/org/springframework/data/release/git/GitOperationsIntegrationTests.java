@@ -26,12 +26,12 @@ import java.net.URLConnection;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.TestReleaseTrains;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 
 /**
@@ -40,6 +40,8 @@ import org.springframework.data.release.model.TrainIteration;
  */
 @Disabled
 class GitOperationsIntegrationTests extends AbstractIntegrationTests {
+
+	private static Train LATEST = ReleaseTrains.latest();
 
 	@Autowired GitOperations gitOperations;
 
@@ -66,7 +68,7 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 
 		gitOperations.update(TestReleaseTrains.SAMPLE);
 
-		assertThat(gitOperations.getTags(BUILD).asList()).isNotEmpty();
+		assertThat(gitOperations.getTags(LATEST.getSupportedProject(BUILD)).asList()).isNotEmpty();
 	}
 
 	@Test
@@ -76,7 +78,7 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 
 	@Test
 	void obtainsVersionTagsForRepoThatAlsoHasOtherTags() {
-		gitOperations.getTags(MONGO_DB);
+		gitOperations.getTags(LATEST.getSupportedProject(MONGO_DB));
 	}
 
 	@Test

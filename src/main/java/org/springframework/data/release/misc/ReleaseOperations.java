@@ -39,7 +39,7 @@ public class ReleaseOperations {
 
 		iteration.stream().forEach(module -> {
 
-			boolean processed = workspace.processFile("src/main/resources/notice.txt", module.getProject(),
+			boolean processed = workspace.processFile("src/main/resources/notice.txt", module.getSupportedProject(),
 					(line, number) -> Optional.of(number != 0 ? line : module.toString()));
 
 			if (processed) {

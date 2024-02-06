@@ -34,20 +34,40 @@ public class ReleaseTrains {
 
 	static {
 
-		CODD = codd();
-		DIJKSTRA = dijkstra();
-		EVANS = DIJKSTRA.next("Evans", Transition.MINOR);
-		FOWLER = EVANS.next("Fowler", Transition.MINOR);
-		GOSLING = FOWLER.next("Gosling", Transition.MINOR, new Module(KEY_VALUE, "1.0"));
-		HOPPER = GOSLING.next("Hopper", Transition.MINOR, new Module(SOLR, "2.0"), new Module(ENVERS, "1.0"),
-				new Module(NEO4J, "4.1"), new Module(COUCHBASE, "2.1"), new Module(ELASTICSEARCH, "2.0"));
-		INGALLS = HOPPER.next("Ingalls", Transition.MINOR, new Module(LDAP, "1.0"));
+		CODD = codd()
+				.withSupportStatus(SupportStatus.EOL);
+		DIJKSTRA = dijkstra()
+				.withSupportStatus(SupportStatus.EOL);
+		EVANS = DIJKSTRA.next("Evans", Transition.MINOR)
+				.withSupportStatus(SupportStatus.EOL);
+		FOWLER = EVANS.next("Fowler", Transition.MINOR)
+				.withSupportStatus(SupportStatus.EOL);
+		GOSLING = FOWLER.next("Gosling", Transition.MINOR,
+				new Module(KEY_VALUE, "1.0"))
+				.withSupportStatus(SupportStatus.EOL);
+		HOPPER = GOSLING.next("Hopper", Transition.MINOR,
+				new Module(SOLR, "2.0"),
+				new Module(ENVERS, "1.0"),
+				new Module(NEO4J, "4.1"),
+				new Module(COUCHBASE, "2.1"),
+				new Module(ELASTICSEARCH, "2.0"))
+				.withSupportStatus(SupportStatus.EOL);
 
-		KAY = INGALLS.next("Kay", Transition.MAJOR, new Module(GEODE, "2.0"));
+		INGALLS = HOPPER.next("Ingalls", Transition.MINOR,
+				new Module(LDAP, "1.0"))
+				.withSupportStatus(SupportStatus.EOL);
 
-		LOVELACE = KAY.next("Lovelace", Transition.MINOR, new Module(JDBC, "1.0"), new Module(SOLR, "4.0"));
+		KAY = INGALLS.next("Kay", Transition.MAJOR,
+				new Module(GEODE, "2.0")) //
+				.withSupportStatus(SupportStatus.EOL);
 
-		MOORE = LOVELACE.next("Moore", Transition.MINOR);
+		LOVELACE = KAY.next("Lovelace", Transition.MINOR, //
+				new Module(JDBC, "1.0"), //
+				new Module(SOLR, "4.0")) //
+				.withSupportStatus(SupportStatus.EOL);
+
+		MOORE = LOVELACE.next("Moore", Transition.MINOR)
+				.withSupportStatus(SupportStatus.EOL);
 
 		NEUMANN = MOORE.next("Neumann", Transition.MINOR, //
 				new Module(COUCHBASE, "4.0"), //
@@ -56,21 +76,28 @@ public class ReleaseTrains {
 				new Module(MONGO_DB, "3.0"), //
 				new Module(JDBC, "2.0"), //
 				new Module(R2DBC, "1.1")) //
-				.filterModules(module -> !module.getProject().getName().equalsIgnoreCase("GemFire"));
+				.filterModules(module -> !module.getProject().getName().equalsIgnoreCase("GemFire"))
+				.withSupportStatus(SupportStatus.EOL);
 
 		OCKHAM = NEUMANN.next("Ockham", Transition.MINOR, //
 				new Module(BOM, "2020.0.0"), //
 				new Module(NEO4J, "6.0") //
-		).withIterations(Train.Iterations.DEFAULT).withCalver("2020.0");
+		).withIterations(Train.Iterations.DEFAULT)
+				.withCalver("2020.0") //
+				.withSupportStatus(SupportStatus.EOL);
 
 		PASCAL = OCKHAM.next("Pascal", Transition.MINOR) //
-				.filterModules(module -> !module.getProject().equals(SOLR)).withCalver("2021.0");
+				.filterModules(module -> !module.getProject().equals(SOLR)) //
+				.withCalver("2021.0") //
+				.withSupportStatus(SupportStatus.EOL);
 
 		Q = PASCAL.next("Q", Transition.MINOR) //
-				.withCalver("2021.1");
+				.withCalver("2021.1") //
+				.withSupportStatus(SupportStatus.EOL);
 
 		RAJ = Q.next("Raj", Transition.MINOR) //
-				.withCalver("2021.2");
+				.withCalver("2021.2") //
+				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		TURING = PASCAL.next("Turing", Transition.MAJOR, //
 				new Module(RELATIONAL, "3.0")) //
@@ -78,7 +105,8 @@ public class ReleaseTrains {
 				.filterModules(module -> !module.getProject().equals(ENVERS))
 				.filterModules(module -> !module.getProject().equals(GEODE))
 				.filterModules(module -> !module.getProject().equals(R2DBC))
-				.filterModules(module -> !module.getProject().equals(JDBC)); // filter "old" JDBC without R2DBC submodule
+				.filterModules(module -> !module.getProject().equals(JDBC)) // filter "old" JDBC without R2DBC submodule
+				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		ULLMAN = TURING.next("Ullman", Transition.MINOR) //
 				.withCalver("2023.0");
@@ -156,5 +184,9 @@ public class ReleaseTrains {
 
 	public static List<Train> trains() {
 		return TRAINS;
+	}
+
+	public static Train latest() {
+		return TRAINS.get(TRAINS.size() - 1);
 	}
 }

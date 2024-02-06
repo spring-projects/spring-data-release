@@ -54,6 +54,7 @@ pipeline {
 				GITHUB = credentials('3a20bcaa-d8ad-48e3-901d-9fbc941376ee')
 				GITHUB_TOKEN = credentials('7b3ebbea-7001-479b-8578-b8c464dab973')
 				REPO_SPRING_IO = credentials('repo_spring_io-jenkins-release-token')
+				COMMERCIAL = credentials('repo_spring_vmware_com-jenkins-token')
 				ARTIFACTORY = credentials('02bd1690-b54f-4c9f-819d-a77cb7a9822c')
 				STAGING_PROFILE_ID = credentials('spring-data-release-deployment-maven-central-staging-profile-id')
 				MAVEN_SIGNING_KEY = credentials('spring-gpg-private-key')

@@ -18,11 +18,12 @@ package org.springframework.data.release.deployment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.model.Password;
 import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.data.release.utils.Logger;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -36,23 +37,30 @@ class DeploymentConfiguration {
 	@Autowired DeploymentProperties properties;
 
 	@Bean
-	public ArtifactoryClient client(Logger logger, RestTemplate artifactoryRestTemplate) {
-		return new ArtifactoryClient(artifactoryRestTemplate, logger, properties);
+	ArtifactoryClient client(Logger logger, RestOperations operations) {
+		return new ArtifactoryClient(logger, properties, operations);
 	}
 
 	@Bean
-	public RestTemplate artifactoryRestTemplate() {
+	RestTemplate artifactoryRestTemplateFactory(DeploymentProperties properties, Logger logger) {
 
-		RestTemplate template = new RestTemplate();
+		HttpComponentsClientHttpRequestFactoryBuilder builder = HttpComponentsClientHttpRequestFactoryBuilder.builder();
 
-		HttpComponentsClientHttpRequestFactory factory = HttpComponentsClientHttpRequestFactoryBuilder.builder()
-				.withAuthentication(properties.getServer().getUri(),
-						new HttpBasicCredentials(properties.getUsername(), Password.of(properties.getApiKey())))
-				.build();
+		for (Authentication authentication : properties.getAuthentications()) {
 
-		template.setRequestFactory(factory);
+			String uri = authentication.getServer().getUri();
 
-		return template;
+			if (authentication.hasCredentials()) {
+
+				HttpBasicCredentials credentials = new HttpBasicCredentials(authentication.getUsername(),
+						Password.of(authentication.getApiKey()));
+				builder = builder.withAuthentication(uri, credentials);
+
+			} else {
+				logger.warn("Infrastructure", "No credentials configured for repository %s!", uri);
+			}
+		}
+
+		return new RestTemplate(builder.build());
 	}
-
 }

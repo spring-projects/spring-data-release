@@ -15,21 +15,7 @@
  */
 package org.springframework.data.release.issues;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.List;
-
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -39,16 +25,11 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.release.issues.github.GitHubProperties;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.utils.HttpBasicCredentials;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
-import org.springframework.data.util.Lazy;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.plugin.core.OrderAwarePluginRegistry;
 import org.springframework.plugin.core.PluginRegistry;
 
 import com.fasterxml.jackson.annotation.JsonCreator.Mode;
@@ -106,8 +87,8 @@ class IssueTrackerConfiguration {
 	}
 
 	@Bean
-	PluginRegistry<IssueTracker, Project> issueTrackers(List<? extends IssueTracker> plugins) {
-		return OrderAwarePluginRegistry.of(plugins);
+	PluginRegistry<IssueTracker, SupportedProject> issueTrackers(List<? extends IssueTracker> plugins) {
+		return PluginRegistry.of(plugins);
 	}
 
 	/**

@@ -36,6 +36,7 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -54,7 +55,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 class GitCommands extends TimedCommand {
 
-	private final PluginRegistry<IssueTracker, Project> trackers;
+	private final PluginRegistry<IssueTracker, SupportedProject> trackers;
 	private final @NonNull GitOperations git;
 	private final @NonNull Executor executor;
 
@@ -75,11 +76,13 @@ class GitCommands extends TimedCommand {
 	}
 
 	@CliCommand("git tags")
-	public String tags(@CliOption(key = { "project" }, mandatory = true) String projectName) throws Exception {
+	public String tags(
+			@CliOption(key = { "project" }, mandatory = true) String projectName,
+			@CliOption(key = { "", "train" }, mandatory = true) Train train) throws Exception {
 
 		Project project = ReleaseTrains.getProjectByName(projectName);
 
-		return StringUtils.collectionToDelimitedString(git.getTags(project).asList(), "\n");
+		return StringUtils.collectionToDelimitedString(git.getTags(train.getSupportedProject(project)).asList(), "\n");
 	}
 
 	@CliCommand("git previous")
@@ -96,7 +99,7 @@ class GitCommands extends TimedCommand {
 		if (StringUtils.hasText(moduleName)) {
 
 			ModuleIteration module = iteration.getModule(Projects.requiredByName(moduleName));
-			List<TicketReference> ticketRefs = git.getTicketReferencesBetween(module.getProject(), previousIteration,
+			List<TicketReference> ticketRefs = git.getTicketReferencesBetween(module.getSupportedProject(), previousIteration,
 					iteration);
 
 			Changelog changelog = Changelog.of(module, toTickets(module, ticketRefs));
@@ -105,15 +108,16 @@ class GitCommands extends TimedCommand {
 		}
 
 		return ExecutionUtils
-				.runAndReturn(executor, iteration, module -> changelog(iteration, module.getModule().getProject().getName())) //
+				.runAndReturn(executor, iteration,
+						module -> changelog(iteration, module.getModule().getProject().getName())) //
 				.stream() //
 				.collect(Collectors.joining("\n"));
 	}
 
 	private Tickets toTickets(ModuleIteration module, List<TicketReference> ticketReferences) {
 
-		IssueTracker issueTracker = trackers.getRequiredPluginFor(module.getProject(),
-				() -> String.format("No issue tracker found for project %s!", module.getProject()));
+		IssueTracker issueTracker = trackers.getRequiredPluginFor(module.getSupportedProject(),
+				() -> String.format("No issue tracker found for project %s!", module.getSupportedProject()));
 
 		List<String> ticketIds = ticketReferences.stream().map(TicketReference::getId).collect(Collectors.toList());
 
@@ -174,12 +178,14 @@ class GitCommands extends TimedCommand {
 	 * @throws Exception
 	 */
 	@CliCommand("git issuebranches")
-	public Table issuebranches(@CliOption(key = { "" }, mandatory = true) String projectName,
+	public Table issuebranches(
+			@CliOption(key = "", mandatory = true) String projectName,
+			@CliOption(key = "train", mandatory = true) Train train,
 			@CliOption(key = "resolved", unspecifiedDefaultValue = "false", specifiedDefaultValue = "true") Boolean resolved)
 			throws Exception {
 
 		Project project = ReleaseTrains.getProjectByName(projectName);
-		TicketBranches ticketBranches = git.listTicketBranches(project);
+		TicketBranches ticketBranches = git.listTicketBranches(train.getSupportedProject(project));
 
 		Table table = new Table();
 		table.addHeader(1, new TableHeader("Branch"));

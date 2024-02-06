@@ -15,6 +15,7 @@
  */
 package org.springframework.data.release.deployment;
 
+import java.net.URI;
 import java.util.Map;
 
 import org.springframework.data.release.model.ModuleIteration;
@@ -40,6 +41,14 @@ public interface DeploymentInformation {
 	String getBuildNumber();
 
 	/**
+	 * A project assignment on the server. JFrog uses this to group different builds into build info repositories in
+	 * Artifactory.
+	 *
+	 * @return
+	 */
+	String getProject();
+
+	/**
 	 * Returns the full URL to be used as deployment target.
 	 *
 	 * @return will never be {@literal null} or empty.
@@ -52,6 +61,10 @@ public interface DeploymentInformation {
 	 * @return will never be {@literal null} or empty.
 	 */
 	String getTargetRepository();
+
+	URI getPromotionResource();
+
+	URI getDeleteBuildResource();
 
 	/**
 	 * Staging repository identifier.
@@ -75,4 +88,6 @@ public interface DeploymentInformation {
 	Map<String, Object> getBuildInfoParameters();
 
 	DeploymentInformation withModule(ModuleIteration module);
+
+	boolean isMavenCentral();
 }

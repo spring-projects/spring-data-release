@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
  */
 @Value
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Module implements VersionAware, ProjectAware, Comparable<Module> {
+public class Module implements VersionAware, Comparable<Module> {
 
 	Project project;
 	Version version;

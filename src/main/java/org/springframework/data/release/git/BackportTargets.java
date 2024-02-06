@@ -45,7 +45,8 @@ class BackportTargets implements Iterable<Branch> {
 
 		this.source = Branch.from(module);
 
-		Stream<Branch> branches = targets.stream().map(target -> target.getModuleIfAvailable(module.getProject()))//
+		Stream<Branch> branches = targets.stream() //
+				.map(target -> target.getModuleIfAvailable(module.getSupportedProject().getProject()))//
 				.flatMap(o -> o.map(Stream::of).orElse(Stream.empty()))//
 				.map(Branch::from);
 

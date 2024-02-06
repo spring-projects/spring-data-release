@@ -48,18 +48,11 @@ import org.springframework.data.release.build.Pom.Artifact;
 import org.springframework.data.release.deployment.DefaultDeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentProperties;
+import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.deployment.DeploymentProperties.MavenCentral;
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.io.Workspace;
-import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.Gpg;
-import org.springframework.data.release.model.JavaVersion;
-import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Phase;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.ProjectAware;
-import org.springframework.data.release.model.TrainIteration;
-import org.springframework.data.release.model.Version;
+import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -107,17 +100,18 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public <M extends ProjectAware> M updateProjectDescriptors(M module, UpdateInformation information) {
 
-		PomUpdater updater = new PomUpdater(logger, information, module.getProject());
+		PomUpdater updater = new PomUpdater(logger, information, module.getSupportedProject());
+		TrainIteration train = information.getTrain();
 
 		if (updater.isBuildProject()) {
 
 			if (information.isBomInBuildProject()) {
-				updateBom(updater, information, "bom/pom.xml", BUILD);
+				updateBom(updater, information, "bom/pom.xml", train.getSupportedProject(BUILD));
 			}
 
 			updateParentPom(updater, information);
 		} else if (updater.isBomProject()) {
-			updateBom(updater, information, "bom/pom.xml", BOM);
+			updateBom(updater, information, "bom/pom.xml", train.getSupportedProject(BOM));
 		} else {
 
 			doWithProjection(workspace.getFile(POM_XML, updater.getProject()), pom -> {
@@ -138,12 +132,12 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public ModuleIteration prepareVersion(ModuleIteration module, Phase phase) {
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 		UpdateInformation information = UpdateInformation.of(module.getTrainIteration(), phase);
 
 		CommandLine goals = CommandLine.of(goal("versions:set"), goal("versions:commit"));
 
-		if (BOM.equals(project)) {
+		if (BOM.equals(module.getProject())) {
 
 			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
 					.and(arg("generateBackupPoms").withValue("false")));
@@ -154,11 +148,12 @@ class MavenBuildSystem implements BuildSystem {
 					.and(Argument.of("-pl").withValue("bom")));
 
 		} else {
-			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getProjectVersionToSet(project)))
-					.and(arg("generateBackupPoms").withValue("false")));
+			mvn.execute(project,
+					goals.and(arg("newVersion").withValue(information.getProjectVersionToSet(project.getProject())))
+							.and(arg("generateBackupPoms").withValue("false")));
 		}
 
-		if (BUILD.equals(project)) {
+		if (BUILD.equals(module.getProject())) {
 
 			if (!module.getTrain().usesCalver()) {
 				mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
@@ -179,7 +174,7 @@ class MavenBuildSystem implements BuildSystem {
 	 */
 	public <M extends ProjectAware> M triggerPreReleaseCheck(M module) {
 
-		mvn.execute(module.getProject(), CommandLine.of(Goal.CLEAN, Goal.VALIDATE, profile("pre-release")));
+		mvn.execute(module.getSupportedProject(), CommandLine.of(Goal.CLEAN, Goal.VALIDATE, profile("pre-release")));
 
 		return module;
 	}
@@ -188,7 +183,7 @@ class MavenBuildSystem implements BuildSystem {
 	 * Perform a {@literal nexus-staging:rc-open} and extract the {@code stagingProfileId} from the results.
 	 */
 	@Override
-	public StagingRepository open() {
+	public StagingRepository open(Train train) {
 
 		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be null");
 		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
@@ -199,7 +194,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"))
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
 
-		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(BUILD, arguments);
+		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(train.getSupportedProject(BUILD), arguments);
 
 		List<String> rcOpenLogContents = invocationResult.getLog();
 
@@ -220,7 +215,7 @@ class MavenBuildSystem implements BuildSystem {
 	 * Perform a {@literal nexus-staging:rc-close}.
 	 */
 	@Override
-	public void close(StagingRepository stagingRepository) {
+	public void close(Train train, StagingRepository stagingRepository) {
 
 		Assert.notNull(stagingRepository, "StagingRepository must not be null");
 		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
@@ -230,7 +225,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
 
-		mvn.execute(BUILD, arguments);
+		mvn.execute(train.getSupportedProject(BUILD), arguments);
 	}
 
 	/*
@@ -241,10 +236,10 @@ class MavenBuildSystem implements BuildSystem {
 	public <M extends ProjectAware> M triggerBuild(M module) {
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
-				.and(profile("ci,release")).andIf(module.getProject().skipTests(), SKIP_TESTS)
+				.and(profile("ci,release")).andIf(module.getSupportedProject().getProject().skipTests(), SKIP_TESTS)
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
 
-		mvn.execute(module.getProject(), arguments);
+		mvn.execute(module.getSupportedProject(), arguments);
 
 		return module;
 	}
@@ -299,24 +294,31 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.notNull(information, "Deployment information must not be null!");
 
-		if (!module.getIteration().isPreview()) {
-			logger.log(module, "Not a preview version (milestone or release candidate). Skipping Artifactory deployment.");
+		boolean isCommercialRelease = module.isCommercial();
+
+		if (!module.getIteration().isPreview() && !isCommercialRelease) {
+			logger.log(module,
+					"Not a preview version (milestone or release candidate) or commercial release. Skipping Artifactory deployment.");
 			return;
 		}
 
-		logger.log(module, "Deploying artifacts to Spring Artifactory…");
+		logger.log(module,
+				String.format("Deploying artifacts to Spring %sArtifactory…", isCommercialRelease ? "Commercial " : ""));
+
+		Authentication authentication = properties.getAuthentication(module);
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				profile("ci,release,artifactory"), //
 				SKIP_TESTS, //
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.staging-repository").withValue(properties.getStagingRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword()),
+				arg("artifactory.server").withValue(authentication.getServer().getUri()),
+				arg("artifactory.staging-repository").withValue(authentication.getStagingRepository()),
+				arg("artifactory.username").withValue(authentication.getUsername()),
+				arg("artifactory.password").withValue(authentication.getPassword()),
 				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
-				arg("artifactory.build-number").withValue(information.getBuildNumber()));
+				arg("artifactory.build-number").withValue(information.getBuildNumber()),
+				arg("artifactory.project").withValue(information.getProject()));
 
-		mvn.execute(module.getProject(), arguments);
+		mvn.execute(module.getSupportedProject(), arguments);
 	}
 
 	/**
@@ -331,9 +333,8 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.notNull(deploymentInformation, "DeploymentInformation iteration must not be null!");
 
-		if (!module.getIteration().isPublic()) {
-
-			logger.log(module, "Skipping deployment to Maven Central as it's not a public version!");
+		if (!module.isPublic()) {
+			logger.log(module, "Skipping deployment to Maven Central as it's not a public version or a commercial release!");
 			return;
 		}
 
@@ -352,7 +353,7 @@ class MavenBuildSystem implements BuildSystem {
 						() -> arg("stagingRepositoryId").withValue(deploymentInformation.getStagingRepositoryId()))
 				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
-		mvn.execute(module.getProject(), arguments);
+		mvn.execute(module.getSupportedProject(), arguments);
 	}
 
 	@Override
@@ -363,12 +364,13 @@ class MavenBuildSystem implements BuildSystem {
 
 		logger.log(iteration, "🚬 Running smoke test…");
 
-		boolean mavenCentral = iteration.getIteration().isPublic();
+		boolean mavenCentral = iteration.isPublic();
 		String profile = mavenCentral ? "maven-central" : "artifactory";
 
 		ModuleIteration module = iteration.getModule(BUILD);
 
-		doWithProjection(workspace.getFile(POM_XML, SMOKE_TESTS), pom -> {
+		SupportedProject smokeTests = iteration.getSupportedProject(SMOKE_TESTS);
+		doWithProjection(workspace.getFile(POM_XML, smokeTests), pom -> {
 
 			Version version = module.getVersion();
 			String targetBootVersion = version.getMajor() == 2 ? "2.7.8" : "3.0.2";
@@ -381,7 +383,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("spring-data-bom.version").withValue(iteration.getReleaseTrainNameAndVersion())) //
 				.andIf(mavenCentral, arg("stagingRepository").withValue(stagingRepository.getId()));
 
-		mvn.execute(SMOKE_TESTS, arguments);
+		mvn.execute(smokeTests, arguments);
 
 		logger.log(iteration, "✅ Smoke tests passed. Do not smoke 🚭. It's unhealthy.");
 	}
@@ -390,7 +392,7 @@ class MavenBuildSystem implements BuildSystem {
 	 * Perform a {@literal nexus-staging:rc-release}.
 	 */
 	@Override
-	public void release(StagingRepository stagingRepository) {
+	public void release(Train train, StagingRepository stagingRepository) {
 
 		Assert.notNull(stagingRepository, "StagingRepository must not be null");
 		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
@@ -400,17 +402,17 @@ class MavenBuildSystem implements BuildSystem {
 				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
 
-		mvn.execute(BUILD, arguments);
+		mvn.execute(train.getSupportedProject(BUILD), arguments);
 	}
 
 	@Override
 	public <M extends ProjectAware> M triggerDocumentationBuild(M module) {
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 
 		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.INSTALL, SKIP_TESTS, profile("distribute")));
-
 		logger.log(project, "Successfully finished documentation build.");
+
 		return module;
 	}
 
@@ -431,33 +433,38 @@ class MavenBuildSystem implements BuildSystem {
 			return module;
 		}
 
-		if (!isMavenProject(project)) {
+		SupportedProject supportedProject = module.getSupportedProject();
+
+		if (!isMavenProject(supportedProject)) {
 			logger.log(project, "Skipping project as no pom.xml could be found in the working directory!");
 			return module;
 		}
 
 		logger.log(project, "Triggering distribution build…");
 
-		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
-				SKIP_TESTS, profile("distribute"), Argument.of("-B"),
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword())));
+		Authentication authentication = properties.getAuthentication(module);
 
-		mvn.execute(project, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+		mvn.execute(supportedProject, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
+				SKIP_TESTS, profile("distribute"), Argument.of("-B"),
+				arg("artifactory.server").withValue(authentication.getServer().getUri()),
+				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
+				arg("artifactory.username").withValue(authentication.getUsername()),
+				arg("artifactory.password").withValue(authentication.getPassword())));
+
+		mvn.execute(supportedProject, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				SKIP_TESTS, profile("distribute-schema"), Argument.of("-B"),
-				arg("artifactory.server").withValue(properties.getServer().getUri()),
-				arg("artifactory.distribution-repository").withValue(properties.getDistributionRepository()),
-				arg("artifactory.username").withValue(properties.getUsername()),
-				arg("artifactory.password").withValue(properties.getPassword())));
+				arg("artifactory.server").withValue(authentication.getServer().getUri()),
+				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
+				arg("artifactory.username").withValue(authentication.getUsername()),
+				arg("artifactory.password").withValue(authentication.getPassword())));
 
 		logger.log(project, "Successfully finished distribution build!");
 
 		return module;
 	}
 
-	private void updateBom(PomUpdater updater, UpdateInformation updateInformation, String file, Project project) {
+	private void updateBom(PomUpdater updater, UpdateInformation updateInformation, String file,
+			SupportedProject project) {
 
 		TrainIteration iteration = updateInformation.getTrain();
 
@@ -506,23 +513,22 @@ class MavenBuildSystem implements BuildSystem {
 	private void updateParentPom(PomUpdater updater, UpdateInformation information) {
 
 		// Fix version of shared resources to to-be-released version.
-		doWithProjection(workspace.getFile("parent/pom.xml", BUILD), ParentPom.class, pom -> {
+		doWithProjection(workspace.getFile("parent/pom.xml", information.getSupportedProject(BUILD)), ParentPom.class,
+				pom -> {
 
-			logger.log(BUILD, "Setting shared resources version to %s.", information.getParentVersionToSet());
-			pom.setSharedResourcesVersion(information.getParentVersionToSet());
+					logger.log(BUILD, "Setting shared resources version to %s.", information.getParentVersionToSet());
+					pom.setSharedResourcesVersion(information.getParentVersionToSet());
 
-			logger.log(BUILD, "Setting releasetrain property to %s.", information.getReleaseTrainVersion());
-			pom.setReleaseTrain(information.getReleaseTrainVersion());
+					logger.log(BUILD, "Setting releasetrain property to %s.", information.getReleaseTrainVersion());
+					pom.setReleaseTrain(information.getReleaseTrainVersion());
 
-			updater.updateRepository(pom);
-		});
+					updater.updateRepository(pom);
+				});
 	}
 
 	public boolean isMavenProject(ModuleIteration module) {
 
-		Project project = module.getProject();
-
-		if (!isMavenProject(project)) {
+		if (!isMavenProject(module.getSupportedProject())) {
 			logger.log(module, "No pom.xml file found, skipping project.");
 			return false;
 		}
@@ -535,7 +541,7 @@ class MavenBuildSystem implements BuildSystem {
 	 * @see org.springframework.data.release.build.BuildSystem#verify()
 	 */
 	@Override
-	public void verify() {
+	public void verify(Train train) {
 
 		logger.log(BUILD, "Verifying Maven Build System…");
 
@@ -549,21 +555,26 @@ class MavenBuildSystem implements BuildSystem {
 				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
 				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
-		mvn.execute(BUILD, arguments);
+		mvn.execute(train.getSupportedProject(BUILD), arguments);
 	}
 
 	@Override
-	public void verifyStagingAuthentication() {
+	public void verifyStagingAuthentication(Train train) {
 
-		logger.log(BUILD, "Verifying Maven Staging Authentication…");
+		if (train.isOpenSource()) {
 
-		mvn.execute(BUILD, CommandLine.of(goal("nexus-staging:rc-list-profiles"), //
-				profile("central")));
+			logger.log(BUILD, "Verifying Maven Staging Authentication…");
 
-		Assert.notNull(properties.getMavenCentral(),
-				"Maven Central properties are not set (deployment.maven-central.staging-profile-id=…)");
-		Assert.hasText(properties.getMavenCentral().getStagingProfileId(),
-				"Staging Profile Id is not set (deployment.maven-central.staging-profile-id=…)");
+			mvn.execute(train.getSupportedProject(BUILD), //
+					CommandLine.of(goal("nexus-staging:rc-list-profiles"), //
+							profile("central")));
+
+			Assert.notNull(properties.getMavenCentral(),
+					"Maven Central properties are not set (deployment.maven-central.staging-profile-id=…)");
+			Assert.hasText(properties.getMavenCentral().getStagingProfileId(),
+					"Staging Profile Id is not set (deployment.maven-central.staging-profile-id=…)");
+			return;
+		}
 	}
 
 	/*
@@ -571,11 +582,11 @@ class MavenBuildSystem implements BuildSystem {
 	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
 	 */
 	@Override
-	public boolean supports(Project project) {
+	public boolean supports(SupportedProject project) {
 		return isMavenProject(project);
 	}
 
-	private boolean isMavenProject(Project project) {
+	private boolean isMavenProject(SupportedProject project) {
 		return workspace.getFile(POM_XML, project).exists();
 	}
 

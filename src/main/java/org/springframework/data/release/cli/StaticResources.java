@@ -23,7 +23,6 @@ import org.springframework.data.release.git.VersionTags;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.DocumentationMetadata;
 import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
 
 /**
  * @author Oliver Gierke
@@ -40,8 +39,7 @@ public class StaticResources {
 
 		this.metadata = DocumentationMetadata.of(module, ArtifactVersion.of(module), false);
 
-		Project project = module.getProject();
-		GitProject gitProject = GitProject.of(project);
+		GitProject gitProject = GitProject.of(module);
 		Tag tag = VersionTags.empty(module.getProject()).createTag(module);
 
 		this.releaseUrl = String.format("%s/releases/tag/%s", gitProject.getProjectUri(), tag.getName());

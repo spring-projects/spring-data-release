@@ -19,10 +19,8 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.release.model.Project;
-import org.springframework.plugin.core.OrderAwarePluginRegistry;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.plugin.core.PluginRegistry;
-
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.XBProjector.Flags;
 import org.xmlbeam.config.DefaultXMLFactoriesConfig;
@@ -37,8 +35,8 @@ import org.xmlbeam.config.DefaultXMLFactoriesConfig.NamespacePhilosophy;
 class BuildConfiguration {
 
 	@Bean
-	public PluginRegistry<BuildSystem, Project> buildSystems(List<? extends BuildSystem> buildSystems) {
-		return OrderAwarePluginRegistry.create(buildSystems);
+	public PluginRegistry<BuildSystem, SupportedProject> buildSystems(List<? extends BuildSystem> buildSystems) {
+		return PluginRegistry.of(buildSystems);
 	}
 
 	@Bean

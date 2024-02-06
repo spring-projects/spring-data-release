@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.util.Streamable;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -104,19 +105,19 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 	}
 
 	/**
-	 * Retrieve upgradable dependencies for a {@link Project}.
+	 * Retrieve upgradable dependencies for a {@link SupportedProject}.
 	 *
 	 * @param project
 	 * @return
 	 * @throws IllegalArgumentException if the project has no upgradable dependencies.
 	 */
-	public static ProjectDependencies get(Project project) {
+	public static ProjectDependencies get(SupportedProject project) {
 
-		if (!containsProject(project)) {
+		if (!containsProject(project.getProject())) {
 			throw new IllegalArgumentException(String.format("No dependency configuration for %s!", project));
 		}
 
-		return new ProjectDependencies(config.get(project));
+		return new ProjectDependencies(config.get(project.getProject()));
 	}
 
 	/**

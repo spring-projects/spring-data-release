@@ -29,6 +29,7 @@ import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.util.Assert;
 
@@ -93,16 +94,20 @@ public class UpdateInformation {
 		if (phase == Phase.PREPARE) {
 
 			Iteration iteration = train.getIteration();
+
 			if (iteration.isMilestone() || iteration.isReleaseCandidate()) {
 				return Collections.singletonList(Repository.MILESTONE);
 			}
 		}
 
 		if (phase == Phase.CLEANUP || phase == Phase.MAINTENANCE) {
-			return Arrays.asList(Repository.SNAPSHOT, Repository.MILESTONE);
+
+			return train.isCommercial()
+					? Arrays.asList(Repository.COMMERCIAL_SNAPSHOT, Repository.COMMERCIAL_RELEASE)
+					: Arrays.asList(Repository.SNAPSHOT, Repository.MILESTONE);
 		}
 
-		return Collections.emptyList();
+		return train.isCommercial() ? Arrays.asList(Repository.COMMERCIAL_RELEASE) : Collections.emptyList();
 	}
 
 	/**
@@ -141,5 +146,9 @@ public class UpdateInformation {
 
 	public boolean isBomInBuildProject() {
 		return !train.getTrain().usesCalver();
+	}
+
+	public SupportedProject getSupportedProject(Project project) {
+		return train.getSupportedProject(project);
 	}
 }

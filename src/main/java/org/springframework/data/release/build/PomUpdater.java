@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.springframework.data.release.build.Pom.RepositoryElementFactory;
 import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.util.Assert;
 
@@ -37,26 +37,26 @@ class PomUpdater {
 
 	private final Logger logger;
 	private final UpdateInformation information;
-	private final @Getter Project project;
+	private final @Getter SupportedProject project;
 
 	public boolean isBuildProject() {
-		return BUILD.equals(project);
+		return BUILD.equals(project.getProject());
 	}
 
 	public boolean isBomProject() {
-		return BOM.equals(project);
+		return BOM.equals(project.getProject());
 	}
 
 	public void updateArtifactVersion(Pom pom) {
 
-		ArtifactVersion version = information.getProjectVersionToSet(project);
+		ArtifactVersion version = information.getProjectVersionToSet(project.getProject());
 		logger.log(project, "Updated project version to %s.", version);
 		pom.setVersion(version);
 	}
 
 	public void updateDependencyProperties(Pom pom) {
 
-		project.getDependencies().forEach(dependency -> {
+		project.getProject().getDependencies().forEach(dependency -> {
 
 			String dependencyProperty = dependency.getDependencyProperty();
 

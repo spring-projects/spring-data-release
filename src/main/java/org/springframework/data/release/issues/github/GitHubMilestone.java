@@ -41,7 +41,9 @@ class GithubMilestone {
 	 */
 	@Override
 	public String toString() {
-		return module.getProject().isUseShortVersionMilestones() ? module.getReleaseVersionString()
+
+		return module.getSupportedProject().getProject().isUseShortVersionMilestones()
+				? module.getReleaseVersionString()
 				: module.getMediumVersionString();
 	}
 }

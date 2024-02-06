@@ -29,12 +29,11 @@ import java.util.stream.Collectors;
 import org.assertj.core.util.VisibleForTesting;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.StagingRepository;
-import org.springframework.data.release.model.Iteration;
-import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.ProjectAware;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
@@ -52,7 +51,7 @@ import org.springframework.util.Assert;
 @RequiredArgsConstructor
 public class BuildOperations {
 
-	private final @NonNull PluginRegistry<BuildSystem, Project> buildSystems;
+	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
 	private final @NonNull Logger logger;
 	private final @NonNull MavenProperties properties;
 	private final @NonNull BuildExecutor executor;
@@ -117,7 +116,7 @@ public class BuildOperations {
 	 */
 	public void open(ModuleIteration iteration) {
 
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open());
+		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open(iteration.getTrain()));
 	}
 
 	/**
@@ -131,8 +130,10 @@ public class BuildOperations {
 		Assert.notNull(stagingRepository, "StagingRepository must not be null");
 		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
 
+		Train train = iteration.getTrain();
+
 		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
-			buildSystem.close(stagingRepository);
+			buildSystem.close(train, stagingRepository);
 			return null;
 		});
 	}
@@ -145,7 +146,7 @@ public class BuildOperations {
 	 */
 	public void build(TrainIteration iteration) {
 
-		executor.doWithBuildSystemOrdered(iteration, BuildSystem::triggerBuild);
+		executor.doWithBuildSystemOrdered(iteration, (it, l) -> it.triggerBuild(l));
 
 		logger.log(iteration, "Build finished");
 	}
@@ -156,11 +157,11 @@ public class BuildOperations {
 	 * @param iteration
 	 * @return
 	 */
-	public StagingRepository openStagingRepository(Iteration iteration) {
+	public StagingRepository openStagingRepository(TrainIteration iteration) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(iteration.getSupportedProject(Projects.BUILD));
 
-		return iteration.isPublic() ? orchestrator.open() : StagingRepository.EMPTY;
+		return iteration.isPublic() ? orchestrator.open(iteration.getTrain()) : StagingRepository.EMPTY;
 	}
 
 	/**
@@ -169,27 +170,28 @@ public class BuildOperations {
 	 * @param stagingRepository
 	 * @return
 	 */
-	public void closeStagingRepository(StagingRepository stagingRepository) {
+	public void closeStagingRepository(Train train, StagingRepository stagingRepository) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(train.getSupportedProject(Projects.BUILD));
 
 		if (stagingRepository.isPresent()) {
-			orchestrator.close(stagingRepository);
+			orchestrator.close(train, stagingRepository);
 		}
 	}
 
 	/**
 	 * Promote the staging repository.
 	 *
-	 * @param stagingRepository
+	 * @param train must not be {@literal null}.
+	 * @param stagingRepository must not be {@literal null}.
 	 * @return
 	 */
-	public void releaseStagingRepository(StagingRepository stagingRepository) {
+	public void releaseStagingRepository(Train train, StagingRepository stagingRepository) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(Projects.BUILD);
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(train.getSupportedProject(Projects.BUILD));
 
 		if (stagingRepository.isPresent()) {
-			orchestrator.release(stagingRepository);
+			orchestrator.release(train, stagingRepository);
 		}
 	}
 
@@ -215,16 +217,19 @@ public class BuildOperations {
 	 */
 	public void release(ModuleIteration iteration, StagingRepository stagingRepository) {
 
+		Train train = iteration.getTrain();
+
 		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
-			buildSystem.release(stagingRepository);
+			buildSystem.release(train, stagingRepository);
 			return null;
 		});
 	}
 
 	public void buildDocumentation(TrainIteration iteration) {
 
-		executor.doWithBuildSystemOrdered(Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD)),
-				BuildSystem::triggerDocumentationBuild);
+		Streamable<ModuleIteration> of = Streamable.of(iteration.getModulesExcept(BOM, COMMONS, BUILD));
+
+		executor.doWithBuildSystemOrdered(of, BuildSystem::triggerDocumentationBuild);
 
 		logger.log(iteration, "Documentation build finished");
 	}
@@ -244,14 +249,17 @@ public class BuildOperations {
 	 */
 	public List<DeploymentInformation> performRelease(TrainIteration iteration) {
 
-		Iteration it = iteration.getIteration();
-		StagingRepository stagingRepository = it.isPublic() ? openStagingRepository(it) : StagingRepository.EMPTY;
+		StagingRepository stagingRepository = iteration.isPublic() //
+				? openStagingRepository(iteration) //
+				: StagingRepository.EMPTY;
 
 		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, stagingRepository));
 
+		Train train = iteration.getTrain();
+
 		if (stagingRepository.isPresent()) {
-			closeStagingRepository(stagingRepository);
+			closeStagingRepository(train, stagingRepository);
 		}
 
 		smokeTests(iteration, stagingRepository);
@@ -259,10 +267,12 @@ public class BuildOperations {
 		logger.log(iteration, "Release: %s", summary);
 
 		if (stagingRepository.isPresent()) {
-			releaseStagingRepository(stagingRepository);
+			releaseStagingRepository(train, stagingRepository);
 		}
 
-		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+		return summary.getExecutions().stream()
+				.map(BuildExecutor.ExecutionResult::getResult)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -296,8 +306,7 @@ public class BuildOperations {
 
 		Assert.notNull(train, "Train must not be null!");
 
-		BuildExecutor.Summary<Module> summary = executor.doWithBuildSystemAnyOrder(train,
-				BuildSystem::triggerDistributionBuild);
+		BuildExecutor.Summary<?> summary = executor.doWithBuildSystemAnyOrder(train, BuildSystem::triggerDistributionBuild);
 
 		logger.log(train, "Distribution build: %s", summary);
 	}
@@ -357,24 +366,30 @@ public class BuildOperations {
 
 	/**
 	 * Verifies Java version presence and that the project can be build using Maven.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	public void verify() {
+	public void verify(Train train) {
 
-		Project project = Projects.BUILD;
+		SupportedProject project = train.getSupportedProject(Projects.BUILD);
 		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
 
-		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verify();
+		buildSystem.verify(train);
+		// buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verify(train);
 	}
 
 	/**
 	 * Verifies Maven staging authentication.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	public void verifyStagingAuthentication() {
+	public void verifyStagingAuthentication(Train train) {
 
-		Project project = Projects.BUILD;
+		SupportedProject project = train.getSupportedProject(Projects.BUILD);
 		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
 
-		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication();
+		buildSystem.verifyStagingAuthentication(train);
+		// buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication(train);
 	}
 
 	/**
@@ -385,15 +400,17 @@ public class BuildOperations {
 	 * @param function must not be {@literal null}.
 	 * @return
 	 */
-	private <T> T doWithBuildSystem(ModuleIteration module, BiFunction<BuildSystem, ModuleIteration, T> function) {
+	private <T, S extends ProjectAware> T doWithBuildSystem(S module,
+			BiFunction<BuildSystem, S, T> function) {
 
 		Assert.notNull(module, "ModuleIteration must not be null!");
 
 		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
-				String.format("No build system plugin found for project %s!", module.getProject()));
+				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
 
-		BuildSystem buildSystem = buildSystems.getPluginFor(module.getProject(), exception);
+		BuildSystem buildSystem = buildSystems.getPluginFor(module.getSupportedProject(), exception);
 
-		return function.apply(buildSystem.withJavaVersion(executor.detectJavaVersion(module.getProject())), module);
+		return function.apply(buildSystem.withJavaVersion(executor.detectJavaVersion(module.getSupportedProject())),
+				module);
 	}
 }

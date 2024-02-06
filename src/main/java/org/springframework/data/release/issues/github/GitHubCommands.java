@@ -31,7 +31,9 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Tracker;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.plugin.core.PluginRegistry;
@@ -48,15 +50,17 @@ import org.springframework.shell.core.annotation.CliOption;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GitHubCommands extends TimedCommand {
 
-	@NonNull PluginRegistry<IssueTracker, Project> tracker;
+	@NonNull PluginRegistry<IssueTracker, SupportedProject> tracker;
 	@NonNull GitHub gitHub;
 	@NonNull GitOperations git;
 	@NonNull GitHubLabels gitHubLabels;
 	@NonNull Executor executor;
 
 	@CliCommand(value = "github update labels")
-	public void createOrUpdateLabels(@CliOption(key = "", mandatory = true) Project project) {
-		gitHubLabels.createOrUpdateLabels(project);
+	public void createOrUpdateLabels(
+			@CliOption(key = "", mandatory = true) Project project,
+			@CliOption(key = "train", mandatory = true) Train train) {
+		gitHubLabels.createOrUpdateLabels(train.getSupportedProject(project));
 	}
 
 	@CliCommand(value = "github push")
@@ -81,9 +85,9 @@ public class GitHubCommands extends TimedCommand {
 
 		ExecutionUtils.run(executor, iteration, it -> {
 
-			if (it.getProject().getTracker() == Tracker.GITHUB) {
+			if (it.getSupportedProject().getProject().getTracker() == Tracker.GITHUB) {
 
-				List<String> ticketReferences = git.getTicketReferencesBetween(it.getProject(), previousIteration, iteration)
+				List<String> ticketReferences = git.getTicketReferencesBetween(it.getSupportedProject(), previousIteration, iteration)
 						.stream().map(TicketReference::getId).collect(Collectors.toList());
 				gitHub.createOrUpdateRelease(iteration, it, ticketReferences);
 			}

@@ -36,14 +36,7 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
-import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.DocumentationMetadata;
-import org.springframework.data.release.model.Iteration;
-import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.Projects;
-import org.springframework.data.release.model.Tracker;
-import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -128,7 +121,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	 */
 	@Override
 	@Cacheable("tickets")
-	public Collection<Ticket> findTickets(Project project, Collection<String> ticketIds) {
+	public Collection<Ticket> findTickets(SupportedProject project, Collection<String> ticketIds) {
 
 		String repositoryName = GitProject.of(project).getRepositoryName();
 		List<Ticket> tickets = new ArrayList<>();
@@ -173,8 +166,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
 	 */
 	@Override
-	public boolean supports(Project project) {
-		return project.uses(Tracker.GITHUB);
+	public boolean supports(SupportedProject project) {
+		return project.getProject().uses(Tracker.GITHUB);
 	}
 
 	@Override
@@ -196,7 +189,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		}
 
 		Tickets tickets = trainIteration.stream(). //
-				filter(moduleIteration -> supports(moduleIteration.getProject())). //
+				filter(moduleIteration -> supports(moduleIteration.getSupportedProject())). //
 				flatMap(moduleIteration -> getTicketsFor(moduleIteration, forCurrentUser).stream()). //
 				collect(Tickets.toTicketsCollector());
 
@@ -212,7 +205,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Assert.notNull(moduleIteration, "ModuleIteration must not be null.");
 
-		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 		Optional<Milestone> milestone = findMilestone(moduleIteration);
 
 		if (milestone.isPresent()) {
@@ -271,7 +264,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private Ticket doCreateTicket(ModuleIteration moduleIteration, String text, TicketType ticketType,
 			boolean assignToCurrentUser) {
 
-		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 		Milestone milestone = getMilestone(moduleIteration);
 
 		Label label = TICKET_LABELS.get(ticketType);
@@ -298,10 +291,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.springframework.data.release.jira.IssueTracker#assignTicketToMe(org.springframework.data.release.jira.Ticket)
+	 * @see org.springframework.data.release.issues.IssueTracker#assignTicketToMe(org.springframework.data.release.model.SupportedProject, org.springframework.data.release.issues.Ticket)
 	 */
 	@Override
-	public Ticket assignTicketToMe(Project project, Ticket ticket) {
+	public Ticket assignTicketToMe(SupportedProject project, Ticket ticket) {
 
 		Assert.notNull(ticket, "Ticket must not be null.");
 
@@ -332,7 +325,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Assert.notNull(module, "ModuleIteration must not be null.");
 
-		return assignTicketToMe(module.getProject(), getReleaseTicketFor(module));
+		return assignTicketToMe(module.getSupportedProject(), getReleaseTicketFor(module));
 	}
 
 	/*
@@ -362,7 +355,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private GitHubReadIssue close(ModuleIteration module, Ticket ticket) {
 
-		String repositoryName = GitProject.of(module.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(module).getRepositoryName();
 
 		Map<String, Object> parameters = newUrlTemplateVariables();
 		parameters.put("repoName", repositoryName);
@@ -390,10 +383,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Optional<Milestone> milestone = milestoneCache.get(moduleIteration);
 		if (milestone == null) {
 
-			String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+			String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 			milestone = doFindMilestone(moduleIteration, repositoryName, m -> m.matches(moduleIteration));
 
-			if(milestone.isPresent()) {
+			if (milestone.isPresent()) {
 				milestoneCache.put(moduleIteration, milestone);
 			}
 		}
@@ -419,12 +412,12 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 					milestones -> {
 
 						Optional<Milestone> milestone = milestones.stream(). //
-						filter(milestonePredicate). //
-						findFirst(). //
-						map(m -> {
-							logger.log(moduleIteration, "Found milestone %s.", m);
-							return m;
-						});
+								filter(milestonePredicate). //
+								findFirst(). //
+								map(m -> {
+									logger.log(moduleIteration, "Found milestone %s.", m);
+									return m;
+								});
 
 						if (milestone.isPresent()) {
 							milestoneRef.set(milestone.get());
@@ -460,7 +453,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		HttpHeaders httpHeaders = new HttpHeaders();
 
-		GitProject project = GitProject.of(module.getProject());
+		GitProject project = GitProject.of(module);
 
 		findMilestone(module) //
 				.filter(Milestone::isOpen) //
@@ -496,7 +489,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Map<String, GitHubReadIssue> issues = getIssuesFor(moduleIteration, false, true)
 				.collect(Collectors.toMap(GitHubIssue::getId, Function.identity()));
 
-		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 
 		logger.log(moduleIteration, "Looking up GitHub issues …");
 		Collection<GitHubReadIssue> foundIssues = ticketIds.stream().filter(it -> it.startsWith("#")).flatMap(it -> {
@@ -602,23 +595,23 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private String createParticipatingModules(TrainIteration iteration) {
 
 		Comparator<ModuleIteration> comparator = Comparator
-				.comparing(moduleIteration -> moduleIteration.getProject().getName());
+				.comparing(moduleIteration -> moduleIteration.getSupportedProject().getName());
 		return iteration.stream().sorted(comparator).map(module -> {
 
 			Tag tag = VersionTags.empty(module.getProject()).createTag(module);
-			return String.format("* [Spring Data %s %s](%s%s/releases/tag/%s)%n", module.getProject().getName(),
-					tag.getName(), GitServer.INSTANCE.getUri(), module.getProject().getFolderName(), tag.getName());
+			return String.format("* [Spring Data %s %s](%s%s/releases/tag/%s)%n", module.getSupportedProject().getName(),
+					tag.getName(), GitServer.INSTANCE.getUri(), module.getSupportedProject().getFolderName(), tag.getName());
 		}).collect(Collectors.joining());
 	}
 
 	/**
 	 * Verify GitHub authentication.
 	 */
-	public void verifyAuthentication() {
+	public void verifyAuthentication(Train train) {
 
 		logger.log("GitHub", "Verifying GitHub Authentication…");
 
-		String repositoryName = GitProject.of(Projects.BUILD).getRepositoryName();
+		String repositoryName = GitProject.of(train.getSupportedProject(Projects.BUILD)).getRepositoryName();
 
 		Map<String, Object> parameters = newUrlTemplateVariables();
 		parameters.put("repoName", repositoryName);
@@ -693,7 +686,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		String referenceDocUrl = documentation.getReferenceDocUrl();
 		String apiDocUrl = documentation.getApiDocUrl();
 
-		String reference = String.format("* [%s %s Reference documentation](%s)", module.getProject().getFullName(),
+		String reference = String.format("* [%s %s Reference documentation](%s)",
+				module.getProject().getFullName(),
 				module.getVersion().toString(), referenceDocUrl);
 
 		String apidoc = String.format("* [%s %s Javadoc](%s)", module.getProject().getFullName(),
@@ -704,7 +698,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private void createOrUpdateRelease(ModuleIteration module, String body) {
 
-		String repositoryName = GitProject.of(module.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(module).getRepositoryName();
 		Tag tag = VersionTags.empty(module.getProject()).createTag(module);
 		logger.log(module, "Looking up GitHub Release …");
 
@@ -764,7 +758,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private Stream<GitHubReadIssue> getIssuesFor(ModuleIteration moduleIteration, boolean forCurrentUser,
 			boolean ignoreMissingMilestone) {
 
-		String repositoryName = GitProject.of(moduleIteration.getProject()).getRepositoryName();
+		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 
 		Optional<Milestone> optionalMilestone = findMilestone(moduleIteration);
 

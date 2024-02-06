@@ -26,6 +26,7 @@ import org.springframework.data.release.build.BuildOperations;
 import org.springframework.data.release.deployment.DeploymentOperations;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.github.GitHub;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.projectservice.ProjectService;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
@@ -50,18 +51,20 @@ class VerifyCommands extends TimedCommand {
 	@NonNull Logger logger;
 
 	@CliCommand("verify")
-	public void verifyReleaseTools(@CliOption(key = "", mandatory = false) String mode) {
+	public void verifyReleaseTools(
+			@CliOption(key = "", mandatory = false) String mode,
+			@CliOption(key = "train", mandatory = true) Train train) {
 
 		if ("local".equals(mode)) {
 
 			// Git checkout build
-			git.verify();
+			git.verify(train);
 
 			// Maven interaction
-			build.verify();
+			build.verify(train);
 
 			// GitHub verification
-			github.verifyAuthentication();
+			github.verifyAuthentication(train);
 
 			// Projects Service Verification
 			projectService.verifyAuthentication();
@@ -72,23 +75,23 @@ class VerifyCommands extends TimedCommand {
 
 		if (ObjectUtils.isEmpty(mode) || "git".equals(mode)) {
 			// Git checkout build
-			git.verify();
+			git.verify(train);
 		}
 
 		if (ObjectUtils.isEmpty(mode) || "build".equals(mode)) {
 			// Maven interaction
-			build.verify();
-			build.verifyStagingAuthentication();
+			build.verify(train);
+			build.verifyStagingAuthentication(train);
 		}
 
 		if (ObjectUtils.isEmpty(mode) || "deployment".equals(mode)) {
 			// Artifactory verification
-			deployment.verifyAuthentication();
+			deployment.verifyAuthentication(train);
 		}
 
 		if (ObjectUtils.isEmpty(mode) || "github".equals(mode)) {
 			// GitHub verification
-			github.verifyAuthentication();
+			github.verifyAuthentication(train);
 		}
 
 		if (ObjectUtils.isEmpty(mode) || "projects".equals(mode)) {
@@ -98,5 +101,4 @@ class VerifyCommands extends TimedCommand {
 
 		logger.log("Verify", "All settings are verified. You can ship a release now.");
 	}
-
 }

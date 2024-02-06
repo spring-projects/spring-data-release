@@ -18,9 +18,7 @@ package org.springframework.data.release.git;
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
-
 import org.springframework.data.release.model.Module;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.Train;
@@ -38,9 +36,8 @@ class GitProjectUnitTests {
 		Train codd = ReleaseTrains.CODD;
 		GitServer server = new GitServer();
 		Module module = codd.getModule(Projects.COMMONS);
-		Project project = module.getProject();
 
-		GitProject gitProject = new GitProject(project, server);
+		GitProject gitProject = GitProject.of(codd.getSupportedProject(module));
 
 		String projectUri = gitProject.getProjectUri();
 

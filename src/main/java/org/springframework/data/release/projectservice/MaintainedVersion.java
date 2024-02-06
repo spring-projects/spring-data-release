@@ -96,6 +96,7 @@ class MaintainedVersion implements Comparable<MaintainedVersion> {
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
+	@Override
 	public String toString() {
 		return String.format("%s - %s - %s", project.getName(), train.getName(), version);
 	}

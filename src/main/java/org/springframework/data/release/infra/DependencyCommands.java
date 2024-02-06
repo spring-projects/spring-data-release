@@ -34,8 +34,8 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
@@ -79,13 +79,14 @@ public class DependencyCommands extends TimedCommand {
 
 		git.prepare(iteration);
 
-		List<Project> projects = Projects.all().stream()
+		List<SupportedProject> projects = Projects.all().stream()
 				.filter(it -> it != Projects.BOM && it != Projects.BUILD && it != Projects.COMMONS)
+				.map(iteration::getSupportedProject)
 				.collect(Collectors.toList());
 
 		Map<Dependency, DependencyVersion> dependencies = new TreeMap<>();
 
-		for (Project project : projects) {
+		for (SupportedProject project : projects) {
 			operations.getCurrentDependencies(project).forEach(dependencies::put);
 		}
 
@@ -113,7 +114,7 @@ public class DependencyCommands extends TimedCommand {
 		ModuleIteration module = iteration.getModule(Projects.BUILD);
 		DependencyVersions dependencyVersions = loadDependencyUpgrades(module);
 
-		DependencyVersions upgradesToApply = operations.getDependencyUpgradesToApply(module.getProject(),
+		DependencyVersions upgradesToApply = operations.getDependencyUpgradesToApply(module.getSupportedProject(),
 				dependencyVersions);
 
 		if (upgradesToApply.isEmpty()) {
@@ -151,12 +152,14 @@ public class DependencyCommands extends TimedCommand {
 
 		String propertiesFile = "dependency-upgrade-modules.properties";
 
-		List<Project> projects = Projects.all().stream().filter(it -> it != Projects.BOM && it != Projects.BUILD)
+		List<SupportedProject> projects = Projects.all().stream()
+				.filter(it -> it != Projects.BOM && it != Projects.BUILD)
+				.map(iteration::getSupportedProject)
 				.collect(Collectors.toList());
 
 		DependencyUpgradeProposals proposals = DependencyUpgradeProposals.empty();
 
-		for (Project project : projects) {
+		for (SupportedProject project : projects) {
 			proposals = proposals.mergeWith(operations.getDependencyUpgradeProposals(project, iteration.getIteration()));
 		}
 
@@ -172,7 +175,8 @@ public class DependencyCommands extends TimedCommand {
 
 		String propertiesFile = BUILD_PROPERTIES;
 
-		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(Projects.BUILD,
+		SupportedProject project = iteration.getSupportedProject(Projects.BUILD);
+		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(project,
 				iteration.getIteration());
 
 		Files.write(Paths.get(propertiesFile), proposals.asProperties(iteration).getBytes());

@@ -91,7 +91,7 @@ public class VersionTags implements Streamable<Tag> {
 
 	public Tag createTag(ModuleIteration iteration) {
 
-		if (iteration.getProject().equals(Projects.BOM)) {
+		if (iteration.getSupportedProject().equals(Projects.BOM)) {
 			return Tag.of(iteration.getTrainIteration().getReleaseTrainNameAndVersion());
 		}
 

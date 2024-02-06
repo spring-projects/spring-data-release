@@ -55,6 +55,7 @@ import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
@@ -65,7 +66,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestOperations;
-
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.annotation.XBRead;
 import org.xmlbeam.io.FileIO;
@@ -102,7 +102,7 @@ public class DependencyOperations {
 	 * @param iteration
 	 * @return
 	 */
-	public DependencyUpgradeProposals getDependencyUpgradeProposals(Project project, Iteration iteration) {
+	public DependencyUpgradeProposals getDependencyUpgradeProposals(SupportedProject project, Iteration iteration) {
 
 		DependencyVersions currentDependencies = getCurrentDependencies(project);
 		Map<Dependency, DependencyUpgradeProposal> proposals = Collections.synchronizedMap(new LinkedHashMap<>());
@@ -132,10 +132,12 @@ public class DependencyOperations {
 		for (ModuleIteration moduleIteration : iteration) {
 
 			// ensure we have Maven Wrapper for each project.
-			getMavenWrapperVersion(moduleIteration.getProject());
+			getMavenWrapperVersion(moduleIteration.getSupportedProject());
 		}
 
-		return getDependencyUpgradeProposals(Projects.BUILD, DependencyUpgradePolicy.LATEST_STABLE, Dependencies.MAVEN,
+		SupportedProject build = iteration.getSupportedProject(Projects.BUILD);
+
+		return getDependencyUpgradeProposals(build, DependencyUpgradePolicy.LATEST_STABLE, Dependencies.MAVEN,
 				this::getMavenWrapperVersion);
 	}
 
@@ -154,7 +156,7 @@ public class DependencyOperations {
 		}
 
 		return doWithDependencyVersionsAndCommit(tickets, module, dependencyVersions, (dependency, version) -> {
-			upgradeMavenWrapperVersion(module.getProject(), version);
+			upgradeMavenWrapperVersion(module.getSupportedProject(), version);
 		});
 	}
 
@@ -164,17 +166,17 @@ public class DependencyOperations {
 
 		for (ModuleIteration moduleIteration : iteration) {
 
-			DependencyVersion currentVersion = getMavenWrapperVersion(moduleIteration.getProject());
+			DependencyVersion currentVersion = getMavenWrapperVersion(moduleIteration.getSupportedProject());
 
 			if (targetVersion.isNewer(currentVersion)) {
-				projectsToUpgrade.add(moduleIteration.getProject());
+				projectsToUpgrade.add(moduleIteration.getSupportedProject().getProject());
 			}
 		}
 
 		return projectsToUpgrade;
 	}
 
-	private DependencyVersion getMavenWrapperVersion(Project project) {
+	private DependencyVersion getMavenWrapperVersion(SupportedProject project) {
 
 		try {
 
@@ -191,8 +193,8 @@ public class DependencyOperations {
 			}
 
 			Pattern versionPattern = Pattern.compile(".*/maven2/org/apache/maven/apache-maven/([\\d\\.]+)/.*");
-
 			Matcher matcher = versionPattern.matcher(distributionUrl);
+
 			if (!matcher.find()) {
 				throw new IllegalStateException(
 						String.format("Invalid distribution URL in %s: %s", project.getName(), distributionUrl));
@@ -204,7 +206,7 @@ public class DependencyOperations {
 		}
 	}
 
-	private void upgradeMavenWrapperVersion(Project project, DependencyVersion dependencyVersion) {
+	private void upgradeMavenWrapperVersion(SupportedProject project, DependencyVersion dependencyVersion) {
 
 		String distributionUrlTemplate = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%s/apache-maven-%s-bin.zip";
 
@@ -229,7 +231,7 @@ public class DependencyOperations {
 		}
 	}
 
-	private File getMavenWrapperProperties(Project project) throws FileNotFoundException {
+	private File getMavenWrapperProperties(SupportedProject project) throws FileNotFoundException {
 		File file = workspace.getFile(".mvn/wrapper/maven-wrapper.properties", project);
 
 		if (!file.exists()) {
@@ -238,8 +240,9 @@ public class DependencyOperations {
 		return file;
 	}
 
-	public DependencyUpgradeProposals getDependencyUpgradeProposals(Project project, DependencyUpgradePolicy policy,
-			Dependency dependency, Function<Project, DependencyVersion> currentVersionExtractor) {
+	public DependencyUpgradeProposals getDependencyUpgradeProposals(SupportedProject project,
+			DependencyUpgradePolicy policy, Dependency dependency,
+			Function<SupportedProject, DependencyVersion> currentVersionExtractor) {
 
 		DependencyVersions currentDependencies = new DependencyVersions(
 				Collections.singletonMap(dependency, currentVersionExtractor.apply(project)));
@@ -280,7 +283,7 @@ public class DependencyOperations {
 	 */
 	public Tickets upgradeDependencies(Tickets tickets, ModuleIteration module, DependencyVersions dependencyVersions) {
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 		ProjectDependencies dependencies = ProjectDependencies.get(project);
 
 		if (dependencyVersions.isEmpty()) {
@@ -290,7 +293,7 @@ public class DependencyOperations {
 		return doWithDependencyVersionsAndCommit(tickets, module, dependencyVersions, (dependency, version) -> {
 
 			String versionProperty = dependencies.getVersionPropertyFor(dependency);
-			File pom = getPomFile(project);
+			File pom = getPomFile(module.getSupportedProject());
 			update(pom, Pom.class, it -> {
 				it.setProperty(versionProperty, version.getIdentifier());
 			});
@@ -333,7 +336,8 @@ public class DependencyOperations {
 		this.tickets.closeTickets(module, tickets);
 	}
 
-	public DependencyVersions getDependencyUpgradesToApply(Project project, DependencyVersions dependencyVersions) {
+	public DependencyVersions getDependencyUpgradesToApply(SupportedProject project,
+			DependencyVersions dependencyVersions) {
 
 		DependencyVersions currentDependencies = getCurrentDependencies(project);
 		Map<Dependency, DependencyVersion> upgrades = new LinkedHashMap<>();
@@ -452,14 +456,16 @@ public class DependencyOperations {
 				.max(DependencyVersion::compareTo);
 	}
 
-	DependencyVersions getCurrentDependencies(Project project) {
+	DependencyVersions getCurrentDependencies(SupportedProject supportedProject) {
+
+		Project project = supportedProject.getProject();
 
 		if (!ProjectDependencies.containsProject(project)) {
 			return DependencyVersions.empty();
 		}
 
-		File pom = getPomFile(project);
-		ProjectDependencies dependencies = ProjectDependencies.get(project);
+		File pom = getPomFile(supportedProject);
+		ProjectDependencies dependencies = ProjectDependencies.get(supportedProject);
 
 		return doWithPom(pom, Pom.class, it -> {
 
@@ -469,7 +475,7 @@ public class DependencyOperations {
 
 				Dependency dependency = projectDependency.getDependency();
 
-				if (!((project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams"))
+				if (!(project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams")
 						|| project == Projects.NEO4J || project == Projects.BUILD)) {
 
 					if (it.getDependencyVersion(dependency.getArtifactId()) == null
@@ -489,8 +495,8 @@ public class DependencyOperations {
 		});
 	}
 
-	private File getPomFile(Project project) {
-		return workspace.getFile(project == Projects.BUILD ? "parent/pom.xml" : "pom.xml", project);
+	private File getPomFile(SupportedProject project) {
+		return workspace.getFile(project.getProject().getProjectDescriptor(), project);
 	}
 
 	@SneakyThrows
@@ -560,7 +566,7 @@ public class DependencyOperations {
 
 		try {
 
-			T pom = (T) io.read(type);
+			T pom = io.read(type);
 			return callback.apply(pom);
 
 		} catch (Exception o_O) {
@@ -574,7 +580,7 @@ public class DependencyOperations {
 
 		try {
 
-			T pom = (T) io.read(type);
+			T pom = io.read(type);
 			callback.accept(pom);
 			io.write(pom);
 

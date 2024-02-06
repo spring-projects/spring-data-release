@@ -20,8 +20,9 @@ import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.ProjectAware;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.plugin.core.Plugin;
 
@@ -32,7 +33,7 @@ import org.springframework.plugin.core.Plugin;
  * @author Mark Paluch
  * @author Greg Turnquist
  */
-interface BuildSystem extends Plugin<Project> {
+interface BuildSystem extends Plugin<SupportedProject> {
 
 	/**
 	 * Updates the project descriptors for the given {@link ModuleIteration} using the given {@link UpdateInformation}.
@@ -61,18 +62,24 @@ interface BuildSystem extends Plugin<Project> {
 
 	/**
 	 * Open a remote repository for staging artifacts.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	StagingRepository open();
+	StagingRepository open(Train train);
 
 	/**
 	 * Close a remote repository for staging artifacts.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	void close(StagingRepository stagingRepository);
+	void close(Train train, StagingRepository stagingRepository);
 
 	/**
 	 * Release a remote repository of staged artifacts.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	void release(StagingRepository stagingRepository);
+	void release(Train train, StagingRepository stagingRepository);
 
 	<M extends ProjectAware> M triggerBuild(M module);
 
@@ -113,13 +120,17 @@ interface BuildSystem extends Plugin<Project> {
 
 	/**
 	 * Verify general functionality and correctness of the build setup.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	void verify();
+	void verify(Train train);
 
 	/**
 	 * Verify general functionality and correctness of the build setup.
+	 *
+	 * @param train must not be {@literal null}.
 	 */
-	void verifyStagingAuthentication();
+	void verifyStagingAuthentication(Train train);
 
 	/**
 	 * Prepare the build system with a Java version.

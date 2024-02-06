@@ -17,25 +17,31 @@ package org.springframework.data.release.git;
 
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 
 /**
  * @author Oliver Gierke
  */
 @EqualsAndHashCode
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class GitProject {
 
 	private static final String PROJECT_PREFIX = "spring-data";
 
-	private final Project project;
+	private final @Getter SupportedProject project;
 	private final GitServer server;
 
-	public static GitProject of(Project project) {
+	public static GitProject of(SupportedProject project) {
 		return new GitProject(project, GitServer.INSTANCE);
+	}
+
+	public static GitProject of(ModuleIteration module) {
+		return new GitProject(module.getSupportedProject(), GitServer.INSTANCE);
 	}
 
 	/**
@@ -44,8 +50,11 @@ public class GitProject {
 	 * @return
 	 */
 	public String getRepositoryName() {
-		return String.format("%s-%s", PROJECT_PREFIX,
-				project == Projects.JDBC ? "relational" : project.getName().toLowerCase());
+
+		String logicalName = String.format("%s-%s", PROJECT_PREFIX,
+				project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase());
+
+		return project.isCommercial() ? logicalName + "-commercial" : logicalName;
 	}
 
 	/**

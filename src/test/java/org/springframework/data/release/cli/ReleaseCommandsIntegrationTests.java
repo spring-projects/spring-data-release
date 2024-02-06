@@ -15,7 +15,6 @@
  */
 package org.springframework.data.release.cli;
 
-import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assumptions.*;
 
 import java.io.IOException;
@@ -24,12 +23,9 @@ import java.net.URLConnection;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.git.GitOperations;
-import org.springframework.data.release.model.ReleaseTrains;
 
 /**
  * @author Oliver Gierke
@@ -51,13 +47,5 @@ class ReleaseCommandsIntegrationTests extends AbstractIntegrationTests {
 		} catch (IOException e) {
 			assumeThat(false).as("Test requires connectivity to GitHub:" + e.toString()).isTrue();
 		}
-	}
-
-	@Test
-	void predictsReleaseTrainCorrectly() throws Exception {
-
-		git.update(ReleaseTrains.MOORE);
-
-		assertThat(releaseCommands.predictTrainAndIteration()).isEqualTo("Neumann");
 	}
 }

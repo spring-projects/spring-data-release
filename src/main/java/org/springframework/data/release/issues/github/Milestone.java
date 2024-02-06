@@ -37,11 +37,9 @@ class Milestone {
 
 	public boolean matches(ModuleIteration moduleIteration) {
 
-		if (moduleIteration.getProject().isUseShortVersionMilestones()) {
-			return title.equals(moduleIteration.getReleaseVersionString());
-		}
-
-		return title.contains(moduleIteration.getShortVersionString());
+		return moduleIteration.getSupportedProject().getProject().isUseShortVersionMilestones()
+				? title.equals(moduleIteration.getReleaseVersionString())
+				: title.contains(moduleIteration.getShortVersionString());
 	}
 
 	@JsonIgnore

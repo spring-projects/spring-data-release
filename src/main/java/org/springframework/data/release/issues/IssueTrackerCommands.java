@@ -33,6 +33,7 @@ import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.util.Streamable;
@@ -50,7 +51,7 @@ import org.springframework.util.StringUtils;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class IssueTrackerCommands extends TimedCommand {
 
-	@NonNull PluginRegistry<IssueTracker, Project> tracker;
+	@NonNull PluginRegistry<IssueTracker, SupportedProject> tracker;
 	@NonNull Executor executor;
 
 	@CliCommand("tracker evict")
@@ -199,13 +200,19 @@ public class IssueTrackerCommands extends TimedCommand {
 	}
 
 	private static Streamable<ModuleIteration> withReleaseProject(TrainIteration iteration) {
+
+		if (iteration.isCommercial()) {
+			return iteration;
+		}
+
 		ModuleIteration bom = iteration.getModule(Projects.BOM);
+
 		return iteration.and(new ModuleIteration(new Module(Projects.RELEASE, bom.getVersion()), iteration));
 	}
 
 	private IssueTracker getTrackerFor(ModuleIteration moduleIteration) {
 
-		return tracker.getRequiredPluginFor(moduleIteration.getProject(),
+		return tracker.getRequiredPluginFor(moduleIteration.getSupportedProject(),
 				() -> String.format("No issue tracker found for module %s!", moduleIteration));
 	}
 }

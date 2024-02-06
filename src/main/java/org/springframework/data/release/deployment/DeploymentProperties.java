@@ -15,17 +15,19 @@
  */
 package org.springframework.data.release.deployment;
 
+import lombok.Data;
+
 import java.net.URI;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
-import org.springframework.data.release.utils.HttpBasicCredentials;
+import org.springframework.data.release.model.SupportStatusAware;
+import org.springframework.data.util.Streamable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriTemplate;
-
-import lombok.Data;
 
 /**
  * @author Oliver Gierke
@@ -36,54 +38,16 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "deployment")
 public class DeploymentProperties {
 
-	/**
-	 * The Artifactory host.
-	 */
-	private Server server;
-
-	/**
-	 * The deployer's username.
-	 */
-	private String username;
-
-	private String apiKey;
-
-	/**
-	 * The deployer's password.
-	 */
-	private Password password;
-
-	/**
-	 * The repository to deploy the artifacts to.
-	 */
-	private String stagingRepository;
-
-	/**
-	 * The repository to deploy docs/schemas to.
-	 */
-	private String distributionRepository;
-
 	private String settingsXml;
-
-	private String repositoryPrefix = "";
-
 	private MavenCentral mavenCentral;
+	private Authentication opensource, commercial;
 
-	public String getStagingRepository() {
-		return repositoryPrefix.concat(stagingRepository);
+	public Authentication getAuthentication(SupportStatusAware status) {
+		return status.isOpenSource() ? opensource : commercial;
 	}
 
-	public String getDistributionRepository() {
-		return repositoryPrefix.concat(distributionRepository);
-	}
-
-	/**
-	 * Returns the URI of the staging repository.
-	 *
-	 * @return
-	 */
-	public String getStagingRepositoryUrl() {
-		return server.getUri().concat("/").concat(stagingRepository);
+	public Streamable<Authentication> getAuthentications() {
+		return Streamable.of(opensource, commercial);
 	}
 
 	@Data
@@ -91,9 +55,10 @@ public class DeploymentProperties {
 
 		private static final String PROMOTION_RESOURCE = "/api/build/promote/{buildName}/{buildNumber}";
 		private static final String DELETE_BUILD_RESOURCE = "/api/build/{buildName}?buildNumbers={buildNumber}&artifacts=1";
-		private static final String VERIFICATION_RESOURCE = "/api/storage/temp-private-local";
+		private static final String VERIFICATION_RESOURCE = "/api/storage/{verificationResource}";
 
 		private String uri;
+		private String verificationResource;
 
 		/**
 		 * Returns the URI to the resource that a promotion can be triggered at.
@@ -114,7 +79,7 @@ public class DeploymentProperties {
 		}
 
 		public URI getVerificationResource() {
-			return URI.create(uri.concat(VERIFICATION_RESOURCE));
+			return new UriTemplate(uri.concat(VERIFICATION_RESOURCE)).expand(verificationResource);
 		}
 	}
 
@@ -130,4 +95,37 @@ public class DeploymentProperties {
 		}
 	}
 
+	@Data
+	public static class Authentication {
+
+		Server server;
+		String stagingRepository, targetRepository;
+		String distributionRepository;
+		String project;
+		String username;
+		Password password;
+		String apiKey;
+		String repositoryPrefix = "";
+
+		public boolean hasCredentials() {
+			return StringUtils.hasText(username) && password != null;
+		}
+
+		/**
+		 * Returns the URI of the staging repository.
+		 *
+		 * @return
+		 */
+		public String getStagingRepositoryUrl() {
+			return server.getUri().concat("/").concat(stagingRepository);
+		}
+
+		public String getStagingRepository() {
+			return repositoryPrefix.concat(stagingRepository);
+		}
+
+		public String getDistributionRepository() {
+			return repositoryPrefix.concat(distributionRepository);
+		}
+	}
 }

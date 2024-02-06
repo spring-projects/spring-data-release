@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
  */
 @ToString
 @EqualsAndHashCode
-public class Project implements Comparable<Project> {
+public class Project implements Comparable<Project>, Named {
 
 	private final @Getter ProjectKey key;
 	private final @Getter String name;
@@ -123,6 +123,10 @@ public class Project implements Comparable<Project> {
 		return dependencies.stream() //
 				.flatMap(dependency -> Stream.concat(Stream.of(dependency), dependency.getDependencies().stream())) //
 				.collect(Collectors.toSet());
+	}
+
+	public String getProjectDescriptor() {
+		return this == Projects.BUILD ? "parent/pom.xml" : "pom.xml";
 	}
 
 	/*

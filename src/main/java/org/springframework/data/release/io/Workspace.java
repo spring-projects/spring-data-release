@@ -42,8 +42,8 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -149,11 +149,11 @@ public class Workspace {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	public File getProjectDirectory(Project project) {
+	public File getProjectDirectory(SupportedProject project) {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		if (project == Projects.SMOKE_TESTS) {
+		if (project.getProject() == Projects.SMOKE_TESTS) {
 			return new File("smoke-tests");
 		}
 
@@ -166,7 +166,7 @@ public class Workspace {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	public boolean hasProjectDirectory(Project project) {
+	public boolean hasProjectDirectory(SupportedProject project) {
 
 		Assert.notNull(project, "Project must not be null!");
 		return getProjectDirectory(project).exists();
@@ -179,7 +179,7 @@ public class Workspace {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	public File getFile(String name, Project project) {
+	public File getFile(String name, SupportedProject project) {
 
 		Assert.hasText(name, "Filename must not be null or empty!");
 		Assert.notNull(project, "Project must not be null!");
@@ -187,7 +187,7 @@ public class Workspace {
 		return new File(getProjectDirectory(project), name);
 	}
 
-	public Stream<File> getFiles(String pattern, Project project) {
+	public Stream<File> getFiles(String pattern, SupportedProject project) {
 
 		File projectDirectory = getProjectDirectory(project);
 		String patternToLookup = String.format("file:%s/%s", projectDirectory.getAbsolutePath(), pattern);
@@ -199,7 +199,7 @@ public class Workspace {
 		}
 	}
 
-	public boolean processFile(String filename, Project project, LineCallback callback) {
+	public boolean processFile(String filename, SupportedProject project, LineCallback callback) {
 
 		File file = getFile(filename, project);
 
@@ -226,7 +226,7 @@ public class Workspace {
 		return true;
 	}
 
-	private void writeContentToFile(String name, Project project, String content) throws IOException {
+	private void writeContentToFile(String name, SupportedProject project, String content) throws IOException {
 
 		File file = getFile(name, project);
 		Files.write(file.toPath(), Collections.singleton(content), UTF_8);

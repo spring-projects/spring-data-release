@@ -18,5 +18,15 @@
             <username>${env.ARTIFACTORY_USR}</username>
             <password>${env.ARTIFACTORY_PSW}</password>
         </server>
+        <server>
+            <id>spring-commercial-snapshot</id>
+            <username>${env.COMMERCIAL_USR}</username>
+            <password>${env.COMMERCIAL_PSW}</password>
+        </server>
+        <server>
+            <id>spring-commercial-release</id>
+            <username>${env.COMMERCIAL_USR}</username>
+            <password>${env.COMMERCIAL_PSW}</password>
+        </server>
     </servers>
 </settings>

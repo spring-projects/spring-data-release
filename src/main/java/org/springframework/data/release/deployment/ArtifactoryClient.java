@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.function.Consumer;
 
+import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
@@ -39,9 +41,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 class ArtifactoryClient {
 
-	private final RestOperations template;
 	private final Logger logger;
 	private final DeploymentProperties properties;
+	private final RestOperations operations;
 
 	/**
 	 * Triggers the promotion of the artifacts identified by the given {@link DeploymentInformation}.
@@ -53,28 +55,35 @@ class ArtifactoryClient {
 		Assert.notNull(information, "DeploymentInformation must not be null!");
 
 		ModuleIteration module = information.getModule();
-		URI uri = properties.getServer().getPromotionResource(information);
+		URI uri = information.getPromotionResource();
+
+		Authentication authentication = properties.getAuthentication(module);
 
 		logger.log(module, "Promoting %s %s from %s to %s.", information.getBuildName(), information.getBuildNumber(),
-				properties.getStagingRepository(), information.getTargetRepository());
+				authentication.getStagingRepository(), authentication.getTargetRepository());
 
 		try {
-			template.postForEntity(uri,
-					new PromotionRequest(information.getTargetRepository(), properties.getStagingRepository()), String.class);
+			PromotionRequest request = new PromotionRequest(information.getTargetRepository(),
+					authentication.getStagingRepository());
+			operations.postForEntity(uri, request, String.class);
+
 		} catch (HttpClientErrorException o_O) {
 			handle(message -> logger.warn(information.getModule(), message), "Promotion failed!", o_O);
 		}
 	}
 
-	public void verify() {
+	public void verify(SupportStatusAware status) {
 
-		URI verificationResource = properties.getServer().getVerificationResource();
+		URI verificationResource = properties
+				.getAuthentication(status)
+				.getServer()
+				.getVerificationResource();
 
 		try {
 
 			logger.log("Artifactory", "Verifying authentication using a GET call to %s.", verificationResource);
 
-			template.getForEntity(verificationResource, String.class);
+			operations.getForEntity(verificationResource, String.class);
 
 			logger.log("Artifactory", "Authentication verified!");
 
@@ -101,7 +110,8 @@ class ArtifactoryClient {
 	}
 
 	public void deleteArtifacts(DeploymentInformation information) {
-		template.delete(properties.getServer().getDeleteBuildResource(information));
+
+		operations.delete(information.getDeleteBuildResource());
 	}
 
 	@Value

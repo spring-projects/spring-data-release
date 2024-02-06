@@ -36,6 +36,7 @@ import org.springframework.data.release.git.Tag;
 import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.Version;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -76,7 +77,15 @@ class ProjectServiceOperations {
 
 		Assert.notNull(trains, "Trains must not be null!");
 
-		Map<Project, MaintainedVersions> versions = findVersions(trains);
+		List<Train> openSourceTrains = trains.stream()
+				.filter(it -> it.getSupportStatus().isOpenSource())
+				.collect(Collectors.toList());
+
+		if (openSourceTrains.isEmpty()) {
+			return;
+		}
+
+		Map<Project, MaintainedVersions> versions = findVersions(openSourceTrains);
 
 		Streamable<Entry<Project, MaintainedVersions>> stream = Streamable.of(versions.entrySet()) //
 				.filter(entry -> {
@@ -118,17 +127,21 @@ class ProjectServiceOperations {
 		Assert.notNull(trains, "Trains must not be null!");
 
 		Map<Project, MaintainedVersions> versions = ExecutionUtils.runAndReturn(executor, Streamable.of(trains), train -> {
+
 			return ExecutionUtils.runAndReturn(executor,
-					Streamable.of(() -> train.stream().filter(module -> !TO_FILTER.contains(module.getProject()))), module -> {
-						return getLatestVersion(module, train);
-					});
-		}).stream().flatMap(Collection::stream).flatMap(Collection::stream).collect(
-				Collectors.groupingBy(MaintainedVersion::getProject, ListWrapperCollector.collectInto(MaintainedVersions::of)));
+					train.getModules().filter(module -> !TO_FILTER.contains(module.getProject())),
+					module -> getLatestVersion(module, train));
+
+		}).stream()
+				.flatMap(Collection::stream)
+				.flatMap(Collection::stream)
+				.collect(
+						Collectors.groupingBy(MaintainedVersion::getProject,
+								ListWrapperCollector.collectInto(MaintainedVersions::of)));
 
 		// Migration because of the R2DBC merge into Spring Data Relational and project rename to Relational
 		versions.put(Projects.R2DBC, MaintainedVersions.of(getR2dbcVersions(versions)));
 		versions.put(Projects.RELATIONAL, MaintainedVersions.of(getRelationalVersions(versions)));
-
 		versions.remove(Projects.JDBC);
 
 		return versions;
@@ -181,12 +194,13 @@ class ProjectServiceOperations {
 
 	private List<MaintainedVersion> getLatestVersion(Module module, Train train) {
 
-		Project project = module.getProject();
+		SupportedProject project = train.getSupportedProject(module);
 
 		List<MaintainedVersion> version = git.getTags(project).stream()//
 				.filter(tag -> matches(tag, module.getVersion())).max(Comparator.naturalOrder()) //
 				.map(it -> {
-					MaintainedVersion maintainedVersion = MaintainedVersion.of(module.getProject(), it.toArtifactVersion().get(),
+					MaintainedVersion maintainedVersion = MaintainedVersion.of(module.getProject(),
+							it.toArtifactVersion().get(),
 							train, it.getCreationDate().toLocalDate(), it.getCreationDate().toLocalDate());
 					return Arrays.asList(maintainedVersion, maintainedVersion.nextDevelopmentVersion());
 				}) //

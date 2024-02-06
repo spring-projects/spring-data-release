@@ -38,8 +38,10 @@ import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
+import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.EmptyCommitException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
@@ -65,6 +67,7 @@ import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
 import org.springframework.data.release.model.*;
+import org.springframework.data.release.model.Module;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
@@ -92,19 +95,9 @@ public class GitOperations {
 	Executor executor;
 	Workspace workspace;
 	Logger logger;
-	PluginRegistry<IssueTracker, Project> issueTracker;
+	PluginRegistry<IssueTracker, SupportedProject> issueTracker;
 	GitProperties gitProperties;
 	Gpg gpg;
-
-	/**
-	 * Returns the {@link GitProject} for the given {@link Project}.
-	 *
-	 * @param project
-	 * @return
-	 */
-	public GitProject getGitProject(Project project) {
-		return new GitProject(project, server);
-	}
 
 	/**
 	 * Resets the repositories for all modules of the given {@link Train}.
@@ -116,7 +109,7 @@ public class GitOperations {
 		Assert.notNull(train, "Train must not be null!");
 
 		ExecutionUtils.run(executor, train, module -> {
-			reset(module.getProject(), Branch.from(module));
+			reset(module.getSupportedProject(), Branch.from(module));
 		});
 	}
 
@@ -149,9 +142,9 @@ public class GitOperations {
 			update(train);
 		}
 
-		ExecutionUtils.run(executor, train, module -> {
+		ExecutionUtils.run(executor, train.getModules(), module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = train.getSupportedProject(module);
 
 			doWithGit(project, git -> {
 
@@ -168,9 +161,9 @@ public class GitOperations {
 
 	}
 
-	private Branch getBranch(Train train, Module module, Project project) {
+	private Branch getBranch(Train train, Module module, SupportedProject project) {
 
-		ModuleIteration gaIteration = train.getModuleIteration(project, Iteration.GA);
+		ModuleIteration gaIteration = train.getModuleIteration(project.getProject(), Iteration.GA);
 		Optional<Tag> gaTag = findTagFor(project, ArtifactVersion.of(gaIteration));
 
 		if (!gaTag.isPresent()) {
@@ -180,7 +173,7 @@ public class GitOperations {
 		return gaTag.isPresent() ? Branch.from(module) : Branch.MAIN;
 	}
 
-	private void checkoutBranch(Project project, Git git, Branch branch) throws GitAPIException {
+	private void checkoutBranch(SupportedProject project, Git git, Branch branch) throws GitAPIException {
 
 		CheckoutCommand command = git.checkout().setName(branch.toString()).setForced(true);
 
@@ -208,8 +201,9 @@ public class GitOperations {
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = module.getSupportedProject();
 			ArtifactVersion artifactVersion = ArtifactVersion.of(module);
+
 			Tag tag = findTagFor(project, artifactVersion).orElseThrow(() -> new IllegalStateException(
 					String.format("No tag found for version %s of project %s, aborting.", artifactVersion, project)));
 
@@ -227,7 +221,7 @@ public class GitOperations {
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = module.getSupportedProject();
 			Branch branch = Branch.from(module);
 
 			update(project);
@@ -238,9 +232,8 @@ public class GitOperations {
 			doWithGit(project, git -> {
 
 				logger.log(project, "git pull origin %s", branch);
-				git.pull()//
-						.setRebase(true)//
-						.call();
+
+				call(git.pull().setRebase(true));
 			});
 
 			logger.log(project, "Pulling updates done!", branch);
@@ -250,7 +243,7 @@ public class GitOperations {
 	}
 
 	public void update(Train train) {
-		ExecutionUtils.run(executor, train, module -> update(module.getProject()));
+		ExecutionUtils.run(executor, train, this::update);
 	}
 
 	public void push(TrainIteration iteration) {
@@ -262,21 +255,21 @@ public class GitOperations {
 		Branch branch = Branch.from(module);
 		logger.log(module, "git push origin %s", branch);
 
-		if (!branchExists(module.getProject(), branch)) {
+		SupportedProject project = module.getSupportedProject();
 
-			logger.log(module, "No branch %s in %s, skip push", branch, module.getProject().getName());
+		if (!branchExists(project, branch)) {
+
+			logger.log(module, "No branch %s in %s, skip push", branch, project.getName());
 			return;
 		}
 
-		doWithGit(module.getProject(), git -> {
+		doWithGit(project, git -> {
 
 			Ref ref = git.getRepository().findRef(branch.toString());
 
-			git.push()//
-					.setRemote("origin")//
-					.setRefSpecs(new RefSpec(ref.getName()))//
-					.setCredentialsProvider(gitProperties.getCredentials())//
-					.call();
+			call(git.push() //
+					.setRemote("origin") //
+					.setRefSpecs(new RefSpec(ref.getName())));
 		});
 	}
 
@@ -284,15 +277,15 @@ public class GitOperations {
 
 		ExecutionUtils.run(executor, train.getModules(), module -> {
 
-			logger.log(module.getProject(), "git push --tags origin");
+			SupportedProject project = train.getSupportedProject(module);
 
-			doWithGit(module.getProject(), git -> {
+			logger.log(project, "git push --tags origin");
 
-				git.push()//
-						.setRemote("origin")//
-						.setPushTags()//
-						.setCredentialsProvider(gitProperties.getCredentials())//
-						.call();
+			doWithGit(project, git -> {
+
+				call(git.push() //
+						.setRemote("origin") //
+						.setPushTags());
 			});
 		});
 	}
@@ -303,16 +296,16 @@ public class GitOperations {
 	 *
 	 * @param project must not be {@literal null}.
 	 */
-	public void update(Project project) {
+	public void update(SupportedProject project) {
 
 		Assert.notNull(project, "Project must not be null!");
 
 		logger.log(project, "Updating project…");
 
-		GitProject gitProject = new GitProject(project, server);
+		GitProject gitProject = getGitProject(project);
 		String repositoryName = gitProject.getRepositoryName();
 
-		doWithGit(project, git -> {
+		doWithGit(gitProject.getProject(), git -> {
 
 			if (workspace.hasProjectDirectory(project)) {
 
@@ -321,10 +314,12 @@ public class GitOperations {
 				checkout(project, Branch.MAIN);
 
 				logger.log(project, "git fetch --tags");
-				git.fetch().setTagOpt(TagOpt.FETCH_TAGS).call();
+
+				call(git.fetch() //
+						.setTagOpt(TagOpt.FETCH_TAGS));
 
 			} else {
-				clone(project);
+				clone(gitProject);
 			}
 		});
 
@@ -336,35 +331,44 @@ public class GitOperations {
 	 *
 	 * @param project must not be {@literal null}.
 	 */
-	public void fetchTags(Project project) {
+	public void fetchTags(Project project, Train train) {
 
 		Assert.notNull(project, "Project must not be null!");
 
 		logger.log(project, "Updating project tags…");
 
-		GitProject gitProject = new GitProject(project, server);
+		GitProject gitProject = getGitProject(train.getSupportedProject(project));
 		String repositoryName = gitProject.getRepositoryName();
 
-		doWithGit(project, git -> {
+		doWithGit(gitProject.getProject(), git -> {
 
-			if (workspace.hasProjectDirectory(project)) {
+			if (workspace.hasProjectDirectory(train.getSupportedProject(project))) {
 
 				logger.log(project, "Found existing repository %s. Obtaining tags…", repositoryName);
 				logger.log(project, "git fetch --tags");
-				git.fetch().setTagOpt(TagOpt.FETCH_TAGS).call();
+
+				call(git.fetch() //
+						.setTagOpt(TagOpt.FETCH_TAGS));
 
 			} else {
-				clone(project);
+				clone(gitProject);
 			}
 		});
 
 		logger.log(project, "Project tags update done!");
 	}
 
-	public VersionTags getTags(Project project) {
+	private GitProject getGitProject(SupportedProject project) {
+		return new GitProject(project, server);
+	}
+
+	public VersionTags getTags(SupportedProject project) {
 
 		return doWithGit(project, git -> {
-			return new VersionTags(project, git.tagList().call().stream()//
+
+			git.tagList().call();
+
+			return new VersionTags(project.getProject(), git.tagList().call().stream()//
 					.map(ref -> {
 
 						RevCommit commit = getCommit(git.getRepository(), ref);
@@ -403,7 +407,7 @@ public class GitOperations {
 	 * @param project must not be {@literal null}.
 	 * @return
 	 */
-	public TicketBranches listTicketBranches(Project project) {
+	public TicketBranches listTicketBranches(SupportedProject project) {
 
 		Assert.notNull(project, "Project must not be null!");
 
@@ -415,7 +419,7 @@ public class GitOperations {
 			update(project);
 
 			Map<String, Branch> ticketIds = getRemoteBranches(project)//
-					.filter(branch -> branch.isIssueBranch(project.getTracker()))//
+					.filter(branch -> branch.isIssueBranch(project.getProject().getTracker()))//
 					.collect(Collectors.toMap(Branch::toString, branch -> branch));
 
 			Collection<Ticket> tickets = tracker.findTickets(project, ticketIds.keySet());
@@ -442,7 +446,9 @@ public class GitOperations {
 			return trainToUse.getIteration(Iteration.GA);
 		}
 
-		Optional<TrainIteration> mostRecentBefore = getTags(Projects.BUILD) //
+		SupportedProject build = trainIteration.getSupportedProject(Projects.BUILD);
+
+		Optional<TrainIteration> mostRecentBefore = getTags(build) //
 				.filter((tag, ti) -> ti.getTrain().equals(trainIteration.getTrain())) //
 				.find((tag, iteration) -> iteration.getIteration().compareTo(trainIteration.getIteration()) < 0,
 						Pair::getSecond);
@@ -451,7 +457,8 @@ public class GitOperations {
 				"Cannot determine previous iteration for " + trainIteration.getReleaseTrainNameAndVersion()));
 	}
 
-	public List<TicketReference> getTicketReferencesBetween(Project project, TrainIteration from, TrainIteration to) {
+	public List<TicketReference> getTicketReferencesBetween(SupportedProject project, TrainIteration from,
+			TrainIteration to) {
 
 		VersionTags tags = getTags(project);
 
@@ -459,8 +466,8 @@ public class GitOperations {
 
 			Repository repo = git.getRepository();
 
-			ModuleIteration toModuleIteration = to.getModule(project);
-			ObjectId fromTag = resolveLowerBoundary(project, from, tags, repo);
+			ModuleIteration toModuleIteration = to.getModule(project.getProject());
+			ObjectId fromTag = resolveLowerBoundary(project.getProject(), from, tags, repo);
 			ObjectId toTag = resolveUpperBoundary(toModuleIteration, tags, repo);
 
 			Iterable<RevCommit> commits = git.log().addRange(fromTag, toTag).call();
@@ -526,9 +533,13 @@ public class GitOperations {
 	}
 
 	private static String getFirstCommit(Repository repo) throws IOException {
+		return getFirstCommit(repo, Branch.MAIN);
+	}
+
+	private static String getFirstCommit(Repository repo, Branch branch) throws IOException {
 
 		try (RevWalk revWalk = new RevWalk(repo)) {
-			return revWalk.parseCommit(repo.resolve("main")).getName();
+			return revWalk.parseCommit(repo.resolve(branch.toString())).getName();
 		}
 	}
 
@@ -547,10 +558,10 @@ public class GitOperations {
 	}
 
 	private static boolean isGaOrFirstMilestone(Iteration iteration) {
-		return iteration.isGAIteration() || (iteration.isMilestone() && iteration.getIterationValue() == 1);
+		return iteration.isGAIteration() || iteration.isMilestone() && iteration.getIterationValue() == 1;
 	}
 
-	private Stream<Branch> getRemoteBranches(Project project) {
+	private Stream<Branch> getRemoteBranches(SupportedProject project) {
 
 		return doWithGit(project, git -> {
 
@@ -576,7 +587,7 @@ public class GitOperations {
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = module.getSupportedProject();
 			ObjectId hash = getReleaseHash(module);
 			Tag tag = getTags(project).createTag(module);
 
@@ -646,7 +657,7 @@ public class GitOperations {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.hasText(summary, "Summary must not be null or empty!");
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
 				() -> String.format("No issue tracker found for project %s!", project));
 		Ticket ticket = tracker.getReleaseTicketFor(module);
@@ -667,7 +678,7 @@ public class GitOperations {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.hasText(summary, "Summary must not be null or empty!");
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
 				() -> String.format("No issue tracker found for project %s!", project));
 		Ticket ticket = tracker.getReleaseTicketFor(module);
@@ -683,11 +694,12 @@ public class GitOperations {
 	 * @param summary must not be {@literal null} or empty.
 	 * @param details can be {@literal null} or empty.
 	 */
-	public void commit(ProjectAware module, Ticket ticket, String summary, Optional<String> details, boolean all) {
+	public void commit(ProjectAware module, Ticket ticket, String summary, Optional<String> details,
+			boolean all) {
 
 		Assert.notNull(module, "ProjectAware must not be null!");
 
-		commit(module.getProject(), ticket, summary, details, all);
+		commit(module.getSupportedProject(), ticket, summary, details, all);
 	}
 
 	/**
@@ -698,7 +710,7 @@ public class GitOperations {
 	 * @param summary must not be {@literal null} or empty.
 	 * @param details can be {@literal null} or empty.
 	 */
-	public void commit(Project project, Ticket ticket, String summary, Optional<String> details, boolean all) {
+	public void commit(SupportedProject project, Ticket ticket, String summary, Optional<String> details, boolean all) {
 
 		Assert.notNull(project, "Project must not be null!");
 		Assert.hasText(summary, "Summary must not be null or empty!");
@@ -745,7 +757,7 @@ public class GitOperations {
 	 * @param project must not be {@literal null}.
 	 * @param filepattern must not be {@literal null} or empty.
 	 */
-	public void add(Project project, String filepattern) {
+	public void add(SupportedProject project, String filepattern) {
 
 		Assert.notNull(project, "Project must not be null!");
 
@@ -761,14 +773,14 @@ public class GitOperations {
 	}
 
 	/**
-	 * Checks out the given {@link Branch} of the given {@link Project}. If the given branch doesn't exist yet, a tracking
-	 * branch is created assuming the branch exists in the {@code origin} remote. Pulls the latest changes from the
-	 * checked out branch will be pulled to make sure we see them.
+	 * Checks out the given {@link Branch} of the given {@link SupportedProject}. If the given branch doesn't exist yet, a
+	 * tracking branch is created assuming the branch exists in the {@code origin} remote. Pulls the latest changes from
+	 * the checked out branch will be pulled to make sure we see them.
 	 *
 	 * @param project must not be {@literal null}.
 	 * @param branch must not be {@literal null}.
 	 */
-	public void checkout(Project project, Branch branch) {
+	public void checkout(SupportedProject project, Branch branch) {
 		checkout(project, branch, BranchCheckoutMode.CREATE_AND_UPDATE);
 	}
 
@@ -782,7 +794,7 @@ public class GitOperations {
 	 * @param branch must not be {@literal null}.
 	 * @param mode must not be {@literal null}.
 	 */
-	private void checkout(Project project, Branch branch, BranchCheckoutMode mode) {
+	private void checkout(SupportedProject project, Branch branch, BranchCheckoutMode mode) {
 
 		Assert.notNull(project, "Project must not be null!");
 		Assert.notNull(branch, "Branch must not be null!");
@@ -822,11 +834,11 @@ public class GitOperations {
 					// Pull latest changes to make sure the branch is up to date
 					logger.log(project, "git pull origin %s", branch);
 
-					git.pull()//
-							.setRemote("origin")//
+					call(git.pull() //
+							.setRemote("origin") //
 							.setRebase(true) //
-							.setRemoteBranchName(branch.toString())//
-							.call();
+							.setRemoteBranchName(branch.toString()));
+
 					break;
 			}
 		});
@@ -845,7 +857,7 @@ public class GitOperations {
 		ExecutionUtils.run(executor, iteration, module -> {
 
 			Branch branch = createMaintenanceBranch(module);
-			checkout(module.getProject(), branch, BranchCheckoutMode.CREATE_ONLY);
+			checkout(module.getSupportedProject(), branch, BranchCheckoutMode.CREATE_ONLY);
 		});
 	}
 
@@ -853,7 +865,7 @@ public class GitOperations {
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Project project = module.getProject();
+			SupportedProject project = module.getSupportedProject();
 			ArtifactVersion artifactVersion = ArtifactVersion.of(module);
 
 			Optional<Tag> tag = findTagFor(project, artifactVersion);
@@ -875,10 +887,12 @@ public class GitOperations {
 	 * Verify general Git operations.
 	 */
 	@SneakyThrows
-	public void verify() {
+	public void verify(Train train) {
 
-		Project project = Projects.BUILD;
+		SupportedProject project = train.getSupportedProject(Projects.BUILD);
+
 		File projectDirectory = workspace.getProjectDirectory(project);
+
 		if (projectDirectory.exists()) {
 			FileUtils.deleteDirectory(projectDirectory);
 		}
@@ -891,7 +905,7 @@ public class GitOperations {
 		reset(project, Branch.MAIN);
 	}
 
-	private void commitRandomFile(Project project, File projectDirectory) throws IOException {
+	private void commitRandomFile(SupportedProject project, File projectDirectory) throws IOException {
 
 		String randomFileName = UUID.randomUUID() + ".txt";
 		File randomFile = new File(projectDirectory, randomFileName);
@@ -925,7 +939,7 @@ public class GitOperations {
 
 		Branch branch = Branch.from(module.getVersion());
 
-		doWithGit(module.getProject(), git -> {
+		doWithGit(module.getSupportedProject(), git -> {
 			logger.log(module, "git checkout -b %s", branch);
 			git.branchCreate().setName(branch.toString()).call();
 		});
@@ -952,14 +966,15 @@ public class GitOperations {
 		Predicate<RevCommit> trigger = calculateFilter(module, summary);
 
 		return findCommit(module, summary).orElseThrow(() -> new IllegalStateException(String
-				.format("Did not find a commit with summary starting with '%s' for project %s", module.getProject(), trigger)));
+				.format("Did not find a commit with summary starting with '%s' for project %s", module.getSupportedProject(),
+						trigger)));
 	}
 
 	private Optional<ObjectId> findCommit(ModuleIteration module, String summary) {
-		return findCommit(module.getProject(), calculateFilter(module, summary));
+		return findCommit(module.getSupportedProject(), calculateFilter(module, summary));
 	}
 
-	private Optional<ObjectId> findCommit(Project project, Predicate<RevCommit> filter) {
+	private Optional<ObjectId> findCommit(SupportedProject project, Predicate<RevCommit> filter) {
 
 		return doWithGit(project, git -> {
 
@@ -976,7 +991,7 @@ public class GitOperations {
 
 	private Predicate<RevCommit> calculateFilter(ModuleIteration module, String summary) {
 
-		Project project = module.getProject();
+		SupportedProject project = module.getSupportedProject();
 		Ticket releaseTicket = issueTracker
 				.getRequiredPluginFor(project, () -> String.format("No issue tracker found for project %s!", project))//
 				.getReleaseTicketFor(module);
@@ -999,14 +1014,14 @@ public class GitOperations {
 	 * @return
 	 * @throws IOException
 	 */
-	private Optional<Tag> findTagFor(Project project, ArtifactVersion version) {
+	private Optional<Tag> findTagFor(SupportedProject project, ArtifactVersion version) {
 
 		return getTags(project).stream()//
 				.filter(tag -> tag.toArtifactVersion().map(it -> it.equals(version)).orElse(false))//
 				.findFirst();
 	}
 
-	private Repository getRepository(Project project) throws IOException {
+	private Repository getRepository(SupportedProject project) throws IOException {
 
 		Repository repository = FileRepositoryBuilder.create(workspace.getFile(".git", project));
 
@@ -1017,25 +1032,24 @@ public class GitOperations {
 		return repository;
 	}
 
-	private void clone(Project project) throws Exception {
+	private void clone(GitProject gitProject) throws Exception {
 
-		GitProject gitProject = getGitProject(project);
+		SupportedProject project = gitProject.getProject();
 
 		logger.log(project, "No repository found! Cloning from %s…", gitProject.getProjectUri());
 
-		Git git = Git.cloneRepository()//
-				.setURI(gitProject.getProjectUri())//
-				.setDirectory(workspace.getProjectDirectory(project))//
-				.call();
+		Git git = call(Git.cloneRepository() //
+				.setURI(gitProject.getProjectUri()) //
+				.setDirectory(workspace.getProjectDirectory(project)));
 
-		git.checkout()//
-				.setName(Branch.MAIN.toString())//
+		git.checkout() //
+				.setName(Branch.MAIN.toString()) //
 				.call();
 
 		logger.log(project, "Cloning done!", project);
 	}
 
-	private boolean branchExists(Project project, Branch branch) {
+	private boolean branchExists(SupportedProject project, Branch branch) {
 
 		try (Git git = new Git(getRepository(project))) {
 
@@ -1046,7 +1060,7 @@ public class GitOperations {
 		}
 	}
 
-	private void reset(Project project, Branch branch) {
+	private void reset(SupportedProject project, Branch branch) {
 
 		logger.log(project, "git reset --hard origin/%s", branch);
 
@@ -1063,7 +1077,7 @@ public class GitOperations {
 		return summary.contains("%s") ? String.format(summary, module.getMediumVersionString()) : summary;
 	}
 
-	private <T> T doWithGit(Project project, GitCallback<T> callback) {
+	private <T> T doWithGit(SupportedProject project, GitCallback<T> callback) {
 
 		try (Git git = new Git(getRepository(project))) {
 			return callback.doWithGit(git);
@@ -1081,7 +1095,7 @@ public class GitOperations {
 		}
 	}
 
-	private void doWithGit(Project project, VoidGitCallback callback) {
+	private void doWithGit(SupportedProject project, VoidGitCallback callback) {
 
 		doWithGit(project, (GitCallback<Void>) git -> {
 			callback.doWithGit(git);
@@ -1104,6 +1118,13 @@ public class GitOperations {
 		}
 
 		return gpg;
+	}
+
+	private <T, C extends GitCommand<T>> T call(TransportCommand<C, T> command) throws GitAPIException {
+
+		return command
+				.setCredentialsProvider(gitProperties.getCredentials())
+				.call();
 	}
 
 	/**

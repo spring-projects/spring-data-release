@@ -19,10 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.Train;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.plugin.core.Plugin;
 
@@ -32,7 +30,7 @@ import org.springframework.plugin.core.Plugin;
  * @author Oliver Gierke
  * @author Mark Paluch
  */
-public interface IssueTracker extends Plugin<Project> {
+public interface IssueTracker extends Plugin<SupportedProject> {
 
 	/**
 	 * Reset internal state (cache, etc).
@@ -80,7 +78,7 @@ public interface IssueTracker extends Plugin<Project> {
 	 * @param ticketIds collection of {@link Ticket#id ticket Ids}, must not be {@literal null}.
 	 * @return
 	 */
-	Collection<Ticket> findTickets(Project project, Collection<String> ticketIds);
+	Collection<Ticket> findTickets(SupportedProject project, Collection<String> ticketIds);
 
 	/**
 	 * Query the issue tracker for multiple {@link Ticket#id ticket Ids}. Tickets that are not found are not returned. The
@@ -133,7 +131,7 @@ public interface IssueTracker extends Plugin<Project> {
 	 * @param project must not be {@literal null}.
 	 * @param ticket must not be {@literal null}.
 	 */
-	Ticket assignTicketToMe(Project project, Ticket ticket);
+	Ticket assignTicketToMe(SupportedProject project, Ticket ticket);
 
 	/**
 	 * Assigns the release ticket for the given {@link ModuleIteration} to the current user.

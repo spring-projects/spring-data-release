@@ -50,7 +50,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.io.JavaRuntimes;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Named;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.lang.Nullable;
 import org.springframework.shell.support.util.StringUtils;
@@ -155,8 +156,7 @@ public class MavenRuntime {
 		return matcher.group(1);
 	}
 
-	public MavenInvocationResult execute(Project project, CommandLine arguments) {
-
+	public MavenInvocationResult execute(SupportedProject project, CommandLine arguments) {
 
 		logger.log(project, "📦 Executing mvn %s", arguments.toString());
 
@@ -173,7 +173,8 @@ public class MavenRuntime {
 				mavenLogger.info(String.format("Java Home: %s", jdk));
 				mavenLogger.info(String.format("Executing: mvn %s", arguments));
 
-				CommandLine disabledGradleBuildCache = arguments.and(arg("gradle.cache.local.enabled=false")).and(arg("gradle.cache.remote.enabled=false"));
+				CommandLine disabledGradleBuildCache = arguments.and(arg("gradle.cache.local.enabled=false"))
+						.and(arg("gradle.cache.remote.enabled=false"));
 
 				mvn.setGoals(disabledGradleBuildCache.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
 			});
@@ -221,7 +222,7 @@ public class MavenRuntime {
 		return jdk.getHome().getAbsoluteFile();
 	}
 
-	private MavenLogger getLogger(Project project, List<CommandLine.Goal> goals) {
+	private MavenLogger getLogger(Named project, List<CommandLine.Goal> goals) {
 
 		if (this.properties.isConsoleLogger()) {
 			return new SlfLogger(log, project);
@@ -258,7 +259,7 @@ public class MavenRuntime {
 		private final String logPrefix;
 		private final List<String> contents;
 
-		SlfLogger(org.slf4j.Logger logger, Project project) {
+		SlfLogger(org.slf4j.Logger logger, Named project) {
 			this.logger = logger;
 			this.logPrefix = StringUtils.padRight(project.getName(), 10);
 			this.contents = new ArrayList<>();
@@ -295,7 +296,7 @@ public class MavenRuntime {
 		private final FileOutputStream outputStream;
 		private final List<String> contents = new ArrayList<>();
 
-		FileLogger(org.slf4j.Logger logger, Project project, File logsDirectory, List<CommandLine.Goal> goals) {
+		FileLogger(org.slf4j.Logger logger, Named project, File logsDirectory, List<CommandLine.Goal> goals) {
 
 			if (!logsDirectory.exists()) {
 				logsDirectory.mkdirs();

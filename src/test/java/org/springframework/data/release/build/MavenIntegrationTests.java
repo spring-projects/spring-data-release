@@ -26,7 +26,6 @@ import java.net.URLConnection;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.release.AbstractIntegrationTests;
@@ -34,7 +33,7 @@ import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Projects;
-
+import org.springframework.data.release.model.ReleaseTrains;
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.evaluation.XPathEvaluator;
 import org.xmlbeam.io.FileIO;
@@ -92,7 +91,7 @@ class MavenIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void findsSnapshotDependencies() throws Exception {
 
-		File file = workspace.getFile("pom.xml", Projects.BUILD);
+		File file = workspace.getFile("pom.xml", ReleaseTrains.latest().getSupportedProject(Projects.BUILD));
 
 		assumeThat(file).exists();
 

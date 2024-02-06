@@ -38,7 +38,6 @@ import org.apache.commons.io.filefilter.AbstractFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.NameFileFilter;
 import org.apache.commons.io.filefilter.NotFileFilter;
-
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
@@ -49,6 +48,7 @@ import org.springframework.data.release.issues.TicketOperations;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
@@ -95,7 +95,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 		if (projectName != null) {
 			Project project = Projects.requiredByName(projectName);
-			modules = modules.filter(it -> it.getProject().equals(project));
+			modules = modules.filter(it -> it.getSupportedProject().equals(project));
 		}
 
 		ExecutionUtils.run(executor, modules, module -> {
@@ -110,7 +110,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 	private int updateLicense(int year, ModuleIteration module) {
 
-		return replaceInFiles(module.getProject(), (file, content) -> {
+		return replaceInFiles(module.getSupportedProject(), (file, content) -> {
 
 			String contentToUse = content;
 
@@ -154,7 +154,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 	 * @param contentFunction
 	 * @return
 	 */
-	private int replaceInFiles(Project project, Function<String, String> contentFunction) {
+	private int replaceInFiles(SupportedProject project, Function<String, String> contentFunction) {
 		return replaceInFiles(project, (file, s) -> contentFunction.apply(s));
 	}
 
@@ -165,7 +165,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 	 * @param contentFunction
 	 * @return
 	 */
-	private int replaceInFiles(Project project, BiFunction<File, String, String> contentFunction) {
+	private int replaceInFiles(SupportedProject project, BiFunction<File, String, String> contentFunction) {
 
 		File projectDirectory = workspace.getProjectDirectory(project);
 		IOFileFilter fileFilter = new AntPathFileFilter(projectDirectory, filePatterns);

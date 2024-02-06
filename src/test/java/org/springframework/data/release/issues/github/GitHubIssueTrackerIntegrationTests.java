@@ -26,7 +26,6 @@ import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.WireMockExtension;
@@ -35,6 +34,7 @@ import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.Train;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.util.UriComponents;
@@ -55,6 +55,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 	static final String MILESTONES_URI = "/repos/spring-projects/spring-data-build/milestones";
 	static final ModuleIteration BUILD_HOPPER_RC1 = ReleaseTrains.HOPPER.getModuleIteration(Projects.BUILD,
 			Iteration.RC1);
+	static final Train LATEST = ReleaseTrains.latest();
 
 	@RegisterExtension WireMockExtension mockService = new WireMockExtension(
 			wireMockConfig().port(8888).fileSource(new ClasspathFileSource("integration/github")));
@@ -76,21 +77,25 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 
 		mockGetIssueWith("issue.json", 233);
 
-		Collection<Ticket> tickets = github.findTickets(Projects.BUILD, Collections.singletonList("233"));
+		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
+				Collections.singletonList("233"));
+
 		assertThat(tickets).hasSize(1);
 	}
 
 	@Test // #5
 	void ignoresUnknownTicketsByTicketId() {
 
-		Collection<Ticket> tickets = github.findTickets(Projects.BUILD, Collections.singletonList("123"));
+		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
+				Collections.singletonList("123"));
 		assertThat(tickets).isEmpty();
 	}
 
 	@Test // #5
 	void emptyResultWithEmptyTicketIds() {
 
-		Collection<Ticket> tickets = github.findTickets(Projects.COMMONS, Collections.emptyList());
+		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.COMMONS),
+				Collections.emptyList());
 		assertThat(tickets).isEmpty();
 	}
 

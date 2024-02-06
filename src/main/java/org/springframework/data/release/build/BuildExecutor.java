@@ -35,16 +35,15 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.io.IOUtils;
-
 import org.springframework.data.release.infra.InfrastructureOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.ProjectAware;
 import org.springframework.data.release.utils.ListWrapperCollector;
 import org.springframework.data.util.Streamable;
@@ -61,8 +60,7 @@ import org.springframework.util.Assert;
 @RequiredArgsConstructor
 class BuildExecutor {
 
-	private final @NonNull PluginRegistry<BuildSystem, Project> buildSystems;
-	private final MavenProperties mavenProperties;
+	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
 	private final ExecutorService executor;
 	private final Workspace workspace;
 
@@ -121,13 +119,14 @@ class BuildExecutor {
 
 					if (futureResult == null) {
 
-						if (!iteration.stream().map(ProjectAware::getProject).anyMatch(project -> project.equals(dependency))) {
-							throw new IllegalStateException(moduleIteration.getProject().getName() + " requires "
+						if (!iteration.stream().map(ProjectAware::getSupportedProject)
+								.anyMatch(project -> project.equals(dependency))) {
+							throw new IllegalStateException(moduleIteration.getSupportedProject().getName() + " requires "
 									+ dependency.getName() + " which is not part of the Iteration. Please fix Projects/Iterations setup");
 						}
 
 						throw new IllegalStateException("No future result for " + dependency.getName() + ", required by "
-								+ moduleIteration.getProject().getName());
+								+ moduleIteration.getSupportedProject().getName());
 					}
 
 					futureResult.join();
@@ -156,16 +155,18 @@ class BuildExecutor {
 				.collect(toSummaryCollector());
 	}
 
-	private <T, M extends ProjectAware> CompletableFuture<T> run(M module, BiFunction<BuildSystem, M, T> function) {
+	private <T, M extends ProjectAware> CompletableFuture<T> run(M module,
+			BiFunction<BuildSystem, M, T> function) {
 
 		Assert.notNull(module, "Module must not be null!");
 
 		CompletableFuture<T> result = new CompletableFuture<>();
 		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
-				String.format("No build system plugin found for project %s!", module.getProject()));
+				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
 
-		BuildSystem buildSystem = buildSystems.getPluginFor(module.getProject(), exception)
-				.withJavaVersion(detectJavaVersion(module.getProject()));
+		BuildSystem buildSystem = buildSystems //
+				.getPluginFor(module.getSupportedProject(), exception) //
+				.withJavaVersion(detectJavaVersion(module.getSupportedProject()));
 
 		Runnable runnable = () -> {
 
@@ -183,7 +184,7 @@ class BuildExecutor {
 	}
 
 	@SneakyThrows
-	public JavaVersion detectJavaVersion(Project project) {
+	public JavaVersion detectJavaVersion(SupportedProject project) {
 
 		File ciProperties = workspace.getFile(InfrastructureOperations.CI_PROPERTIES, project);
 

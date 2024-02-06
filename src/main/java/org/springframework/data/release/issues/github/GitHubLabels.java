@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.release.git.GitProject;
-import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -63,13 +63,15 @@ public class GitHubLabels extends GitHubSupport {
 	 *
 	 * @param project the project to process.
 	 */
-	public void createOrUpdateLabels(Project project) {
+	public void createOrUpdateLabels(SupportedProject project) {
 
 		logger.log(project, "Obtaining labels…");
-		Map<String, Object> parameters = Collections.singletonMap("repoName", GitProject.of(project).getRepositoryName());
+
+		Map<String, Object> parameters = Collections.singletonMap("repoName",
+				GitProject.of(project).getRepositoryName());
 
 		List<Label> existsOnGitHub = getLabelsFromGitHub(parameters);
-		LabelConfiguration configuration = ProjectLabelConfiguration.forProject(project);
+		LabelConfiguration configuration = ProjectLabelConfiguration.forProject(project.getProject());
 		List<Label> newLabels = configuration.getNewLabels(existsOnGitHub);
 		List<Label> existingLabels = configuration.getExistingLabels(existsOnGitHub);
 		List<Label> additionalLabels = configuration.getAdditionalLabels(existsOnGitHub);

@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.git.GitOperations;
@@ -30,9 +29,9 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.model.Iteration;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.plugin.core.PluginRegistry;
 
@@ -44,7 +43,7 @@ import org.springframework.plugin.core.PluginRegistry;
 @Disabled("Requires changes to application-test.properties to enable remote GitHub/Jira access")
 class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 
-	@Autowired PluginRegistry<IssueTracker, Project> trackers;
+	@Autowired PluginRegistry<IssueTracker, SupportedProject> trackers;
 
 	@Autowired GitOperations gitOperations;
 
@@ -54,8 +53,10 @@ class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 		TrainIteration from = ReleaseTrains.OCKHAM.getIteration(Iteration.M1);
 		TrainIteration to = ReleaseTrains.OCKHAM.getIteration(Iteration.M2);
 
-		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(Projects.MONGO_DB, from, to);
-		IssueTracker tracker = trackers.getRequiredPluginFor(Projects.MONGO_DB);
+		SupportedProject project = from.getSupportedProject(Projects.MONGO_DB);
+
+		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(project, from, to);
+		IssueTracker tracker = trackers.getRequiredPluginFor(project);
 
 		Tickets tickets = tracker.findTickets(to.getModule(Projects.MONGO_DB),
 				ticketReferences.stream().map(TicketReference::getId).collect(Collectors.toList()));
@@ -69,8 +70,10 @@ class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 		TrainIteration from = ReleaseTrains.OCKHAM.getIteration(Iteration.M1);
 		TrainIteration to = ReleaseTrains.OCKHAM.getIteration(Iteration.M2);
 
-		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(Projects.R2DBC, from, to);
-		IssueTracker tracker = trackers.getRequiredPluginFor(Projects.R2DBC);
+		SupportedProject project = from.getSupportedProject(Projects.R2DBC);
+
+		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(project, from, to);
+		IssueTracker tracker = trackers.getRequiredPluginFor(project);
 
 		Tickets tickets = tracker.findTickets(to.getModule(Projects.R2DBC),
 				ticketReferences.stream().map(TicketReference::getId).collect(Collectors.toList()));

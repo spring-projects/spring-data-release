@@ -28,7 +28,7 @@ import org.springframework.data.util.Streamable;
  */
 @Value
 @RequiredArgsConstructor
-public class TrainIteration implements Streamable<ModuleIteration> {
+public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 
 	private final Train train;
 	private final Iteration iteration;
@@ -84,11 +84,19 @@ public class TrainIteration implements Streamable<ModuleIteration> {
 			return getCalver().toMajorMinorBugfix();
 		}
 
-		if (iteration.isGAIteration()) {
-			return String.format("%s-RELEASE", getTrain().getName());
-		}
+		String trainName = getTrain().getName();
 
-		return String.format("%s-%s", getTrain().getName(), iteration);
+		return iteration.isGAIteration()
+				? String.format("%s-RELEASE", trainName)
+				: String.format("%s-%s", trainName, iteration);
+	}
+
+	public SupportedProject getSupportedProject(Project project) {
+		return train.getSupportedProject(project);
+	}
+
+	public SupportedProject getSupportedProject(Module module) {
+		return train.getSupportedProject(module);
 	}
 
 	/*
@@ -123,5 +131,14 @@ public class TrainIteration implements Streamable<ModuleIteration> {
 		Version version = getTrain().getCalver().nextMinor();
 
 		return version.toMajorMinorBugfix();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.model.SupportStatusAware#getSupportStatus()
+	 */
+	@Override
+	public SupportStatus getSupportStatus() {
+		return train.getSupportStatus();
 	}
 }

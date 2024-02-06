@@ -20,11 +20,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.web.util.UriTemplate;
 
@@ -44,6 +46,8 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	private final @Getter String buildNumber;
 	private final @Getter StagingRepository stagingRepositoryId;
 
+	private final Authentication authentication;
+
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties) {
 		this(module, properties, StagingRepository.EMPTY);
 	}
@@ -51,17 +55,18 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
 			String stagingRepositoryId) {
 		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)),
-				StagingRepository.of(stagingRepositoryId));
+				StagingRepository.of(stagingRepositoryId), properties.getAuthentication(module));
 	}
 
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
 			StagingRepository stagingRepository) {
-		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)), stagingRepository);
+		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)), stagingRepository,
+				properties.getAuthentication(module));
 	}
 
 	@Override
 	public DeploymentInformation withModule(ModuleIteration module) {
-		return new DefaultDeploymentInformation(module, properties, buildNumber, stagingRepositoryId);
+		return new DefaultDeploymentInformation(module, properties, buildNumber, stagingRepositoryId, authentication);
 	}
 
 	/*
@@ -75,12 +80,20 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 
 	/*
 	 * (non-Javadoc)
+	 * @see org.springframework.data.release.deployment.DeploymentInformation#getProject()
+	 */
+	@Override
+	public String getProject() {
+		return authentication.getProject();
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see org.springframework.data.release.deployment.DeploymentInformation#getTargetRepository()
 	 */
 	@Override
 	public String getTargetRepository() {
-		return properties.getRepositoryPrefix()
-				.concat(module.getIteration().isPublic() ? "libs-release-local" : "libs-milestone-local");
+		return authentication.getRepositoryPrefix().concat(authentication.getTargetRepository());
 	}
 
 	/*
@@ -91,7 +104,7 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	public String getDeploymentTargetUrl() {
 
 		Map<String, Object> parameters = new HashMap<>();
-		parameters.put("server", properties.getStagingRepositoryUrl());
+		parameters.put("server", authentication.getTargetRepository());
 		parameters.putAll(getBuildInfoParameters());
 
 		return REPOSITORY_TEMPLATE.expand(parameters).toString();
@@ -109,5 +122,34 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 		parameters.put("buildName", getBuildName());
 
 		return parameters;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.deployment.DeploymentInformation#getPromotionResource()
+	 */
+	@Override
+	public URI getPromotionResource() {
+		return authentication.getServer().getPromotionResource(this);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.deployment.DeploymentInformation#getDeleteBuildResource()
+	 */
+	@Override
+	public URI getDeleteBuildResource() {
+		return authentication.getServer().getDeleteBuildResource(this);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.springframework.data.release.deployment.DeploymentInformation#isMavenCentral()
+	 */
+	@Override
+	public boolean isMavenCentral() {
+
+		return !module.isCommercial()
+				&& module.getIteration().isPublic();
 	}
 }
