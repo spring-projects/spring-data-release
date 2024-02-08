@@ -162,7 +162,7 @@ Java and Maven versions are installed via https://sdkman.io/[SDKman] during the 
 link:src/main/java/org/springframework/data/release/issues/github/ProjectLabelConfiguration.java[`ProjectLabelConfiguration`] contains a per-project configuration which labels should be present in a project. To apply that configuration (create or update), use:
 
 ----
-$ github update labels $project
+$ github update labels $project [--commercial]
 ----
 
 ===== Dependency Upgrade
