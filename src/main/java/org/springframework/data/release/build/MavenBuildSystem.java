@@ -365,7 +365,8 @@ class MavenBuildSystem implements BuildSystem {
 		logger.log(iteration, "🚬 Running smoke test…");
 
 		boolean mavenCentral = iteration.isPublic();
-		String profile = mavenCentral ? "maven-central" : "artifactory";
+		boolean commercial = iteration.isCommercial();
+		String profile = commercial ? "commercial" : (mavenCentral ? "maven-central" : "artifactory");
 
 		ModuleIteration module = iteration.getModule(BUILD);
 
@@ -380,6 +381,7 @@ class MavenBuildSystem implements BuildSystem {
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, VERIFY, //
 				profile(profile), //
+				arg("s").withValue("settings.xml"), //
 				arg("spring-data-bom.version").withValue(iteration.getReleaseTrainNameAndVersion())) //
 				.andIf(mavenCentral, arg("stagingRepository").withValue(stagingRepository.getId()));
 

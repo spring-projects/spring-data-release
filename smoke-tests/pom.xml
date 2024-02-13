@@ -92,6 +92,25 @@
 				</repository>
 			</repositories>
 		</profile>
+		<profile>
+
+			<id>commercial</id>
+
+			<repositories>
+				<repository>
+					<id>spring-commercial-release</id>
+					<url>
+						https://repo.spring.vmware.com/artifactory/spring-commercial/
+					</url>
+				</repository>
+				<repository>
+					<id>spring-commercial-staging</id>
+					<url>
+						https://repo.spring.vmware.com/artifactory/spring-commercial-staging-local/
+					</url>
+				</repository>
+			</repositories>
+		</profile>
 	</profiles>
 
 

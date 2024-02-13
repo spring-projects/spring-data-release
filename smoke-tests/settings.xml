@@ -1,0 +1,24 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+	<servers>
+		<server>
+			<id>spring-commercial-staging</id>
+			<username>${env.COMMERCIAL_USR}</username>
+			<password>${env.COMMERCIAL_PSW}</password>
+		</server>
+		<server>
+			<id>spring-commercial-release</id>
+			<username>${env.COMMERCIAL_USR}</username>
+			<password>${env.COMMERCIAL_PSW}</password>
+		</server>
+		<server>
+			<id>spring-libs-milestone</id>
+			<username>${ARTIFACTORY_USR}</username>
+			<password>${ARTIFACTORY_PSW}</password>
+		</server>
+	</servers>
+
+</settings>
