@@ -43,7 +43,7 @@ public class DeploymentProperties {
 	private Authentication opensource, commercial;
 
 	public Authentication getAuthentication(SupportStatusAware status) {
-		return status.isOpenSource() ? opensource : commercial;
+		return status.isCommercial() ? commercial : opensource;
 	}
 
 	public Streamable<Authentication> getAuthentications() {

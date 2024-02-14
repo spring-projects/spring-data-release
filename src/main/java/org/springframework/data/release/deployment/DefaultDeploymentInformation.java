@@ -27,7 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
+import org.springframework.data.release.git.Branch;
+import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.SupportedProject;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriTemplate;
 
 /**
@@ -54,14 +58,34 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
 			String stagingRepositoryId) {
-		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)),
-				StagingRepository.of(stagingRepositoryId), properties.getAuthentication(module));
+		this(module, properties, createBuildNumber(module), StagingRepository.of(stagingRepositoryId),
+				properties.getAuthentication(module));
 	}
 
 	public DefaultDeploymentInformation(ModuleIteration module, DeploymentProperties properties,
 			StagingRepository stagingRepository) {
-		this(module, properties, String.valueOf(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC)), stagingRepository,
-				properties.getAuthentication(module));
+		this(module, properties, createBuildNumber(module), stagingRepository, properties.getAuthentication(module));
+	}
+
+	public static String createBuildNumber(ModuleIteration module) {
+
+		String actualBuildNumber;
+
+		if (StringUtils.hasText(System.getenv("BUILD_ID"))) {
+			actualBuildNumber = System.getenv("BUILD_ID");
+		} else {
+			actualBuildNumber = "" + LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
+
+		}
+
+		Branch branch;
+		if (module.isBranchVersion() || module.isCommercial() || module.getIteration().isServiceIteration()) {
+			branch = Branch.from(module.getVersion());
+		} else {
+			branch = Branch.MAIN;
+		}
+
+		return String.format("%s-%s-release-%s", getBuildName(module.getSupportedProject()), branch, actualBuildNumber);
 	}
 
 	@Override
@@ -75,7 +99,11 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	 */
 	@Override
 	public String getBuildName() {
-		return module.getProject().getFullName().concat(" - Release");
+		return getBuildName(module.getSupportedProject());
+	}
+
+	private static String getBuildName(SupportedProject project) {
+		return GitProject.of(project).getRepositoryName();
 	}
 
 	/*
@@ -149,7 +177,6 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	@Override
 	public boolean isMavenCentral() {
 
-		return !module.isCommercial()
-				&& module.getIteration().isPublic();
+		return !module.isCommercial() && module.getIteration().isPublic();
 	}
 }

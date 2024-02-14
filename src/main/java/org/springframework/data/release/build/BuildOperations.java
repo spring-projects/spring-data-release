@@ -294,7 +294,10 @@ public class BuildOperations {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
 
-		distributeResources(iteration.getTrain());
+		BuildExecutor.Summary<?> summary = executor.doWithBuildSystemAnyOrder(iteration,
+				BuildSystem::triggerDistributionBuild);
+
+		logger.log(iteration, "Distribution build: %s", summary);
 	}
 
 	/**

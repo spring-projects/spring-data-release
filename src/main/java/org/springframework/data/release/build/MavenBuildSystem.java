@@ -442,6 +442,10 @@ class MavenBuildSystem implements BuildSystem {
 			return module;
 		}
 
+		DefaultDeploymentInformation deploymentInformation = module instanceof ModuleIteration
+				? new DefaultDeploymentInformation((ModuleIteration) module, properties)
+				: null;
+
 		logger.log(project, "Triggering distribution build…");
 
 		Authentication authentication = properties.getAuthentication(module);
@@ -451,14 +455,20 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getPassword())));
+				arg("artifactory.password").withValue(authentication.getPassword()))
+				.andIf(deploymentInformation != null, () -> {
+					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
+				}));
 
 		mvn.execute(supportedProject, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				SKIP_TESTS, profile("distribute-schema"), Argument.of("-B"),
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getPassword())));
+				arg("artifactory.password").withValue(authentication.getPassword()))
+				.andIf(deploymentInformation != null, () -> {
+					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
+				}));
 
 		logger.log(project, "Successfully finished distribution build!");
 

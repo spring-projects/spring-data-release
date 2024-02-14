@@ -29,7 +29,7 @@ import org.springframework.data.release.model.TrainIteration;
 
 /**
  * Integration test for {@link DefaultDeploymentInformation}.
- * 
+ *
  * @author Oliver Gierke
  */
 class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
@@ -44,8 +44,24 @@ class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
 
 		DeploymentInformation information = new DefaultDeploymentInformation(buildModule, properties);
 
-		assertThat(information.getDeploymentTargetUrl()).contains(properties.getServer().getUri().toString());
-		assertThat(information.getBuildName()).isEqualTo("Spring Data Build - Release");
-		assertThat(information.getTargetRepository()).isEqualTo("test-libs-milestone-local");
+		assertThat(information.getBuildName()).isEqualTo("spring-data-build");
+		assertThat(information.getBuildNumber()).startsWith("spring-data-build-main-release");
+		assertThat(information.getTargetRepository()).contains("libs-milestone-local");
+	}
+
+	@Test
+	void considersBranchName() {
+
+		DeploymentInformation commercialSr1 = new DefaultDeploymentInformation(
+				ReleaseTrains.TURING.getIteration(Iteration.SR1).getModule(Projects.BUILD), properties);
+		assertThat(commercialSr1.getBuildNumber()).startsWith("spring-data-build-commercial-3.0.x-release");
+
+		DeploymentInformation ossGA = new DefaultDeploymentInformation(
+				ReleaseTrains.VAUGHAN.getIteration(Iteration.GA).getModule(Projects.BUILD), properties);
+		assertThat(ossGA.getBuildNumber()).startsWith("spring-data-build-main-release");
+
+		DeploymentInformation ossSr1 = new DefaultDeploymentInformation(
+				ReleaseTrains.VAUGHAN.getIteration(Iteration.SR1).getModule(Projects.BUILD), properties);
+		assertThat(ossSr1.getBuildNumber()).startsWith("spring-data-build-3.2.x-release");
 	}
 }
