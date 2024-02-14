@@ -61,17 +61,18 @@ import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
+
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
 import org.springframework.data.release.model.*;
-import org.springframework.data.release.model.Module;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
 import org.springframework.data.util.Streamable;
+import org.springframework.lang.Nullable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -224,7 +225,7 @@ public class GitOperations {
 			SupportedProject project = module.getSupportedProject();
 			Branch branch = Branch.from(module);
 
-			update(project);
+			update(project, branch);
 			checkout(project, branch);
 
 			logger.log(project, "Pulling latest updates for branch %s…", branch);
@@ -297,6 +298,17 @@ public class GitOperations {
 	 * @param project must not be {@literal null}.
 	 */
 	public void update(SupportedProject project) {
+		update(project, null);
+	}
+
+	/**
+	 * Updates the given {@link Project}. Will either pull the latest changes or clone the project's repository if not
+	 * already available.
+	 *
+	 * @param project must not be {@literal null}.
+	 * @param branch
+	 */
+	public void update(SupportedProject project, @Nullable Branch branch) {
 
 		Assert.notNull(project, "Project must not be null!");
 
@@ -311,7 +323,7 @@ public class GitOperations {
 
 				logger.log(project, "Found existing repository %s. Obtaining latest changes…", repositoryName);
 
-				checkout(project, Branch.MAIN);
+				checkout(project, branch == null ? Branch.from(git.getRepository().getBranch()) : branch);
 
 				logger.log(project, "git fetch --tags");
 
@@ -694,8 +706,7 @@ public class GitOperations {
 	 * @param summary must not be {@literal null} or empty.
 	 * @param details can be {@literal null} or empty.
 	 */
-	public void commit(ProjectAware module, Ticket ticket, String summary, Optional<String> details,
-			boolean all) {
+	public void commit(ProjectAware module, Ticket ticket, String summary, Optional<String> details, boolean all) {
 
 		Assert.notNull(module, "ProjectAware must not be null!");
 
@@ -965,9 +976,9 @@ public class GitOperations {
 
 		Predicate<RevCommit> trigger = calculateFilter(module, summary);
 
-		return findCommit(module, summary).orElseThrow(() -> new IllegalStateException(String
-				.format("Did not find a commit with summary starting with '%s' for project %s", module.getSupportedProject(),
-						trigger)));
+		return findCommit(module, summary).orElseThrow(() -> new IllegalStateException(
+				String.format("Did not find a commit with summary starting with '%s' for project %s",
+						module.getSupportedProject(), trigger)));
 	}
 
 	private Optional<ObjectId> findCommit(ModuleIteration module, String summary) {
@@ -1038,13 +1049,9 @@ public class GitOperations {
 
 		logger.log(project, "No repository found! Cloning from %s…", gitProject.getProjectUri());
 
-		Git git = call(Git.cloneRepository() //
+		call(Git.cloneRepository() //
 				.setURI(gitProject.getProjectUri()) //
 				.setDirectory(workspace.getProjectDirectory(project)));
-
-		git.checkout() //
-				.setName(Branch.MAIN.toString()) //
-				.call();
 
 		logger.log(project, "Cloning done!", project);
 	}
@@ -1122,9 +1129,7 @@ public class GitOperations {
 
 	private <T, C extends GitCommand<T>> T call(TransportCommand<C, T> command) throws GitAPIException {
 
-		return command
-				.setCredentialsProvider(gitProperties.getCredentials())
-				.call();
+		return command.setCredentialsProvider(gitProperties.getCredentials()).call();
 	}
 
 	/**

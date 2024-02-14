@@ -235,8 +235,12 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public <M extends ProjectAware> M triggerBuild(M module) {
 
-		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL)//
-				.and(profile("ci,release")).andIf(module.getSupportedProject().getProject().skipTests(), SKIP_TESTS)
+		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL, //
+				profile("ci,release"), //
+				arg("gpg.executable").withValue(gpg.getExecutable()), //
+				arg("gpg.keyname").withValue(gpg.getKeyname()), //
+				arg("gpg.passphrase").withValue(gpg.getPassphrase()))//
+				.andIf(module.getSupportedProject().getProject().skipTests(), SKIP_TESTS)
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
 
 		mvn.execute(module.getSupportedProject(), arguments);

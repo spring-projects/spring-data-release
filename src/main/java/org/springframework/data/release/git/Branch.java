@@ -20,6 +20,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.release.model.IterationVersion;
+import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.Version;
 import org.springframework.data.release.model.VersionAware;
@@ -38,6 +39,23 @@ public class Branch implements Comparable<Branch> {
 	public static final Branch MAIN = new Branch("main");
 
 	private final String name;
+
+	/**
+	 * Creates a new {@link Branch} from the given {@link IterationVersion}.
+	 *
+	 * @param iterationVersion must not be {@literal null}.
+	 * @return
+	 */
+	public static Branch from(ModuleIteration iterationVersion) {
+
+		Assert.notNull(iterationVersion, "Iteration version must not be null!");
+
+		if (iterationVersion.isBranchVersion() || iterationVersion.isCommercial()) {
+			return from((VersionAware) iterationVersion);
+		}
+
+		return MAIN;
+	}
 
 	/**
 	 * Creates a new {@link Branch} from the given {@link IterationVersion}.
