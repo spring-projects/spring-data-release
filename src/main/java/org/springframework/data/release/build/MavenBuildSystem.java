@@ -320,7 +320,8 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.password").withValue(authentication.getPassword()),
 				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
 				arg("artifactory.build-number").withValue(information.getBuildNumber()),
-				arg("artifactory.project").withValue(information.getProject()));
+				arg("artifactory.project").withValue(information.getProject()))
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
 	}
