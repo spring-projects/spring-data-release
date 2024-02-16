@@ -62,7 +62,7 @@ public class DocumentationMetadata {
 
 		String format = project.isCommercial() ? COMMERICIAL_JAVADOC : JAVADOC;
 
-		if (Projects.BUILD.equals(project)) { // Report Commons Docs for Spring Data Build
+		if (Projects.BUILD.equals(project.getProject())) { // Report Commons Docs for Spring Data Build
 			return String.format(format, getProjectName(Projects.COMMONS), getDocumentationVersion());
 		}
 
@@ -119,7 +119,7 @@ public class DocumentationMetadata {
 
 	public String getVersionOrTrainName(Train train) {
 
-		if (Projects.BUILD.equals(project)) {
+		if (Projects.BUILD.equals(project.getProject())) {
 
 			if (train.usesCalver()) {
 

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.SupportStatus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -46,9 +47,9 @@ class ProjectMetadataSerializationTests {
 
 		MaintainedVersions versions = MaintainedVersions.of(kay, ingalls, hopper);
 
-		System.out.println(mapper.writeValueAsString(new ProjectMetadata(kay, versions)));
-		System.out.println(mapper.writeValueAsString(new ProjectMetadata(ingallsSnapshot, versions)));
-		System.out.println(mapper.writeValueAsString(new ProjectMetadata(ingalls, versions)));
-		System.out.println(mapper.writeValueAsString(new ProjectMetadata(hopper, versions)));
+		System.out.println(mapper.writeValueAsString(new ProjectMetadata(kay, SupportStatus.OSS, versions)));
+		System.out.println(mapper.writeValueAsString(new ProjectMetadata(ingallsSnapshot, SupportStatus.OSS, versions)));
+		System.out.println(mapper.writeValueAsString(new ProjectMetadata(ingalls, SupportStatus.OSS, versions)));
+		System.out.println(mapper.writeValueAsString(new ProjectMetadata(hopper, SupportStatus.OSS, versions)));
 	}
 }
