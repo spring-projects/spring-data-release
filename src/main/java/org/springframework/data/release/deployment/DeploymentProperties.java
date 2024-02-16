@@ -19,6 +19,7 @@ import lombok.Data;
 
 import java.net.URI;
 
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
@@ -36,7 +37,7 @@ import org.springframework.web.util.UriTemplate;
 @Data
 @Component
 @ConfigurationProperties(prefix = "deployment")
-public class DeploymentProperties {
+public class DeploymentProperties implements InitializingBean {
 
 	private String settingsXml;
 	private MavenCentral mavenCentral;
@@ -48,6 +49,18 @@ public class DeploymentProperties {
 
 	public Streamable<Authentication> getAuthentications() {
 		return Streamable.of(opensource, commercial);
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+
+		Assert.notNull(mavenCentral, "Maven Central properties not provided");
+		Assert.notNull(opensource, "OSS authentication properties not provided");
+		Assert.notNull(commercial, "Commercial authentication properties not provided");
+
+		mavenCentral.validate();
+		opensource.validate();
+		commercial.validate();
 	}
 
 	@Data
@@ -93,6 +106,13 @@ public class DeploymentProperties {
 		public boolean hasGpgConfiguration() {
 			return gpg != null && gpg.isGpgAvailable();
 		}
+
+		public void validate() {
+
+			if (!StringUtils.hasText(stagingProfileId)) {
+				throw new IllegalArgumentException("No staging profile Id for Maven Central");
+			}
+		}
 	}
 
 	@Data
@@ -109,6 +129,34 @@ public class DeploymentProperties {
 
 		public boolean hasCredentials() {
 			return StringUtils.hasText(username) && password != null;
+		}
+
+		public void validate() {
+
+			if (!StringUtils.hasText(stagingRepository)) {
+				throw new IllegalArgumentException(
+						String.format("No staging repository for server authentication %s provided", server));
+			}
+
+			if (!StringUtils.hasText(targetRepository)) {
+				throw new IllegalArgumentException(
+						String.format("No target repository for server authentication %s provided", server));
+			}
+
+			if (!StringUtils.hasText(distributionRepository)) {
+				throw new IllegalArgumentException(
+						String.format("No distribution repository for server authentication %s provided", server));
+			}
+
+			if (!StringUtils.hasText(server.uri)) {
+				throw new IllegalArgumentException(
+						String.format("No server URI for server authentication %s provided", server));
+			}
+
+			if (!StringUtils.hasText(server.verificationResource)) {
+				throw new IllegalArgumentException(
+						String.format("No verification resource for server authentication %s provided", server));
+			}
 		}
 
 		/**
