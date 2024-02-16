@@ -49,13 +49,6 @@ public interface DeploymentInformation {
 	String getProject();
 
 	/**
-	 * Returns the full URL to be used as deployment target.
-	 *
-	 * @return will never be {@literal null} or empty.
-	 */
-	String getDeploymentTargetUrl();
-
-	/**
 	 * Returns the name of the repository to deploy to.
 	 *
 	 * @return will never be {@literal null} or empty.

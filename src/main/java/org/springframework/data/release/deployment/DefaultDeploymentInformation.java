@@ -42,9 +42,6 @@ import org.springframework.web.util.UriTemplate;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class DefaultDeploymentInformation implements DeploymentInformation {
 
-	private static UriTemplate REPOSITORY_TEMPLATE = new UriTemplate(
-			"artifactory::default::{server};build.number={buildNumber};build.name={buildName}");
-
 	private final @Getter @NonNull ModuleIteration module;
 	private final @NonNull DeploymentProperties properties;
 	private final @Getter String buildNumber;
@@ -126,20 +123,6 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.springframework.data.release.deployment.DeploymentInformation#getDeploymentTargetUrl()
-	 */
-	@Override
-	public String getDeploymentTargetUrl() {
-
-		Map<String, Object> parameters = new HashMap<>();
-		parameters.put("server", authentication.getTargetRepository());
-		parameters.putAll(getBuildInfoParameters());
-
-		return REPOSITORY_TEMPLATE.expand(parameters).toString();
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see org.springframework.data.release.deployment.DeploymentInformation#getBuildInfoParameters()
 	 */
 	@Override
@@ -148,6 +131,7 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("buildNumber", getBuildNumber());
 		parameters.put("buildName", getBuildName());
+		parameters.put("project", getProject());
 
 		return parameters;
 	}

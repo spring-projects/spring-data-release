@@ -53,8 +53,8 @@ public class DeploymentProperties {
 	@Data
 	public static class Server {
 
-		private static final String PROMOTION_RESOURCE = "/api/build/promote/{buildName}/{buildNumber}";
-		private static final String DELETE_BUILD_RESOURCE = "/api/build/{buildName}?buildNumbers={buildNumber}&artifacts=1";
+		private static final String PROMOTION_RESOURCE = "/api/build/promote/{buildName}/{buildNumber}?project={project}";
+		private static final String DELETE_BUILD_RESOURCE = "/api/build/{buildName}?buildNumbers={buildNumber}&artifacts=1&project={project}";
 		private static final String VERIFICATION_RESOURCE = "/api/storage/{verificationResource}";
 
 		private String uri;
