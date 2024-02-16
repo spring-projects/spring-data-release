@@ -311,6 +311,8 @@ class MavenBuildSystem implements BuildSystem {
 
 		Authentication authentication = properties.getAuthentication(module);
 
+		Gpg gpg = getGpg();
+
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				profile("ci,release,artifactory"), //
 				SKIP_TESTS, //
@@ -320,7 +322,10 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.password").withValue(authentication.getPassword()),
 				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
 				arg("artifactory.build-number").withValue(information.getBuildNumber()),
-				arg("artifactory.project").withValue(information.getProject()))
+				arg("artifactory.project").withValue(information.getProject()),
+				arg("gpg.executable").withValue(gpg.getExecutable()), //
+				arg("gpg.keyname").withValue(gpg.getKeyname()), //
+				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
