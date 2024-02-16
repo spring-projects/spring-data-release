@@ -19,6 +19,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -27,10 +28,12 @@ import java.util.stream.Stream;
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
+import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.SupportStatus;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.utils.ExecutionUtils;
-import org.springframework.data.util.Streamable;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
@@ -50,20 +53,27 @@ class ProjectServiceCommands extends TimedCommand {
 	ProjectServiceOperations projects;
 	GitOperations git;
 	ExecutorService executor;
-
-	@CliCommand("sagan update")
-	public void saganUpdateProjectInformation(@CliOption(key = "", mandatory = true) String trainNames) {
-		updateProjectInformation(trainNames);
-	}
+	Workspace workspace;
 
 	@CliCommand("projects update")
-	public void updateProjectInformation(@CliOption(key = "", mandatory = true) String trainNames) {
+	public void updateProjectInformation(@CliOption(key = "", mandatory = true) String trainNames,
+			@CliOption(key = "update", mandatory = false) Boolean update) {
 
+		File oss = new File(workspace.getWorkingDirectory(), "oss");
+		File commercial = new File(workspace.getWorkingDirectory(), "commercial");
 		List<Train> trains = Stream.of(trainNames.split(","))//
-				.map(ReleaseTrains::getTrainByName)
-				.collect(Collectors.toList());
+				.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
 
-		ExecutionUtils.run(executor, Streamable.of(trains), git::update);
+		if ((update != null && update) || (!commercial.exists() || !oss.exists())) {
+
+			// avoid race condition in directory creation
+			oss.mkdirs();
+			commercial.mkdirs();
+
+			for (Train train : trains) {
+				ExecutionUtils.run(executor, train, sp -> git.update(SupportedProject.of(sp.getProject(), SupportStatus.OSS)));
+			}
+		}
 
 		projects.updateProjectMetadata(trains);
 	}

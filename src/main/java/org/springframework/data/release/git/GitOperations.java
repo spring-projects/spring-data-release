@@ -1049,9 +1049,13 @@ public class GitOperations {
 
 		logger.log(project, "No repository found! Cloning from %s…", gitProject.getProjectUri());
 
+		File projectDirectory = workspace.getProjectDirectory(project);
+		if (!projectDirectory.exists()) {
+			projectDirectory.mkdirs();
+		}
 		call(Git.cloneRepository() //
 				.setURI(gitProject.getProjectUri()) //
-				.setDirectory(workspace.getProjectDirectory(project)));
+				.setDirectory(projectDirectory));
 
 		logger.log(project, "Cloning done!", project);
 	}
