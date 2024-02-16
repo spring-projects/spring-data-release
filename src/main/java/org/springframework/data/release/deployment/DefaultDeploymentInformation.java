@@ -131,7 +131,9 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("buildNumber", getBuildNumber());
 		parameters.put("buildName", getBuildName());
-		parameters.put("project", getProject());
+
+		String project = StringUtils.hasText(getProject()) ? getProject() : "";
+		parameters.put("project", project);
 
 		return parameters;
 	}

@@ -57,6 +57,7 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.dom.DOMAccess;
@@ -322,11 +323,11 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.password").withValue(authentication.getPassword()),
 				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
 				arg("artifactory.build-number").withValue(information.getBuildNumber()),
-				arg("artifactory.project").withValue(information.getProject()),
 				arg("gpg.executable").withValue(gpg.getExecutable()), //
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
 				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()));
+				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
+				.andIf(StringUtils.hasText(information.getProject()), () -> arg("artifactory.project").withValue(information.getProject()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
 	}
