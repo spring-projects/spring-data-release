@@ -43,14 +43,11 @@ public class ChangelogGenerator {
 
 	private static final Pattern ghUserMentionPattern = Pattern.compile("(^|[^\\w`])(@[\\w-]+)");
 
-	@Getter
-	private final Set<String> excludeLabels;
+	@Getter private final Set<String> excludeLabels;
 
-	@Getter
-	private final Set<String> excludeContributors;
+	@Getter private final Set<String> excludeContributors;
 
-	@Getter
-	private final String contributorsTitle;
+	@Getter private final String contributorsTitle;
 
 	private final ChangelogSections sections;
 
@@ -66,10 +63,11 @@ public class ChangelogGenerator {
 	 *
 	 * @param issues the issues to generate the changelog for
 	 * @param sectionContentPostProcessor the postprocessor for a changelog section
+	 * @param generateLinks whether to generate links
 	 */
 	public String generate(List<GitHubReadIssue> issues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor) {
-		return generateContent(issues, sectionContentPostProcessor);
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
+		return generateContent(issues, sectionContentPostProcessor, generateLinks);
 	}
 
 	private boolean isExcluded(GitHubReadIssue issue) {
@@ -81,9 +79,9 @@ public class ChangelogGenerator {
 	}
 
 	private String generateContent(List<GitHubReadIssue> issues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor) {
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
 		StringBuilder content = new StringBuilder();
-		addSectionContent(content, this.sections.collate(issues), sectionContentPostProcessor);
+		addSectionContent(content, this.sections.collate(issues), sectionContentPostProcessor, generateLinks);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {
 			addContributorsContent(content, contributors);
@@ -92,7 +90,7 @@ public class ChangelogGenerator {
 	}
 
 	private void addSectionContent(StringBuilder result, Map<ChangelogSection, List<GitHubReadIssue>> sectionIssues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor) {
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
 
 		sectionIssues.forEach((section, issues) -> {
 
@@ -102,16 +100,16 @@ public class ChangelogGenerator {
 
 			content.append((content.length() != 0) ? String.format("%n") : "");
 			content.append("## ").append(section).append(String.format("%n%n"));
-			issues.stream().map(this::getFormattedIssue).forEach(content::append);
+			issues.stream().map(issue -> getFormattedIssue(issue, generateLinks)).forEach(content::append);
 
 			result.append(sectionContentPostProcessor.apply(section, content.toString()));
 		});
 	}
 
-	private String getFormattedIssue(GitHubReadIssue issue) {
+	private String getFormattedIssue(GitHubReadIssue issue, boolean generateLinks) {
 		String title = issue.getTitle();
 		title = ghUserMentionPattern.matcher(title).replaceAll("$1`$2`");
-		return String.format("- %s %s%n", title, getLinkToIssue(issue));
+		return String.format("- %s %s%n", title, generateLinks ? getLinkToIssue(issue) : issue.getId());
 	}
 
 	private String getLinkToIssue(GitHubIssue issue) {

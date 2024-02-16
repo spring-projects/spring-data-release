@@ -16,6 +16,8 @@
 package org.springframework.data.release.projectservice;
 
 import org.springframework.data.release.model.DocumentationMetadata;
+import org.springframework.data.release.model.SupportStatus;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -39,15 +41,17 @@ class ProjectMetadata {
 	 * Creates a new {@link ProjectMetadata} instance from the given {@link MaintainedVersion}.
 	 *
 	 * @param version must not be {@literal null}.
+	 * @param supportStatus must not be {@literal null}.
 	 * @param versions must not be {@literal null}.
 	 */
-	public ProjectMetadata(MaintainedVersion version, MaintainedVersions versions) {
+	public ProjectMetadata(MaintainedVersion version, SupportStatus supportStatus, MaintainedVersions versions) {
 
 		Assert.notNull(version, "MaintainedVersion must not be null!");
 
 		this.version = version;
 		this.versions = versions;
-		this.documentation = DocumentationMetadata.of(version.getTrain().getDocumentationFormat(), version.getProject(),
+		this.documentation = DocumentationMetadata.of(version.getTrain().getDocumentationFormat(),
+				SupportedProject.of(version.getProject(), supportStatus),
 				version.getVersion(), versions.isMainVersion(version));
 	}
 

@@ -36,7 +36,16 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
-import org.springframework.data.release.model.*;
+import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.DocumentationMetadata;
+import org.springframework.data.release.model.Iteration;
+import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportedProject;
+import org.springframework.data.release.model.Tracker;
+import org.springframework.data.release.model.Train;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -571,7 +580,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		ChangelogGenerator generator = new ChangelogGenerator();
 		generator.getExcludeContributors().addAll(properties.getTeam());
 
-		String releaseBody = generator.generate(gitHubIssues, (changelogSection, s) -> s);
+		boolean generateLinks = !iteration.isCommercial();
+		String releaseBody = generator.generate(gitHubIssues, (changelogSection, s) -> s, generateLinks);
 		String documentationLinks = getDocumentationLinks(module, documentation);
 
 		if (module.getProject() == Projects.BOM || module.getProject() == Projects.BUILD) {

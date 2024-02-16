@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
@@ -139,7 +140,7 @@ class DefaultProjectClient implements ProjectService {
 
 	private static Stream<ProjectMetadata> getVersionsToWrite(MaintainedVersions versions) {
 		return versions.stream() //
-				.map(it -> new ProjectMetadata(it, versions));
+				.map(it -> new ProjectMetadata(it, SupportStatus.OSS, versions));
 	}
 
 	private boolean requiresDeleteVersions(Project project, List<String> versionsToRetain,

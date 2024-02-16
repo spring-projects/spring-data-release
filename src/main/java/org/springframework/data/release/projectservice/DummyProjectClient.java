@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.utils.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,7 +50,7 @@ class DummyProjectClient implements ProjectService {
 		logger.log(project, "Updating released version on Sagan to %s!", versions);
 
 		List<ProjectMetadata> payload = versions.stream() //
-				.map(it -> new ProjectMetadata(it, versions)) //
+				.map(it -> new ProjectMetadata(it, SupportStatus.OSS, versions)) //
 				.collect(Collectors.toList());
 
 		try {
@@ -67,7 +68,8 @@ class DummyProjectClient implements ProjectService {
 	public String getProjectMetadata(MaintainedVersion version) {
 
 		try {
-			return mapper.writeValueAsString(new ProjectMetadata(version, MaintainedVersions.of(Collections.emptyList())));
+			return mapper.writeValueAsString(
+					new ProjectMetadata(version, SupportStatus.OSS, MaintainedVersions.of(Collections.emptyList())));
 		} catch (JsonProcessingException o_O) {
 			throw new RuntimeException(o_O);
 		}
