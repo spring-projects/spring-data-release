@@ -86,6 +86,11 @@ public class Dependencies {
 
 	public static final Dependency XML_BEAM = Dependency.of("XMLBeam", "org.xmlbeam:xmlprojector");
 
+	public static final Dependency HIBERNATE = Dependency.of("Hibernate", "org.hibernate.orm:hibernate-core");
+
+	public static final Dependency ECLIPSELINK = Dependency.of("Eclipselink",
+			"org.eclipse.persistence:org.eclipse.persistence.jpa");
+
 	public static final Dependency MONGODB_CORE = Dependency.of("MongoDB", "org.mongodb:mongodb-driver-core");
 
 	public static final Dependency MONGODB_LEGACY = Dependency.of("MongoDB", "org.mongodb:mongo-java-driver");

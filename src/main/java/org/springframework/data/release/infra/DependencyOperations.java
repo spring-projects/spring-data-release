@@ -476,7 +476,7 @@ public class DependencyOperations {
 				Dependency dependency = projectDependency.getDependency();
 
 				if (!(project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams")
-						|| project == Projects.NEO4J || project == Projects.BUILD)) {
+						|| project == Projects.NEO4J || project == Projects.BUILD || project == Projects.JPA)) {
 
 					if (it.getDependencyVersion(dependency.getArtifactId()) == null
 							&& it.getManagedDependency(dependency.getArtifactId()) == null) {

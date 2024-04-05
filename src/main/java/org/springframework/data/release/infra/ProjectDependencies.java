@@ -70,6 +70,9 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.COMMONS, ProjectDependency.ofProperty("vavr", Dependencies.VAVR));
 		config.add(Projects.COMMONS, ProjectDependency.ofProperty("xmlbeam", Dependencies.XML_BEAM));
 
+		config.add(Projects.JPA, ProjectDependency.ofProperty("hibernate", Dependencies.HIBERNATE));
+		config.add(Projects.JPA, ProjectDependency.ofProperty("eclipselink", Dependencies.ECLIPSELINK));
+
 		config.add(Projects.MONGO_DB, ProjectDependency.ofProperty("mongo.reactivestreams", Dependencies.MONGODB_RS));
 		config.add(Projects.MONGO_DB, ProjectDependency.ofProperty("mongo", Dependencies.MONGODB_LEGACY));
 		config.add(Projects.MONGO_DB, ProjectDependency.ofProperty("mongo", Dependencies.MONGODB_CORE));
