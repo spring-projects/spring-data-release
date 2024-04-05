@@ -63,11 +63,11 @@ public class ChangelogGenerator {
 	 *
 	 * @param issues the issues to generate the changelog for
 	 * @param sectionContentPostProcessor the postprocessor for a changelog section
-	 * @param generateLinks whether to generate links
+	 * @param includeIssueNumbers whether to include issue numbers
 	 */
 	public String generate(List<GitHubReadIssue> issues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
-		return generateContent(issues, sectionContentPostProcessor, generateLinks);
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
+		return generateContent(issues, sectionContentPostProcessor, includeIssueNumbers);
 	}
 
 	private boolean isExcluded(GitHubReadIssue issue) {
@@ -79,9 +79,9 @@ public class ChangelogGenerator {
 	}
 
 	private String generateContent(List<GitHubReadIssue> issues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 		StringBuilder content = new StringBuilder();
-		addSectionContent(content, this.sections.collate(issues), sectionContentPostProcessor, generateLinks);
+		addSectionContent(content, this.sections.collate(issues), sectionContentPostProcessor, includeIssueNumbers);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {
 			addContributorsContent(content, contributors);
@@ -90,7 +90,7 @@ public class ChangelogGenerator {
 	}
 
 	private void addSectionContent(StringBuilder result, Map<ChangelogSection, List<GitHubReadIssue>> sectionIssues,
-			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean generateLinks) {
+			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 
 		sectionIssues.forEach((section, issues) -> {
 
@@ -100,16 +100,17 @@ public class ChangelogGenerator {
 
 			content.append((content.length() != 0) ? String.format("%n") : "");
 			content.append("## ").append(section).append(String.format("%n%n"));
-			issues.stream().map(issue -> getFormattedIssue(issue, generateLinks)).forEach(content::append);
+			issues.stream().map(issue -> getFormattedIssue(issue, includeIssueNumbers)).forEach(content::append);
 
 			result.append(sectionContentPostProcessor.apply(section, content.toString()));
 		});
 	}
 
-	private String getFormattedIssue(GitHubReadIssue issue, boolean generateLinks) {
+	private String getFormattedIssue(GitHubReadIssue issue, boolean includeIssueNumbers) {
 		String title = issue.getTitle();
 		title = ghUserMentionPattern.matcher(title).replaceAll("$1`$2`");
-		return String.format("- %s %s%n", title, generateLinks ? getLinkToIssue(issue) : issue.getId());
+		return includeIssueNumbers ? String.format("- %s %s%n", title, getLinkToIssue(issue))
+				: String.format("- %s%n", title);
 	}
 
 	private String getLinkToIssue(GitHubIssue issue) {
