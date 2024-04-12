@@ -17,10 +17,11 @@ package org.springframework.data.release.issues;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportedProject;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.plugin.core.Plugin;
 
@@ -78,7 +79,7 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 * @param ticketIds collection of {@link Ticket#id ticket Ids}, must not be {@literal null}.
 	 * @return
 	 */
-	Collection<Ticket> findTickets(SupportedProject project, Collection<String> ticketIds);
+	Collection<Ticket> findTickets(SupportedProject project, Collection<TicketReference> ticketIds);
 
 	/**
 	 * Query the issue tracker for multiple {@link Ticket#id ticket Ids}. Tickets that are not found are not returned. The
@@ -89,7 +90,7 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 * @param ticketReferences must not be {@literal null}.
 	 * @return
 	 */
-	Tickets findTickets(ModuleIteration moduleIteration, Collection<String> ticketIds);
+	Tickets findTickets(ModuleIteration moduleIteration, Collection<TicketReference> ticketIds);
 
 	/**
 	 * Creates a release version if release version is missing.
@@ -165,8 +166,7 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 */
 	default Changelog getChangelogFor(ModuleIteration module, List<TicketReference> ticketReferences) {
 
-		Tickets tickets = findTickets(module,
-				ticketReferences.stream().map(TicketReference::getId).collect(Collectors.toList()));
+		Tickets tickets = findTickets(module, ticketReferences);
 		return Changelog.of(module, tickets);
 	}
 

@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component;
  * @author Madhura Bhave
  * @author Phillip Webb
  */
-@Component
 public class ChangelogGenerator {
 
 	private static final Pattern ghUserMentionPattern = Pattern.compile("(^|[^\\w`])(@[\\w-]+)");
@@ -52,7 +51,7 @@ public class ChangelogGenerator {
 	private final ChangelogSections sections;
 
 	public ChangelogGenerator() {
-		this.excludeLabels = new HashSet<>(Arrays.asList("type: task"));
+		this.excludeLabels = new HashSet<>(Collections.singletonList("type: task"));
 		this.excludeContributors = new LinkedHashSet<>();
 		this.contributorsTitle = null;
 		this.sections = new ChangelogSections();
@@ -65,7 +64,7 @@ public class ChangelogGenerator {
 	 * @param sectionContentPostProcessor the postprocessor for a changelog section
 	 * @param includeIssueNumbers whether to include issue numbers
 	 */
-	public String generate(List<GitHubReadIssue> issues,
+	public String generate(List<ChangeItem> issues,
 			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 		return generateContent(issues, sectionContentPostProcessor, includeIssueNumbers);
 	}
@@ -78,10 +77,12 @@ public class ChangelogGenerator {
 		return this.excludeLabels.contains(label.getName());
 	}
 
-	private String generateContent(List<GitHubReadIssue> issues,
+	private String generateContent(List<ChangeItem> issues,
 			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 		StringBuilder content = new StringBuilder();
-		addSectionContent(content, this.sections.collate(issues), sectionContentPostProcessor, includeIssueNumbers);
+		addSectionContent(content,
+				this.sections.collate(issues.stream().filter(it -> it.getReference().isIssue()).map(ChangeItem::getIssue).collect(Collectors.toList())),
+				sectionContentPostProcessor, includeIssueNumbers);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {
 			addContributorsContent(content, contributors);
@@ -98,10 +99,10 @@ public class ChangelogGenerator {
 
 			StringBuilder content = new StringBuilder();
 
-			content.append((content.length() != 0) ? String.format("%n") : "");
-			content.append("## ").append(section).append(String.format("%n%n"));
+			content.append("## ").append(section).append(String.format("%n"));
 			issues.stream().map(issue -> getFormattedIssue(issue, includeIssueNumbers)).forEach(content::append);
 
+			result.append((result.length() != 0) ? String.format("%n") : "");
 			result.append(sectionContentPostProcessor.apply(section, content.toString()));
 		});
 	}
@@ -117,12 +118,16 @@ public class ChangelogGenerator {
 		return "[" + issue.getId() + "]" + "(" + issue.getUrl() + ")";
 	}
 
-	private Set<GitHubUser> getContributors(List<GitHubReadIssue> issues) {
+	private Set<GitHubUser> getContributors(List<ChangeItem> issues) {
 		if (this.excludeContributors.contains("*")) {
 			return Collections.emptySet();
 		}
-		return issues.stream().filter((issue) -> issue.getPullRequest() != null).map(GitHubReadIssue::getUser)
-				.filter(this::isIncludedContributor).collect(Collectors.toSet());
+		return issues.stream()
+				.filter(item -> item.getReference().isPullRequest() || item.getIssue().getPullRequest() != null) //
+				.map(ChangeItem::getIssue) //
+				.map(GitHubReadIssue::getUser) //
+				.filter(this::isIncludedContributor) //
+				.collect(Collectors.toSet());
 	}
 
 	private boolean isIncludedContributor(GitHubUser user) {
@@ -132,7 +137,7 @@ public class ChangelogGenerator {
 	private void addContributorsContent(StringBuilder content, Set<GitHubUser> contributors) {
 		content.append(String.format("%n## "));
 		content.append((this.contributorsTitle != null) ? this.contributorsTitle : ":heart: Contributors");
-		content.append(String.format("%n%nWe'd like to thank all the contributors who worked on this release!%n%n"));
+		content.append(String.format("%nWe'd like to thank all the contributors who worked on this release!%n%n"));
 		contributors.stream().map(this::formatContributors).forEach(content::append);
 	}
 

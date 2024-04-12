@@ -26,11 +26,17 @@ public class TicketReference implements Comparable<TicketReference> {
 	String id;
 	String message;
 	Style style;
+	Reference reference;
 
-	public TicketReference(String id, String message, Style style) {
+	public TicketReference(String id, String message, Style style, Reference reference) {
 		this.id = normalize(id);
 		this.message = message;
 		this.style = style;
+		this.reference = reference;
+	}
+
+	public static TicketReference ofTicket(String number, Style style) {
+		return new TicketReference(number, "", style, Reference.Ticket);
 	}
 
 	private static String normalize(String id) {
@@ -52,7 +58,19 @@ public class TicketReference implements Comparable<TicketReference> {
 		return id.compareToIgnoreCase(o.id);
 	}
 
+	public boolean isIssue() {
+		return getReference() == Reference.Ticket;
+	}
+
+	public boolean isPullRequest() {
+		return getReference() == Reference.PullRequest;
+	}
+
 	public enum Style {
-		GitHub, Jira;
+		GitHub, Jira
+	}
+
+	public enum Reference {
+		Ticket, Related, PullRequest
 	}
 }

@@ -68,7 +68,6 @@ import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
 import org.springframework.data.release.model.*;
-import org.springframework.data.release.model.Module;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
@@ -435,7 +434,10 @@ public class GitOperations {
 					.filter(branch -> branch.isIssueBranch(project.getProject().getTracker()))//
 					.collect(Collectors.toMap(Branch::toString, branch -> branch));
 
-			Collection<Ticket> tickets = tracker.findTickets(project, ticketIds.keySet());
+			Collection<Ticket> tickets = tracker.findTickets(project,
+					ticketIds.keySet().stream()
+							.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub))
+							.collect(Collectors.toList()));
 
 			return TicketBranches
 					.from(tickets.stream().collect(Collectors.toMap(ticket -> ticketIds.get(ticket.getId()), ticket -> ticket)));
@@ -495,7 +497,7 @@ public class GitOperations {
 					return Stream.empty();
 				}
 
-				return Stream.of(message.getTicketReference());
+				return message.getTicketReferences().stream();
 
 			}).collect(Collectors.toList());
 		});

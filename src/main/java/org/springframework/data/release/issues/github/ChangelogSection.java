@@ -28,7 +28,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Phillip Webb
  */
-class ChangelogSection {
+public class ChangelogSection {
 
 	private final String title;
 

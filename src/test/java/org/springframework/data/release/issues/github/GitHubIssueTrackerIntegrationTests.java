@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.WireMockExtension;
 import org.springframework.data.release.issues.Ticket;
+import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
@@ -80,7 +81,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetIssueWith("issue.json", 233);
 
 		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
-				Collections.singletonList("233"));
+				Collections.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub)));
 
 		assertThat(tickets).hasSize(1);
 	}
@@ -89,7 +90,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 	void ignoresUnknownTicketsByTicketId() {
 
 		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
-				Collections.singletonList("123"));
+				Collections.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub)));
 		assertThat(tickets).isEmpty();
 	}
 

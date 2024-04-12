@@ -22,7 +22,6 @@ import lombok.experimental.FieldDefaults;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
@@ -30,6 +29,7 @@ import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
+import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
@@ -59,8 +59,8 @@ public class GitHubCommands extends TimedCommand {
 	@CliCommand(value = "github update labels")
 	public void createOrUpdateLabels(@CliOption(key = "", mandatory = true) Project project,
 			@CliOption(key = "commercial", mandatory = false) Boolean commercial) {
-		gitHubLabels.createOrUpdateLabels(SupportedProject.of(project,
-				commercial == null || !commercial ? SupportStatus.OSS : SupportStatus.COMMERCIAL));
+		gitHubLabels.createOrUpdateLabels(
+				SupportedProject.of(project, commercial == null || !commercial ? SupportStatus.OSS : SupportStatus.COMMERCIAL));
 	}
 
 	@CliCommand(value = "github push")
@@ -74,25 +74,48 @@ public class GitHubCommands extends TimedCommand {
 				git.push(new TrainIteration(iteration.getTrain(), Iteration.SR1));
 			}
 
-			createOrUpdateRelease(iteration);
+			createOrUpdateRelease(iteration, null);
 		}, 2);
 	}
 
 	@CliCommand(value = "github create release")
-	public void createOrUpdateRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public void createOrUpdateRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "project") Project project) {
 
 		TrainIteration previousIteration = git.getPreviousIteration(iteration);
+
+		if (project != null) {
+
+			ModuleIteration module = iteration.getModule(project);
+			createOrUpdateRelease(module, previousIteration);
+			return;
+		}
 
 		ExecutionUtils.run(executor, iteration, it -> {
 
 			if (it.getSupportedProject().getProject().getTracker() == Tracker.GITHUB) {
-
-				List<String> ticketReferences = git
-						.getTicketReferencesBetween(it.getSupportedProject(), previousIteration, iteration).stream()
-						.map(TicketReference::getId).collect(Collectors.toList());
-				gitHub.createOrUpdateRelease(iteration, it, ticketReferences);
+				createOrUpdateRelease(it, previousIteration);
 			}
 		});
+	}
+
+	@CliCommand(value = "github preview release")
+	public String previewRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "project", mandatory = true) Project project) {
+
+		TrainIteration previousIteration = git.getPreviousIteration(iteration);
+		ModuleIteration module = iteration.getModule(project);
+
+		List<TicketReference> ticketReferences = git.getTicketReferencesBetween(module.getSupportedProject(),
+				previousIteration, module.getTrainIteration());
+
+		return gitHub.createReleaseMarkdown(module, ticketReferences);
+	}
+
+	private void createOrUpdateRelease(ModuleIteration module, TrainIteration previousIteration) {
+		List<TicketReference> ticketReferences = git.getTicketReferencesBetween(module.getSupportedProject(),
+				previousIteration, module.getTrainIteration());
+		gitHub.createOrUpdateRelease(module, ticketReferences);
 	}
 
 	public void triggerAntoraWorkflow(Project project) {
