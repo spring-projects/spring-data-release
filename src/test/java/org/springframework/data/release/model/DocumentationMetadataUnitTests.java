@@ -38,14 +38,14 @@ class DocumentationMetadataUnitTests {
 				.isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/reference/html/");
 	}
 
-	@Test // gh-167
+	@Test // gh-167, gh-79
 	void shouldReportCorrectAntoraDocumentationUrls() {
 
 		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ANTORA,
 				SupportedProject.of(Projects.MONGO_DB, SupportStatus.OSS), ArtifactVersion.of("3.1.0"), false);
 
 		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/api/");
-		assertThat(metadata.getReferenceDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/");
+		assertThat(metadata.getReferenceDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/3.1/");
 	}
 
 	@Test // gh-197

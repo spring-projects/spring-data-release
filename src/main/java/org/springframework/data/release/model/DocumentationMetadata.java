@@ -31,8 +31,8 @@ public class DocumentationMetadata {
 
 	private static String DOCS_BASE = "https://docs.spring.io/spring-data/%s/docs/%s";
 	private static String COMMERICIAL_DOCS_BASE = "https://docs.spring.vmware.com/spring-data/%s/docs/%s";
-	private static String ANTORA_BASE = "https://docs.spring.io/spring-data/%s/reference/";
-	private static String COMMERCIAL_ANTORA_BASE = "https://docs.spring.vmware.com/spring-data/%s/reference/";
+	private static String ANTORA_BASE = "https://docs.spring.io/spring-data/%s/reference/%s/";
+	private static String COMMERCIAL_ANTORA_BASE = "https://docs.spring.vmware.com/spring-data/%s/reference/%s/";
 
 	private static String DOCS = DOCS_BASE.concat("/reference/html/");
 	private static String JAVADOC = DOCS_BASE.concat("/api/");
@@ -114,7 +114,7 @@ public class DocumentationMetadata {
 		}
 
 		String format = this.project.isCommercial() ? COMMERCIAL_ANTORA_BASE : ANTORA_BASE;
-		return String.format(format, getProjectName(project));
+		return String.format(format, getProjectName(project), version.getMajorMinor());
 	}
 
 	public String getVersionOrTrainName(Train train) {

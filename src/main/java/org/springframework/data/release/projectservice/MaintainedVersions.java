@@ -49,7 +49,7 @@ import org.springframework.data.util.Streamable;
  */
 @ToString
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-class MaintainedVersions implements Streamable<MaintainedVersion> {
+public class MaintainedVersions implements Streamable<MaintainedVersion> {
 
 	private final List<MaintainedVersion> versions;
 

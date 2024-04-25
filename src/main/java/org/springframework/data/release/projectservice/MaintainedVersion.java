@@ -36,7 +36,7 @@ import org.springframework.util.Assert;
  * @author Mark Paluch
  */
 @Value(staticConstructor = "of")
-class MaintainedVersion implements Comparable<MaintainedVersion> {
+public class MaintainedVersion implements Comparable<MaintainedVersion> {
 
 	@With Project project;
 	ArtifactVersion version;

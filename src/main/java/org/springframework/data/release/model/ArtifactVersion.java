@@ -318,8 +318,12 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return modifierFormat ? SNAPSHOT_MODIFIER : SNAPSHOT_SUFFIX;
 	}
 
+	public String getMajorMinor() {
+		return String.format("%s.%s", version.getMajor(), version.getMinor());
+	}
+
 	public String getGeneration() {
-		return String.format("%s.%s.x", version.getMajor(), version.getMinor());
+		return String.format("%s.x", getMajorMinor());
 	}
 
 	@Override
@@ -342,4 +346,5 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return Objects.hash(version, isReleaseVersion(), isSnapshotVersion(), isMilestoneVersion(),
 				isReleaseCandidateVersion(), suffix);
 	}
+
 }
