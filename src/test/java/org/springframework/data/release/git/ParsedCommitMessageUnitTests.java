@@ -68,7 +68,9 @@ class ParsedCommitMessageUnitTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "Incorporate review feedback\n\nSee gh-574." })
+	@ValueSource(strings = { "Incorporate review feedback\n\nSee gh-574.",
+			"Incorporate review feedback\n\nRelated ticket: GH-574.", "Incorporate review feedback\n\nTicket: GH-574.",
+			"Incorporate review feedback\n\nRelated GH-574." })
 	void shouldParseCommitWithSeeTicket(String commitMessage) {
 
 		ParsedCommitMessage commit = ParsedCommitMessage.parse(commitMessage);
