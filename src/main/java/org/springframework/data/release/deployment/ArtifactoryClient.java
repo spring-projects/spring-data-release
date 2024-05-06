@@ -20,14 +20,20 @@ import lombok.Value;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +46,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @RequiredArgsConstructor
 class ArtifactoryClient {
+
+	private final static String CREATE_RELEASE_BUNDLE_PATH = "/lifecycle/api/v2/release_bundle?project=spring";
 
 	private final Logger logger;
 	private final DeploymentProperties properties;
@@ -74,10 +82,7 @@ class ArtifactoryClient {
 
 	public void verify(SupportStatusAware status) {
 
-		URI verificationResource = properties
-				.getAuthentication(status)
-				.getServer()
-				.getVerificationResource();
+		URI verificationResource = properties.getAuthentication(status).getServer().getVerificationResource();
 
 		try {
 
@@ -110,8 +115,32 @@ class ArtifactoryClient {
 	}
 
 	public void deleteArtifacts(DeploymentInformation information) {
-
 		operations.delete(information.getDeleteBuildResource());
+	}
+
+	public void createRelease(ModuleIteration iteration, ArtifactoryReleaseBundle releaseBundle,
+			Authentication authentication) {
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+		headers.add("X-JFrog-Signing-Key-Name", "packagesKey");
+		HttpEntity<ArtifactoryReleaseBundle> entity = new HttpEntity<>(releaseBundle, headers);
+
+		try {
+			ResponseEntity<Map> response = operations
+					.postForEntity(authentication.getServer().getUri() + CREATE_RELEASE_BUNDLE_PATH, entity, Map.class);
+
+			if (!response.getStatusCode().is2xxSuccessful()) {
+				logger.warn(iteration, "Artifactory request failed: %d %s", response.getStatusCode().value(),
+						response.getBody());
+			} else {
+				logger.log(iteration, "Artifactory request succeeded: %s %s", releaseBundle.getName(),
+						releaseBundle.getVersion());
+			}
+		} catch (HttpStatusCodeException e) {
+			logger.warn(iteration, "Artifactory request failed: %d %s", e.getStatusCode().value(),
+					e.getResponseBodyAsString());
+		}
 	}
 
 	@Value

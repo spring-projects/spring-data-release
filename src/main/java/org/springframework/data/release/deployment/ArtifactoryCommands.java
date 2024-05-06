@@ -17,13 +17,17 @@ package org.springframework.data.release.deployment;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatus;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.core.annotation.CliCommand;
+import org.springframework.shell.core.annotation.CliOption;
 
 /**
  * Commands to interact with Artifactory.
@@ -35,11 +39,20 @@ import org.springframework.shell.core.annotation.CliCommand;
 class ArtifactoryCommands extends TimedCommand {
 
 	private final @NonNull DeploymentOperations deployment;
+	private final @NonNull ArtifactoryOperations operations;
 
 	@CliCommand(value = "artifactory verify", help = "Verifies authentication at Artifactory.")
 	public void verify() {
 
-		Stream.of(SupportStatus.OSS, SupportStatus.COMMERCIAL)
-				.forEach(deployment::verifyAuthentication);
+		Stream.of(SupportStatus.OSS, SupportStatus.COMMERCIAL).forEach(deployment::verifyAuthentication);
+	}
+
+	@CliCommand(value = "artifactory create releases")
+	@SneakyThrows
+	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
+
+		for (ModuleIteration moduleIteration : trainIteration) {
+			operations.createArtifactoryRelease(moduleIteration);
+		}
 	}
 }

@@ -20,6 +20,7 @@ import static org.springframework.data.release.model.Projects.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import org.springframework.data.release.model.ArtifactCoordinate;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
@@ -75,6 +76,10 @@ public class MavenArtifact {
 
 	public ArtifactVersion getNextDevelopmentVersion() {
 		return version.getNextDevelopmentVersion();
+	}
+
+	public ArtifactCoordinate toArtifactCoordinate() {
+		return ArtifactCoordinate.of(getGroupId(), getArtifactId());
 	}
 
 }
