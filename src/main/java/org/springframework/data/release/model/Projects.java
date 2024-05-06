@@ -53,19 +53,21 @@ public class Projects {
 
 		BUILD = new Project("DATABUILD", "Build", Tracker.GITHUB) //
 				.withAdditionalArtifacts(ArtifactCoordinates.forGroupId("org.springframework.data.build")
-						.artifacts("spring-data-build-parent", "spring-data-build-resources")
+						.artifacts("spring-data-build", "spring-data-parent", "spring-data-build-parent",
+								"spring-data-build-resources")
 						.and(ArtifactCoordinate.of("org.springframework.data", "spring-data-releasetrain")));
 
 		COMMONS = new Project("DATACMNS", "Commons", Tracker.GITHUB).withDependencies(BUILD);
 
 		JPA = new Project("DATAJPA", "JPA", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
-				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-envers"));
+				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-envers",
+						"spring-data-jpa-parent", "spring-data-jpa-distribution"));
 
 		MONGO_DB = new Project("DATAMONGO", "MongoDB", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
-				.withAdditionalArtifacts(
-						ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-mongodb-cross-store", "spring-data-mongodb-log4j"));
+				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-mongodb-parent",
+						"spring-data-mongodb-distribution"));
 
 		NEO4J = new Project("DATAGRAPH", "Neo4j", Tracker.GITHUB).withDependencies(COMMONS);
 
@@ -77,7 +79,8 @@ public class Projects {
 
 		CASSANDRA = new Project("DATACASS", "Cassandra", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
-				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-cql"))
+				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-cassandra-parent",
+						"spring-data-cassandra-distribution"))
 				.withFullName("Spring Data for Apache Cassandra");
 
 		ELASTICSEARCH = new Project("DATAES", "Elasticsearch", Tracker.GITHUB).withDependencies(COMMONS);
@@ -86,13 +89,13 @@ public class Projects {
 
 		REDIS = new Project("DATAREDIS", "Redis", Tracker.GITHUB).withDependencies(KEY_VALUE);
 
-		JDBC = new Project("DATAJDBC", "JDBC", Tracker.GITHUB)
-				.withAdditionalArtifacts(
-						ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-relational", "spring-data-jdbc"))
+		JDBC = new Project("DATAJDBC", "JDBC", Tracker.GITHUB).withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA
+				.artifacts("spring-data-relational", "spring-data-relational-parent", "spring-data-jdbc"))
 				.withDependencies(COMMONS);
 
-		RELATIONAL = new Project("DATAJDBC", "Relational", Tracker.GITHUB).withAdditionalArtifacts(
-				ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-relational", "spring-data-jdbc", "spring-data-r2dbc"))
+		RELATIONAL = new Project("DATAJDBC", "Relational", Tracker.GITHUB)
+				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-relational",
+						"spring-data-relational-parent", "spring-data-jdbc", "spring-data-jdbc-distribution", "spring-data-r2dbc"))
 				.withDependencies(COMMONS);
 
 		R2DBC = new Project("DATAR2DBC", "R2DBC", Tracker.GITHUB).withDependencies(COMMONS, JDBC);
@@ -106,7 +109,8 @@ public class Projects {
 		REST = new Project("DATAREST", "REST", Tracker.GITHUB) //
 				.withDependencies(JPA, MONGO_DB, NEO4J, CASSANDRA, KEY_VALUE) //
 				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA //
-						.artifacts("spring-data-rest-core", "spring-data-rest-core", "spring-data-rest-hal-browser",
+						.artifacts("spring-data-rest-parent", "spring-data-rest-core", "spring-data-rest-core",
+								"spring-data-rest-webmvc", "spring-data-rest-hal-browser", "spring-data-rest-distribution",
 								"spring-data-rest-hal-explorer"));
 
 		ENVERS = new Project("DATAENV", "Envers", Tracker.GITHUB).withDependencies(JPA);
