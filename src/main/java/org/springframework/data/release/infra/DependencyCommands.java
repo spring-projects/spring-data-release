@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.springframework.data.release.CliComponent;
@@ -34,6 +35,7 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
@@ -60,12 +62,15 @@ public class DependencyCommands extends TimedCommand {
 
 	@CliCommand(value = "dependency check")
 	public void check(@CliOption(key = "", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "all", mandatory = false) Boolean reportAll) throws IOException {
+			@CliOption(key = "all", mandatory = false) Boolean reportAll,
+			@CliOption(key = "project", mandatory = false) Project project) throws IOException {
 
 		git.prepare(iteration);
 
-		checkBuildDependencies(iteration, reportAll != null ? reportAll : false);
-		checkModuleDependencies(iteration, reportAll != null ? reportAll : false);
+		checkBuildDependencies(iteration, reportAll != null ? reportAll : false,
+				it -> project == null || it.equals(project));
+		checkModuleDependencies(iteration, reportAll != null ? reportAll : false,
+				it -> project == null || it.equals(project));
 	}
 
 	/**
@@ -81,8 +86,7 @@ public class DependencyCommands extends TimedCommand {
 
 		List<SupportedProject> projects = Projects.all().stream()
 				.filter(it -> it != Projects.BOM && it != Projects.BUILD && it != Projects.COMMONS)
-				.map(iteration::getSupportedProject)
-				.collect(Collectors.toList());
+				.map(iteration::getSupportedProject).collect(Collectors.toList());
 
 		Map<Dependency, DependencyVersion> dependencies = new TreeMap<>();
 
@@ -133,8 +137,7 @@ public class DependencyCommands extends TimedCommand {
 		operations.closeUpgradeTickets(module, tickets);
 	}
 
-	private DependencyVersions loadDependencyUpgrades(ModuleIteration iteration)
-			throws IOException {
+	private DependencyVersions loadDependencyUpgrades(ModuleIteration iteration) throws IOException {
 
 		if (!Files.exists(Paths.get(BUILD_PROPERTIES))) {
 			logger.log(iteration, "Cannot upgrade dependencies: " + BUILD_PROPERTIES + " does not exist.");
@@ -148,13 +151,15 @@ public class DependencyCommands extends TimedCommand {
 		return DependencyUpgradeProposals.fromProperties(iteration.getTrainIteration(), properties);
 	}
 
-	private void checkModuleDependencies(TrainIteration iteration, boolean reportAll) throws IOException {
+	private void checkModuleDependencies(TrainIteration iteration, boolean reportAll, Predicate<Project> projectFilter)
+			throws IOException {
 
 		String propertiesFile = "dependency-upgrade-modules.properties";
 
-		List<SupportedProject> projects = Projects.all().stream()
-				.filter(it -> it != Projects.BOM && it != Projects.BUILD)
-				.map(iteration::getSupportedProject)
+		List<SupportedProject> projects = Projects.all().stream() //
+				.filter(it -> it != Projects.BOM && it != Projects.BUILD) //
+				.filter(projectFilter) //
+				.map(iteration::getSupportedProject) //
 				.collect(Collectors.toList());
 
 		DependencyUpgradeProposals proposals = DependencyUpgradeProposals.empty();
@@ -171,13 +176,17 @@ public class DependencyCommands extends TimedCommand {
 		logger.log(iteration, "Upgrade proposals written to " + propertiesFile);
 	}
 
-	private void checkBuildDependencies(TrainIteration iteration, boolean reportAll) throws IOException {
+	private void checkBuildDependencies(TrainIteration iteration, boolean reportAll, Predicate<Project> projectFilter)
+			throws IOException {
 
 		String propertiesFile = BUILD_PROPERTIES;
 
+		if (!projectFilter.test(Projects.BUILD)) {
+			return;
+		}
+
 		SupportedProject project = iteration.getSupportedProject(Projects.BUILD);
-		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(project,
-				iteration.getIteration());
+		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(project, iteration.getIteration());
 
 		Files.write(Paths.get(propertiesFile), proposals.asProperties(iteration).getBytes());
 

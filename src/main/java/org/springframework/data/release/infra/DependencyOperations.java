@@ -434,7 +434,7 @@ public class DependencyOperations {
 
 		return availableVersions.stream().filter(it -> {
 
-			if (StringUtils.hasText(it.getModifier())) {
+			if (it.hasPreReleaseModifier()) {
 				return policy.milestoneAllowed();
 			}
 

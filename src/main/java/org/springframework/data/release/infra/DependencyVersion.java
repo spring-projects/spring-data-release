@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.data.release.model.Version;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Value object representing a dependency version. The primary identifier is {@link #identifier} that corresponds with
@@ -140,5 +141,19 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 	@Override
 	public String toString() {
 		return identifier;
+	}
+
+	public boolean hasPreReleaseModifier() {
+
+		if (ObjectUtils.isEmpty(getModifier())) {
+			return false;
+		}
+
+		if (getModifier().equalsIgnoreCase("final")) {
+			return false;
+		}
+
+		return true;
+
 	}
 }
