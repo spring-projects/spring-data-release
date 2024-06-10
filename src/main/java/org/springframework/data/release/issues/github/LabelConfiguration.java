@@ -143,6 +143,9 @@ class LabelConfiguration implements Streamable<Label> {
 
 			configurer.register(LabelFactories.HAS_LABEL, "design-decision",
 					"An issue that contains a design decision about its topic");
+
+			configurer.register(LabelFactories.HAS_LABEL, "breaking-change",
+					"An issue that is associated with a breaking change.");
 			configurer.register(TYPE_TASK);
 		});
 
