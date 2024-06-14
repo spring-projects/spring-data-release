@@ -377,8 +377,7 @@ public class BuildOperations {
 		SupportedProject project = train.getSupportedProject(Projects.BUILD);
 		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
 
-		buildSystem.verify(train);
-		// buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verify(train);
+		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verify(train);
 	}
 
 	/**
@@ -391,8 +390,7 @@ public class BuildOperations {
 		SupportedProject project = train.getSupportedProject(Projects.BUILD);
 		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
 
-		buildSystem.verifyStagingAuthentication(train);
-		// buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication(train);
+		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication(train);
 	}
 
 	/**
