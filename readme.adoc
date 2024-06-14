@@ -49,11 +49,14 @@ The <<build,*Build and publish the release*>> phase is what's covered by the CI 
 |Commit the change to this repository
 |`$ git add ci/release.properties && git commit`
 
-|🚨 *To trigger 🛣 the release* `git push` the `release` branch
+|`git push` the `release` branch
 |`$ git push -f origin release`
 
-|Go to https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/release, Navigate to the `release` branch.
-A job should have started. Click on the active job, and then click on *Open Blue Ocean*.
+|🚨 *To trigger 🛣 the release* manually on Jenkins.
+Goto https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/release/ and click *▶ Build Now*
+|
+
+|Once started click on the active job, and then click on *Open Blue Ocean*.
 | Monitor the release process.
 
 |===
@@ -85,7 +88,7 @@ A job should have started. Click on the active job, and then click on *Open Blue
 |Create list of docs for release announcements
 |`$ announcement $trainIteration`
 
-|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository) 
+|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository)
 |`$ release documentation $trainIteration`
 
 |Announce release (Blog, Twitter) and notify downstream dependency projects as needed.
