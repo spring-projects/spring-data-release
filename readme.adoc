@@ -85,6 +85,9 @@ A job should have started. Click on the active job, and then click on *Open Blue
 |Create list of docs for release announcements
 |`$ announcement $trainIteration`
 
+|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository) 
+|`$ release documentation $trainIteration`
+
 |Announce release (Blog, Twitter) and notify downstream dependency projects as needed.
 |N.A.
 |===
