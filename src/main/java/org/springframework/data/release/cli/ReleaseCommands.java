@@ -27,6 +27,7 @@ import java.util.Set;
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.build.BuildOperations;
+import org.springframework.data.release.build.BuildSystem;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentOperations;
 import org.springframework.data.release.deployment.StagingRepository;
@@ -58,6 +59,8 @@ class ReleaseCommands extends TimedCommand {
 	@NonNull BuildOperations build;
 	@NonNull IssueTrackerCommands tracker;
 	@NonNull GitHubCommands gitHub;
+	@NonNull
+	BuildSystem bs;
 
 	/**
 	 * Composite command to prepare a release.

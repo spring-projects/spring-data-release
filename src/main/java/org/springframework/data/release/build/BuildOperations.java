@@ -253,7 +253,7 @@ public class BuildOperations {
 				? openStagingRepository(iteration) //
 				: StagingRepository.EMPTY;
 
-		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration.filter(it -> it.getProject() == BUILD || it.getProject() == COMMONS),
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, stagingRepository));
 
 		Train train = iteration.getTrain();

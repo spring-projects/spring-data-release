@@ -32,14 +32,18 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.release.build.CommandLine.Argument;
@@ -58,6 +62,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.dom.DOMAccess;
@@ -80,18 +85,19 @@ class MavenBuildSystem implements BuildSystem {
 	ProjectionFactory projectionFactory;
 	Logger logger;
 	MavenRuntime mvn;
+	MavenProperties mavenProperties;
 	DeploymentProperties properties;
 	Gpg gpg;
-
 	Environment env;
+	DeploymentProperties deploymentProperties;
 
 	static final String REPO_OPENING_TAG = "<repository>";
 	static final String REPO_CLOSING_TAG = "</repository>";
 
 	@Override
 	public BuildSystem withJavaVersion(JavaVersion javaVersion) {
-		return new MavenBuildSystem(workspace, projectionFactory, logger, mvn.withJavaVersion(javaVersion), properties, gpg,
-				env);
+		return new MavenBuildSystem(workspace, projectionFactory, logger, mvn.withJavaVersion(javaVersion), mavenProperties,
+				properties, gpg, env, deploymentProperties);
 	}
 
 	/*
@@ -186,14 +192,30 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public StagingRepository open(Train train) {
 
-		Assert.notNull(properties.getMavenCentral(), "Maven Central properties must not be null");
-		Assert.hasText(properties.getMavenCentral().getStagingProfileId(), "Staging Profile Identifier must not be empty");
+		MavenCentral properties = this.properties.getMavenCentral();
+		Assert.notNull(properties, "Maven Central properties must not be null");
+		Assert.hasText(properties.getStagingProfileId(), "Staging Profile Identifier must not be empty");
+
+		if (properties.getProcess() == MavenCentral.Publishing.OSSRH) {
+			return openRemoteStagingRepository(train, properties);
+		}
+
+		String instance = UUID.randomUUID().toString();
+
+		File stagingRoot = new File(mavenProperties.getLocalStaging(), instance);
+		stagingRoot.mkdirs();
+
+		return StagingRepository.ofFile(stagingRoot.getPath());
+	}
+
+	private StagingRepository openRemoteStagingRepository(Train train, MavenCentral properties) {
 
 		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-open"), //
 				profile("central"), //
-				arg("stagingProfileId").withValue(properties.getMavenCentral().getStagingProfileId()), //
+				arg("stagingProfileId").withValue(properties.getStagingProfileId()), //
 				arg("openedRepositoryMessageFormat").withValue("'" + REPO_OPENING_TAG + "%s" + REPO_CLOSING_TAG + "'"))
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+				.andIf(!ObjectUtils.isEmpty(this.properties.getSettingsXml()),
+						() -> settingsXml(this.properties.getSettingsXml()));
 
 		MavenRuntime.MavenInvocationResult invocationResult = mvn.execute(train.getSupportedProject(BUILD), arguments);
 
@@ -221,12 +243,16 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(stagingRepository, "StagingRepository must not be null");
 		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
 
-		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-close"), //
-				profile("central"), //
-				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
-				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+		if (deploymentProperties.getMavenCentral().getProcess() == MavenCentral.Publishing.OSSRH
+				&& stagingRepository.isRemote()) {
 
-		mvn.execute(train.getSupportedProject(BUILD), arguments);
+			CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-close"), //
+					profile("central"), //
+					arg("stagingRepositoryId").withValue(stagingRepository.getId()))
+					.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml()));
+
+			mvn.execute(train.getSupportedProject(BUILD), arguments);
+		}
 	}
 
 	/*
@@ -327,7 +353,8 @@ class MavenBuildSystem implements BuildSystem {
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
 				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
-				.andIf(StringUtils.hasText(information.getProject()), () -> arg("artifactory.project").withValue(information.getProject()));
+				.andIf(StringUtils.hasText(information.getProject()),
+						() -> arg("artifactory.project").withValue(information.getProject()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
 	}
@@ -353,6 +380,7 @@ class MavenBuildSystem implements BuildSystem {
 
 		Gpg gpg = getGpg();
 
+		StagingRepository stagingRepository = deploymentInformation.getStagingRepositoryId();
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				profile("ci,release,central"), //
 				SKIP_TESTS, //
@@ -360,8 +388,10 @@ class MavenBuildSystem implements BuildSystem {
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
 				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
-				.andIf(deploymentInformation.getStagingRepositoryId().isPresent(),
-						() -> arg("stagingRepositoryId").withValue(deploymentInformation.getStagingRepositoryId()))
+				.andIf(stagingRepository.isPresent() && stagingRepository.isRemote(),
+						() -> arg("stagingRepositoryId").withValue(stagingRepository.getId()))
+				.andIf(stagingRepository.isPresent() && stagingRepository.isFile(),
+						() -> arg("altDeploymentRepository").withValue("staging::default::file:" + stagingRepository.getId()))
 				.andIf(gpg.hasSecretKeyring(), () -> arg("gpg.secretKeyring").withValue(gpg.getSecretKeyring()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
@@ -385,16 +415,17 @@ class MavenBuildSystem implements BuildSystem {
 		doWithProjection(workspace.getFile(POM_XML, smokeTests), pom -> {
 
 			Version version = module.getVersion();
-			String targetBootVersion = version.getMajor() == 2 ? "2.7.8" : "3.0.2";
+			String targetBootVersion = version.getMajor() == 2 ? "2.7.8" : "3.2.2";
 
 			pom.setParentVersion(ArtifactVersion.of(Version.parse(targetBootVersion), true));
 		});
 
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, VERIFY, //
 				profile(profile), //
-				arg("s").withValue("settings.xml"), //
+				settingsXml("settings.xml"), //
 				arg("spring-data-bom.version").withValue(iteration.getReleaseTrainNameAndVersion())) //
-				.andIf(mavenCentral, arg("stagingRepository").withValue(stagingRepository.getId()));
+				.andIf(mavenCentral && stagingRepository.isPresent() && stagingRepository.isRemote(),
+						arg("stagingRepository").withValue(stagingRepository.getId()));
 
 		mvn.execute(smokeTests, arguments);
 
@@ -410,6 +441,84 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(stagingRepository, "StagingRepository must not be null");
 		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
 
+		MavenCentral.Publishing process = deploymentProperties.getMavenCentral().getProcess();
+
+		if (process == MavenCentral.Publishing.OSSRH && stagingRepository.isRemote()) {
+			releaseRemoteRepository(train, stagingRepository);
+			return;
+		}
+
+		if (process == MavenCentral.Publishing.PUBLISHER && stagingRepository.isFile()) {
+			publishRelease(stagingRepository);
+			return;
+		}
+
+		throw new UnsupportedOperationException(
+				String.format("Cannot release train using %s and staging repository %s", process, stagingRepository));
+	}
+
+	private void publishRelease(StagingRepository stagingRepository) {
+
+		File root = new File(mavenProperties.getLocalStaging(), stagingRepository.getId());
+
+		Assert.isTrue(root.exists(), "StagingRepository " + root + " does not exist");
+
+		try {
+			File releaseBundle = createReleaseBundle(root);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private File createReleaseBundle(File root) throws IOException {
+
+		String deploymentIdentifier = root.getName();
+		String deploymentBundle = deploymentIdentifier + ".zip";
+
+		File zip = new File(root, deploymentBundle);
+		File[] files = root.listFiles();
+
+		Assert.notEmpty(files, "StagingRepository " + root + " is empty");
+
+		try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
+
+			// consider only directories on the root level.
+			for (File file : files) {
+				if (file.isDirectory()) {
+					zipRecursively("", file, zos);
+				}
+			}
+		}
+
+		return zip;
+	}
+
+	private void zipRecursively(String prefix, File file, ZipOutputStream zos) throws IOException {
+
+		String prefixToUse = (StringUtils.hasText(prefix) ? prefix + "/" : "");
+		if (file.isDirectory()) {
+
+			File[] files = file
+					.listFiles((dir, name) -> !name.startsWith(".") && !name.startsWith("_") && !name.endsWith(".lastUpdated"));
+			if (!ObjectUtils.isEmpty(files)) {
+
+				for (File nested : files) {
+					zipRecursively(prefixToUse + file.getName(), nested, zos);
+				}
+			}
+
+			return;
+		}
+
+		ZipEntry entry = new ZipEntry(prefixToUse + file.getName());
+		zos.putNextEntry(entry);
+
+		FileInputStream in = new FileInputStream(file);
+		IOUtils.copy(in, zos);
+		IOUtils.closeQuietly(in);
+	}
+
+	private void releaseRemoteRepository(Train train, StagingRepository stagingRepository) {
 		CommandLine arguments = CommandLine.of(goal("nexus-staging:rc-release"), //
 				profile("central"), //
 				arg("stagingRepositoryId").withValue(stagingRepository.getId()))
@@ -584,9 +693,9 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public void verifyStagingAuthentication(Train train) {
 
-		if (train.isOpenSource()) {
+		if (train.isOpenSource() && properties.getMavenCentral().getProcess() == MavenCentral.Publishing.OSSRH) {
 
-			logger.log(BUILD, "Verifying Maven Staging Authentication…");
+			logger.log(BUILD, "Verifying Maven OSSRH Staging Authentication…");
 
 			mvn.execute(train.getSupportedProject(BUILD), //
 					CommandLine.of(goal("nexus-staging:rc-list-profiles"), //
@@ -596,7 +705,6 @@ class MavenBuildSystem implements BuildSystem {
 					"Maven Central properties are not set (deployment.maven-central.staging-profile-id=…)");
 			Assert.hasText(properties.getMavenCentral().getStagingProfileId(),
 					"Staging Profile Id is not set (deployment.maven-central.staging-profile-id=…)");
-			return;
 		}
 	}
 

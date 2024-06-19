@@ -101,6 +101,8 @@ public class DeploymentProperties implements InitializingBean {
 
 		private String stagingProfileId;
 
+		private Publishing process;
+
 		private Gpg gpg;
 
 		public boolean hasGpgConfiguration() {
@@ -112,6 +114,10 @@ public class DeploymentProperties implements InitializingBean {
 			if (!StringUtils.hasText(stagingProfileId)) {
 				throw new IllegalArgumentException("No staging profile Id for Maven Central");
 			}
+		}
+
+		public enum Publishing {
+			OSSRH, PUBLISHER
 		}
 	}
 
