@@ -57,11 +57,19 @@ import org.springframework.data.release.deployment.DeploymentProperties.MavenCen
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.*;
+import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
@@ -90,6 +98,7 @@ class MavenBuildSystem implements BuildSystem {
 	Gpg gpg;
 	Environment env;
 	DeploymentProperties deploymentProperties;
+	RestTemplate restTemplate;
 
 	static final String REPO_OPENING_TAG = "<repository>";
 	static final String REPO_CLOSING_TAG = "</repository>";
@@ -97,7 +106,7 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public BuildSystem withJavaVersion(JavaVersion javaVersion) {
 		return new MavenBuildSystem(workspace, projectionFactory, logger, mvn.withJavaVersion(javaVersion), mavenProperties,
-				properties, gpg, env, deploymentProperties);
+				properties, gpg, env, deploymentProperties, restTemplate);
 	}
 
 	/*
@@ -449,7 +458,7 @@ class MavenBuildSystem implements BuildSystem {
 		}
 
 		if (process == MavenCentral.Publishing.PUBLISHER && stagingRepository.isFile()) {
-			publishRelease(stagingRepository);
+			publishRelease(train, stagingRepository);
 			return;
 		}
 
@@ -457,14 +466,34 @@ class MavenBuildSystem implements BuildSystem {
 				String.format("Cannot release train using %s and staging repository %s", process, stagingRepository));
 	}
 
-	private void publishRelease(StagingRepository stagingRepository) {
+	private void publishRelease(Train train, StagingRepository stagingRepository) {
 
 		File root = new File(mavenProperties.getLocalStaging(), stagingRepository.getId());
 
 		Assert.isTrue(root.exists(), "StagingRepository " + root + " does not exist");
+		logger.log(train, "Creating release bundle from %s…", stagingRepository);
 
 		try {
 			File releaseBundle = createReleaseBundle(root);
+
+			logger.log(train, "Release bundle created. About to upload release bundle …");
+
+			MavenCentral mavenCentral = deploymentProperties.getMavenCentral();
+			HttpBasicCredentials httpCredentials = mavenCentral.getAuthentication().getHttpCredentials();
+
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+			headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + httpCredentials.encode());
+
+			MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+			body.add("bundle", releaseBundle);
+
+			HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+			ResponseEntity<String> response = restTemplate.postForEntity(mavenCentral.getPublisherApi() + "publisher/upload",
+					requestEntity, String.class);
+
+			logger.log(train, "Bundle published with deployment Id %s", response.getBody());
+
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

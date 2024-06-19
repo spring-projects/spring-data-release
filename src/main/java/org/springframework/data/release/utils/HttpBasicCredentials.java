@@ -29,8 +29,16 @@ import org.springframework.data.release.model.Password;
 @Value
 public class HttpBasicCredentials {
 
-	private final @NonNull String username;
-	private final @NonNull Password password;
+	@NonNull String username;
+	@NonNull Password password;
+
+	public String encode() {
+
+		String header = username.concat(":").concat(password.toString());
+		byte[] encodedAuth = Base64.getEncoder().encode(header.getBytes(StandardCharsets.US_ASCII));
+
+		return new String(encodedAuth);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -38,9 +46,6 @@ public class HttpBasicCredentials {
 	 */
 	public String toString() {
 
-		String header = username.concat(":").concat(password.toString());
-		byte[] encodedAuth = Base64.getEncoder().encode(header.getBytes(StandardCharsets.US_ASCII));
-
-		return "Basic ".concat(new String(encodedAuth));
+		return "Basic ".concat(encode());
 	}
 }

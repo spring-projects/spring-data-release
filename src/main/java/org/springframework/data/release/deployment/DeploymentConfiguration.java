@@ -19,8 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
-import org.springframework.data.release.model.Password;
-import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.web.client.RestOperations;
@@ -51,10 +49,7 @@ class DeploymentConfiguration {
 			String uri = authentication.getServer().getUri();
 
 			if (authentication.hasCredentials()) {
-
-				HttpBasicCredentials credentials = new HttpBasicCredentials(authentication.getUsername(),
-						Password.of(authentication.getApiKey()));
-				builder = builder.withAuthentication(uri, credentials);
+				builder = builder.withAuthentication(uri, authentication.getHttpCredentials());
 
 			} else {
 				logger.warn("Infrastructure", "No credentials configured for repository %s!", uri);

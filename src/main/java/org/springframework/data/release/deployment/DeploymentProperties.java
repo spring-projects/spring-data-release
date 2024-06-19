@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
 import org.springframework.data.release.model.SupportStatusAware;
+import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.util.Streamable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -103,7 +104,11 @@ public class DeploymentProperties implements InitializingBean {
 
 		private Publishing process;
 
+		private Authentication authentication;
+
 		private Gpg gpg;
+
+		private String publisherApi = "https://central.sonatype.com/api/v1/";
 
 		public boolean hasGpgConfiguration() {
 			return gpg != null && gpg.isGpgAvailable();
@@ -111,8 +116,12 @@ public class DeploymentProperties implements InitializingBean {
 
 		public void validate() {
 
-			if (!StringUtils.hasText(stagingProfileId)) {
+			if (process == Publishing.OSSRH && !StringUtils.hasText(stagingProfileId)) {
 				throw new IllegalArgumentException("No staging profile Id for Maven Central");
+			}
+
+			if (process == Publishing.PUBLISHER && (authentication == null || !authentication.hasCredentials())) {
+				throw new IllegalArgumentException("No publisher authentication for Maven Central");
 			}
 		}
 
@@ -135,6 +144,10 @@ public class DeploymentProperties implements InitializingBean {
 
 		public boolean hasCredentials() {
 			return StringUtils.hasText(username) && password != null;
+		}
+
+		public HttpBasicCredentials getHttpCredentials() {
+			return new HttpBasicCredentials(username, password);
 		}
 
 		public void validate() {
