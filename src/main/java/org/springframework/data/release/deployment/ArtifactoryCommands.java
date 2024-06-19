@@ -47,9 +47,9 @@ class ArtifactoryCommands extends TimedCommand {
 		Stream.of(SupportStatus.OSS, SupportStatus.COMMERCIAL).forEach(deployment::verifyAuthentication);
 	}
 
-	@CliCommand(value = "artifactory aql")
+	@CliCommand(value = "artifactory create releases")
 	@SneakyThrows
-	public void aql(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
+	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
 		for (ModuleIteration moduleIteration : trainIteration) {
 			operations.createArtifactoryRelease(moduleIteration);

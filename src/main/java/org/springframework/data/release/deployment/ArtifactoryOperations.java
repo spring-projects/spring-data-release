@@ -23,7 +23,6 @@ import java.util.Locale;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestOperations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,16 +33,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class ArtifactoryOperations {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
-	private final DeploymentProperties properties;
-	private final RestOperations restOperations;
 	private final AqlWriter aqlWriter;
+	private final ArtifactoryClient client;
 
-	private final static String CREATE_RELEASE_BUNDLE_PATH = "/lifecycle/api/v2/release_bundle?project=spring";
-
-	public ArtifactoryOperations(DeploymentProperties properties, RestOperations restOperations) {
-		this.properties = properties;
-		this.restOperations = restOperations;
+	public ArtifactoryOperations(DeploymentProperties properties, ArtifactoryClient client) {
 		this.aqlWriter = new AqlWriter(properties.getCommercial(), objectMapper);
+		this.client = client;
 	}
 
 	@SneakyThrows
@@ -64,11 +59,8 @@ class ArtifactoryOperations {
 		System.out.println();
 		System.out.println();
 
-		DeploymentProperties.Authentication authentication = properties.getAuthentication(module);
+		/*DeploymentProperties.Authentication authentication = properties.getAuthentication(module);
 
-		/*
-		restOperations.postForObject(authentication.getServer()
-											 .getUri() + CREATE_RELEASE_BUNDLE_PATH, releaseBundle, Map.class);
-		  */
+		client.createRelease(releaseBundle, authentication); */
 	}
 }
