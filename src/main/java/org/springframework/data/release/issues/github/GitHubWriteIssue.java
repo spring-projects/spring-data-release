@@ -37,7 +37,7 @@ import org.springframework.util.Assert;
 @With
 class GitHubWriteIssue implements GitHubIssue {
 
-	String number, title, state;
+	String number, title, body, state;
 	List<Object> assignees;
 	Long milestone;
 	List<String> labels;
@@ -48,17 +48,17 @@ class GitHubWriteIssue implements GitHubIssue {
 	}
 
 	public static GitHubWriteIssue of(String title, Milestone milestone) {
-		return new GitHubWriteIssue(null, title, null, null, milestone.getNumber(), null);
+		return new GitHubWriteIssue(null, title, null, null, null, milestone.getNumber(), null);
 	}
 
 	public static GitHubWriteIssue assignedTo(String username) {
 
 		Assert.hasText(username, "Username must not be null or empty!");
-		return new GitHubWriteIssue(null, null, null, Collections.singletonList(username), null, null);
+		return new GitHubWriteIssue(null, null, null, null, Collections.singletonList(username), null, null);
 	}
 
 	public GitHubWriteIssue close() {
-		return new GitHubWriteIssue(this.number, this.title, "closed", this.assignees, null, null);
+		return new GitHubWriteIssue(this.number, this.title, "closed", null, this.assignees, null, null);
 	}
 
 	public GitHubWriteIssue withLabel(String labelName) {

@@ -259,19 +259,20 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		logger.log(moduleIteration, "Creating release ticket…");
 
-		doCreateTicket(moduleIteration, Tracker.releaseTicketSummary(moduleIteration), TicketType.Task, false);
+		doCreateTicket(moduleIteration, Tracker.releaseTicketSummary(moduleIteration), null, TicketType.Task, false);
 	}
 
 	@Override
-	public Ticket createTicket(ModuleIteration moduleIteration, String text, TicketType ticketType,
+	public Ticket createTicket(ModuleIteration moduleIteration, String subject, String description, TicketType ticketType,
 			boolean assignToCurrentUser) {
 
 		logger.log(moduleIteration, "Creating ticket…");
 
-		return doCreateTicket(moduleIteration, text, ticketType, assignToCurrentUser);
+		return doCreateTicket(moduleIteration, subject, description, ticketType, assignToCurrentUser);
 	}
 
-	private Ticket doCreateTicket(ModuleIteration moduleIteration, String text, TicketType ticketType,
+	private Ticket doCreateTicket(ModuleIteration moduleIteration, String subject, String description,
+			TicketType ticketType,
 			boolean assignToCurrentUser) {
 
 		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
@@ -279,7 +280,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Label label = TICKET_LABELS.get(ticketType);
 
-		GitHubWriteIssue gitHubIssue = GitHubWriteIssue.of(text, milestone).withLabel(label.getName());
+		GitHubWriteIssue gitHubIssue = GitHubWriteIssue.of(subject, milestone).withBody(description)
+				.withLabel(label.getName());
 
 		if (assignToCurrentUser) {
 			gitHubIssue = gitHubIssue.withAssignees(Collections.singletonList(properties.getUsername()));

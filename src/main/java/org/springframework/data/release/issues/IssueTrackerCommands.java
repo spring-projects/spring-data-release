@@ -22,6 +22,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -132,12 +134,31 @@ public class IssueTrackerCommands extends TimedCommand {
 
 	@CliCommand(value = "tracker create tickets")
 	public String createTickets(@CliOption(key = "iteration", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "text", mandatory = true) String text) {
+			@CliOption(key = "subject", mandatory = true) String subject,
+			@CliOption(key = "description", mandatory = false) String description) {
 
-		return iteration.stream().//
-				map(module -> getTrackerFor(module).createTicket(module, text, IssueTracker.TicketType.Task, false))
-				.collect(Tickets.toTicketsCollector())
-				.toString();
+		Predicate<ModuleIteration> isBuildProject = module -> module.getProject() == Projects.BUILD;
+
+		List<Ticket> tickets = iteration.stream() //
+				.filter(isBuildProject.negate()) //
+				.map(module -> getTrackerFor(module).createTicket(module, subject, IssueTracker.TicketType.Task, false))
+				.collect(Collectors.toList());
+
+		StringBuilder body = new StringBuilder();
+
+		for (Ticket ticket : tickets) {
+			body.append("- [ ] ").append(ticket.getUrl()).append("\n");
+		}
+
+		ModuleIteration module = iteration.getModule(Projects.BUILD);
+		Ticket buildTicket = getTrackerFor(module).createTicket(module, subject, body.toString(),
+				IssueTracker.TicketType.Task, false);
+
+		List<Ticket> allTickets = new ArrayList<>();
+		allTickets.add(buildTicket);
+		allTickets.addAll(tickets);
+
+		return new Tickets(allTickets).toString();
 	}
 
 	@CliCommand("tracker open-tickets")
@@ -169,11 +190,9 @@ public class IssueTrackerCommands extends TimedCommand {
 			return getTicketsForProject(iteration, Projects.requiredByName(moduleName), ticketPredicate);
 		}
 
-		return ExecutionUtils.runAndReturn(executor, iteration,
-				moduleIteration -> {
-					return getTicketsForProject(iteration, moduleIteration.getModule().getProject(), ticketPredicate);
-				})
-				.stream() //
+		return ExecutionUtils.runAndReturn(executor, iteration, moduleIteration -> {
+			return getTicketsForProject(iteration, moduleIteration.getModule().getProject(), ticketPredicate);
+		}).stream() //
 				.filter(StringUtils::hasText) //
 				.collect(Collectors.joining("\n"));
 	}
