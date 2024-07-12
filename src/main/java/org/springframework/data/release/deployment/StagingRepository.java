@@ -24,21 +24,12 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Mark Paluch
  */
-@Value
+@Value(staticConstructor = "of")
 public class StagingRepository {
 
-	public static final StagingRepository EMPTY = new StagingRepository("", false);
+	public static final StagingRepository EMPTY = StagingRepository.of("");
 
 	String id;
-	boolean file;
-
-	public static StagingRepository of(String id) {
-		return new StagingRepository(id, false);
-	}
-
-	public static StagingRepository ofFile(String id) {
-		return new StagingRepository(id, true);
-	}
 
 	public boolean isEmpty() {
 		return ObjectUtils.isEmpty(id);
@@ -48,15 +39,10 @@ public class StagingRepository {
 		return !isEmpty();
 	}
 
-	public boolean isRemote() {
-		return !isEmpty() && !isFile();
-	}
-
 	@Override
 	public String toString() {
-
 		if (isPresent()) {
-			return (isFile() ? "file:" : "remote:") + id;
+			return id;
 		}
 
 		return "(empty)";

@@ -41,7 +41,6 @@ public class MavenProperties {
 
 	private File mavenHome;
 	private File localRepository;
-	private File localStaging;
 	private Map<String, String> plugins;
 	private boolean consoleLogger = true;
 	private boolean parallelize = false;
@@ -71,19 +70,6 @@ public class MavenProperties {
 
 		if (!this.localRepository.exists()) {
 			this.localRepository.mkdirs();
-		}
-	}
-
-	public void setLocalStaging(String localStaging) {
-
-		Assert.hasText(localStaging, "Local staging must not be null!");
-
-		log.info("Using {} as local Maven local staging!", localStaging);
-
-		this.localStaging = new File(localStaging.replace("~", FileUtils.getUserDirectoryPath()));
-
-		if (!this.localStaging.exists()) {
-			this.localStaging.mkdirs();
 		}
 	}
 
