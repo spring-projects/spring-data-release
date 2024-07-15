@@ -19,14 +19,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.With;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import org.springframework.util.Assert;
 
 /**
  * @author Oliver Gierke
@@ -58,7 +57,7 @@ class GitHubWriteIssue implements GitHubIssue {
 	}
 
 	public GitHubWriteIssue close() {
-		return new GitHubWriteIssue(this.number, this.title, "closed", null, this.assignees, null, null);
+		return new GitHubWriteIssue(this.number, this.title, null, "closed", this.assignees, null, null);
 	}
 
 	public GitHubWriteIssue withLabel(String labelName) {
