@@ -276,3 +276,13 @@ $ check-links $url
 ----
 $ check-links file:///usr/git/spring-data-mongodb/target/site/reference/html/index.html --report ERROR,REDIRECT
 ----
+
+==== Running the Tests
+
+In order to run the test you need either `MAVEN_HOME` setup properly, or run your maven build like this:
+
+```
+mvn clean verify -Dmaven.maven-home=/opt/homebrew/bin/mvn
+```
+
+Obviously, the path given should be the location of your Maven installation.
