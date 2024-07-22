@@ -114,7 +114,7 @@ public class DocumentationMetadata {
 		}
 
 		String format = this.project.isCommercial() ? COMMERCIAL_ANTORA_BASE : ANTORA_BASE;
-		return String.format(format, getProjectName(project), version.getMajorMinor());
+		return String.format(format, getProjectName(project), this.version.getMajorMinor(true));
 	}
 
 	public String getVersionOrTrainName(Train train) {

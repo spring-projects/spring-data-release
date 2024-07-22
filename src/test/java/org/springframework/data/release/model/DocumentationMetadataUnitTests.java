@@ -48,6 +48,17 @@ class DocumentationMetadataUnitTests {
 		assertThat(metadata.getReferenceDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/3.1/");
 	}
 
+	@Test // gh-91
+	void shouldReportCorrectAntoraSnapshotDocumentationUrls() {
+
+		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ANTORA,
+				SupportedProject.of(Projects.MONGO_DB, SupportStatus.OSS), ArtifactVersion.of("3.1.0-SNAPSHOT"), false);
+
+		assertThat(metadata.getApiDocUrl()).isEmpty();
+		assertThat(metadata.getReferenceDocUrl())
+				.isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/3.1-SNAPSHOT/");
+	}
+
 	@Test // gh-197
 	void shouldReportCorrectCurrentDocumentationUrls() {
 

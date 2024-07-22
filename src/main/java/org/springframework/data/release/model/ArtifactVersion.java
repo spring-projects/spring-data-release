@@ -318,12 +318,17 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return modifierFormat ? SNAPSHOT_MODIFIER : SNAPSHOT_SUFFIX;
 	}
 
-	public String getMajorMinor() {
+	public String getMajorMinor(boolean includeSuffix) {
+
+		if (includeSuffix && isSnapshotVersion()) {
+			return String.format("%s.%s-SNAPSHOT", version.getMajor(), version.getMinor());
+		}
+
 		return String.format("%s.%s", version.getMajor(), version.getMinor());
 	}
 
 	public String getGeneration() {
-		return String.format("%s.x", getMajorMinor());
+		return String.format("%s.x", getMajorMinor(false));
 	}
 
 	@Override
