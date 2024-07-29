@@ -109,7 +109,8 @@ public class ReleaseTrains {
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		ULLMAN = TURING.next("Ullman", Transition.MINOR) //
-				.withCalver("2023.0");
+				.withCalver("2023.0") //
+				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		VAUGHAN = ULLMAN.next("Vaughan", Transition.MINOR) //
 				.withDocumentationFormat(DocumentationFormat.ANTORA) //
