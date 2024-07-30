@@ -34,8 +34,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class AqlWriter {
 
-	private static final String DEFAULT_GROUP_ID = "org.springframework.data";
-
 	private final DeploymentProperties.Authentication targetServer;
 
 	private final ObjectMapper objectMapper;

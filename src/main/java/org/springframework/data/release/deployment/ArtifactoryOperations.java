@@ -34,33 +34,29 @@ class ArtifactoryOperations {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final AqlWriter aqlWriter;
+	private final DeploymentProperties.Authentication authentication;
 	private final ArtifactoryClient client;
 
 	public ArtifactoryOperations(DeploymentProperties properties, ArtifactoryClient client) {
-		this.aqlWriter = new AqlWriter(properties.getCommercial(), objectMapper);
+		this.authentication = properties.getCommercial();
+		this.aqlWriter = new AqlWriter(authentication, objectMapper);
 		this.client = client;
 	}
 
 	@SneakyThrows
 	public void createArtifactoryRelease(ModuleIteration module) {
 
+		ArtifactoryReleaseBundle releaseBundle = createReleaseBundle(module);
+		client.createRelease(module, releaseBundle, authentication);
+	}
+
+	ArtifactoryReleaseBundle createReleaseBundle(ModuleIteration module) {
+
 		String projectName = module.getProject().getName().toLowerCase(Locale.ROOT);
 		String releaseName = String.format("TNZ-spring-data-%s-commercial", projectName);
 		String version = ArtifactVersion.of(module).toString();
 		String aql = aqlWriter.createFindAqlStatement(module);
-		ArtifactoryReleaseBundle releaseBundle = new ArtifactoryReleaseBundle(releaseName, version, "aql",
-				Collections.singletonMap("aql", aql));
 
-		// TODO: Send REST request to create the release.
-		// String json = objectMapper.writeValueAsString(releaseBundle);
-
-		System.out.println(releaseName);
-		System.out.println(objectMapper.writeValueAsString(releaseBundle));
-		System.out.println();
-		System.out.println();
-
-		/*DeploymentProperties.Authentication authentication = properties.getAuthentication(module);
-
-		client.createRelease(releaseBundle, authentication); */
+		return new ArtifactoryReleaseBundle(releaseName, version, "aql", Collections.singletonMap("aql", aql));
 	}
 }

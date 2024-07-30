@@ -33,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -125,13 +126,19 @@ class ArtifactoryClient {
 		headers.add("X-JFrog-Signing-Key-Name", "packagesKey");
 		HttpEntity<ArtifactoryReleaseBundle> entity = new HttpEntity<>(releaseBundle, headers);
 
-		ResponseEntity<Map> response = operations
-				.postForEntity(authentication.getServer().getUri() + CREATE_RELEASE_BUNDLE_PATH, entity, Map.class);
+		try {
+			ResponseEntity<Map> response = operations
+					.postForEntity(authentication.getServer().getUri() + CREATE_RELEASE_BUNDLE_PATH, entity, Map.class);
 
-		if (!response.getStatusCode().is2xxSuccessful()) {
-			logger.warn(iteration, "Artifactory request failed %s", response);
-		} else {
-			logger.log(iteration, "Artifactory request succeeded %s", response);
+			if (!response.getStatusCode().is2xxSuccessful()) {
+				logger.warn(iteration, "Artifactory request failed: %d %s", response.getStatusCode().value(),
+						response.getBody());
+			} else {
+				logger.log(iteration, "Artifactory request succeeded: %s", response);
+			}
+		} catch (HttpStatusCodeException e) {
+			logger.warn(iteration, "Artifactory request failed: %d %s", e.getStatusCode().value(),
+					e.getResponseBodyAsString());
 		}
 	}
 
