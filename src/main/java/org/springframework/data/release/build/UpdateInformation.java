@@ -102,12 +102,11 @@ public class UpdateInformation {
 
 		if (phase == Phase.CLEANUP || phase == Phase.MAINTENANCE) {
 
-			return train.isCommercial()
-					? Arrays.asList(Repository.COMMERCIAL_SNAPSHOT, Repository.COMMERCIAL_RELEASE)
+			return train.isCommercial() ? Arrays.asList(Repository.COMMERCIAL_SNAPSHOT, Repository.COMMERCIAL_RELEASE)
 					: Arrays.asList(Repository.SNAPSHOT, Repository.MILESTONE);
 		}
 
-		return train.isCommercial() ? Arrays.asList(Repository.COMMERCIAL_RELEASE) : Collections.emptyList();
+		return Collections.emptyList();
 	}
 
 	/**

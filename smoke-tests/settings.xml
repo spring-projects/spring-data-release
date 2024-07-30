@@ -16,8 +16,18 @@
 		</server>
 		<server>
 			<id>spring-libs-milestone</id>
-			<username>${ARTIFACTORY_USR}</username>
-			<password>${ARTIFACTORY_PSW}</password>
+			<username>${env.ARTIFACTORY_USR}</username>
+			<password>${env.ARTIFACTORY_PSW}</password>
+		</server>
+		<server>
+			<id>spring-enterprise-stage</id>
+			<username>${env.COMMERCIAL_USR}</username>
+			<password>${env.COMMERCIAL_PSW}</password>
+		</server>
+		<server>
+			<id>spring-enterprise-release</id>
+			<username>${env.COMMERCIAL_USR}</username>
+			<password>${env.COMMERCIAL_PSW}</password>
 		</server>
 	</servers>
 

@@ -70,6 +70,10 @@ class UpdateInformationUnitTests {
 				Phase.PREPARE);
 
 		assertThat(updateInformation.getRepositories()).isEmpty();
+
+		updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.TURING, Iteration.GA), Phase.PREPARE);
+
+		assertThat(updateInformation.getRepositories()).isEmpty();
 	}
 
 	@Test

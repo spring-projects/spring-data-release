@@ -97,16 +97,17 @@
 			<id>commercial</id>
 
 			<repositories>
+
 				<repository>
-					<id>spring-commercial-release</id>
+					<id>spring-enterprise-stage</id>
 					<url>
-						https://repo.spring.vmware.com/artifactory/spring-commercial/
+						https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-stage-local/
 					</url>
 				</repository>
 				<repository>
-					<id>spring-commercial-staging</id>
+					<id>spring-enterprise-release</id>
 					<url>
-						https://repo.spring.vmware.com/artifactory/spring-commercial-staging-local/
+						https://usw1.packages.broadcom.com/artifactory/spring-enterprise-maven-prod-local/
 					</url>
 				</repository>
 			</repositories>
