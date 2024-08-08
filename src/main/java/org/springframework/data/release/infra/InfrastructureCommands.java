@@ -75,7 +75,7 @@ public class InfrastructureCommands extends TimedCommand {
 	public void check(@CliOption(key = "", mandatory = true) TrainIteration iteration,
 			@CliOption(key = "all", mandatory = false) Boolean reportAll) throws IOException {
 
-		git.checkout(iteration.getTrain());
+		git.prepare(iteration);
 
 		DependencyUpgradeProposals proposals = operations.getMavenWrapperDependencyUpgradeProposals(iteration);
 
@@ -102,7 +102,7 @@ public class InfrastructureCommands extends TimedCommand {
 
 		logger.log(iteration, "Distributing CI properties for Spring Data…");
 
-		git.checkout(iteration.getTrain(), true);
+		git.prepare(iteration);
 
 		infra.distributeCiProperties(iteration);
 	}
