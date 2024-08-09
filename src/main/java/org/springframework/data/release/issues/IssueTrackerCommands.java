@@ -220,12 +220,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 	private static Streamable<ModuleIteration> withReleaseProject(TrainIteration iteration) {
 
-		if (iteration.isCommercial()) {
-			return iteration;
-		}
-
 		ModuleIteration bom = iteration.getModule(Projects.BOM);
-
 		return iteration.and(new ModuleIteration(new Module(Projects.RELEASE, bom.getVersion()), iteration));
 	}
 
