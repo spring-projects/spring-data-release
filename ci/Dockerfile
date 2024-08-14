@@ -7,6 +7,7 @@ ARG USER_UID="1001"
 ARG USER_GID="1001"
 ARG USER_NAME="jenkins"
 
+
 RUN groupadd -g $USER_GID $USER_NAME && \
 	useradd -m -g $USER_GID -u $USER_UID $USER_NAME
 

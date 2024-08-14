@@ -21,8 +21,8 @@ pipeline {
 		stage('Build the Spring Data release tools container') {
 			when {
 				anyOf {
-				   changeset 'ci/Dockerfile'
-				   changeset 'ci/java-tools.properties'
+					changeset 'ci/Dockerfile'
+					changeset 'ci/java-tools.properties'
 				}
 			}
 			agent {
@@ -31,7 +31,7 @@ pipeline {
 
 			steps {
 				script {
-					def image = docker.build("springci/spring-data-release-tools:0.15", "ci")
+					def image = docker.build("springci/spring-data-release-tools:0.16", "ci")
 					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
 						image.push()
 					}
@@ -45,7 +45,7 @@ pipeline {
 			}
 			agent {
 				docker {
-					image 'springci/spring-data-release-tools:0.15'
+					image 'springci/spring-data-release-tools:0.16'
 				}
 			}
 			options { timeout(time: 4, unit: 'HOURS') }
