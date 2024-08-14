@@ -17,11 +17,13 @@ maven.console-logger=false
 maven.parallelize=true
 
 # Deployment
-# Must be always the encrypted password taken from the Artifactory GUI/Profile view
-deployment.username=
-deployment.password=
-deployment.api-key=
-deployment.maven-central.staging-profile-id=
+deployment.opensource.username=
+deployment.opensource.password=
+deployment.opensource.api-key=
+
+deployment.commercial.username=
+deployment.commercial.password=
+deployment.commercial.api-key=
 
 # GPG
 gpg.keyname=
