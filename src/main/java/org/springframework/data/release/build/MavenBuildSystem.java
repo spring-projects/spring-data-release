@@ -327,7 +327,8 @@ class MavenBuildSystem implements BuildSystem {
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
 				arg("gpg.passphrase").withValue(gpg.getPassphrase())) //
 				.andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), settingsXml(properties.getSettingsXml()))
-				.andIf(StringUtils.hasText(information.getProject()), () -> arg("artifactory.project").withValue(information.getProject()));
+				.andIf(StringUtils.hasText(information.getProject()),
+						() -> arg("artifactory.project").withValue(information.getProject()));
 
 		mvn.execute(module.getSupportedProject(), arguments);
 	}
@@ -469,7 +470,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.password").withValue(authentication.getPassword()))
 				.andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
-				}));
+				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));
 
 		mvn.execute(supportedProject, CommandLine.of(Goal.CLEAN, Goal.DEPLOY, //
 				SKIP_TESTS, profile("distribute-schema"), Argument.of("-B"),
@@ -479,7 +480,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.password").withValue(authentication.getPassword()))
 				.andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
-				}));
+				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));
 
 		logger.log(project, "Successfully finished distribution build!");
 
