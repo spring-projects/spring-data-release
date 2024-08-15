@@ -434,10 +434,8 @@ public class GitOperations {
 					.filter(branch -> branch.isIssueBranch(project.getProject().getTracker()))//
 					.collect(Collectors.toMap(Branch::toString, branch -> branch));
 
-			Collection<Ticket> tickets = tracker.findTickets(project,
-					ticketIds.keySet().stream()
-							.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub))
-							.collect(Collectors.toList()));
+			Collection<Ticket> tickets = tracker.findTickets(project, ticketIds.keySet().stream()
+					.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub)).collect(Collectors.toList()));
 
 			return TicketBranches
 					.from(tickets.stream().collect(Collectors.toMap(ticket -> ticketIds.get(ticket.getId()), ticket -> ticket)));
@@ -461,12 +459,17 @@ public class GitOperations {
 			return trainToUse.getIteration(Iteration.GA);
 		}
 
+		Iteration iteration = trainIteration.getIteration();
+		Train train = trainIteration.getTrain();
+		if (iteration.isServiceIteration()) {
+			return train.getIteration(iteration.getPrevious());
+		}
+
 		SupportedProject build = trainIteration.getSupportedProject(Projects.BUILD);
 
 		Optional<TrainIteration> mostRecentBefore = getTags(build) //
-				.filter((tag, ti) -> ti.getTrain().equals(trainIteration.getTrain())) //
-				.find((tag, iteration) -> iteration.getIteration().compareTo(trainIteration.getIteration()) < 0,
-						Pair::getSecond);
+				.filter((tag, ti) -> ti.getTrain().equals(train)) //
+				.find((tag, ti) -> ti.getIteration().compareTo(trainIteration.getIteration()) < 0, Pair::getSecond);
 
 		return mostRecentBefore.orElseThrow(() -> new IllegalStateException(
 				"Cannot determine previous iteration for " + trainIteration.getReleaseTrainNameAndVersion()));
@@ -482,7 +485,7 @@ public class GitOperations {
 			Repository repo = git.getRepository();
 
 			ModuleIteration toModuleIteration = to.getModule(project.getProject());
-			ObjectId fromTag = resolveLowerBoundary(project.getProject(), from, tags, repo);
+			ObjectId fromTag = resolveLowerBoundary(project.getStatus(), project.getProject(), from, tags, git, repo);
 			ObjectId toTag = resolveUpperBoundary(toModuleIteration, tags, repo);
 
 			Iterable<RevCommit> commits = git.log().addRange(fromTag, toTag).call();
@@ -517,14 +520,29 @@ public class GitOperations {
 		return uniqueTicketReferences;
 	}
 
-	protected ObjectId resolveLowerBoundary(Project project, TrainIteration iteration, VersionTags tags, Repository repo)
-			throws IOException {
+	protected ObjectId resolveLowerBoundary(SupportStatus supportStatus, Project project, TrainIteration iteration,
+			VersionTags tags, Git git, Repository repo) throws IOException, GitAPIException {
 
 		if (iteration.contains(project)) {
 
-			Optional<Tag> fromTag = tags.filter(iteration.getTrain()).findTag(iteration.getIteration());
+			Iteration it = iteration.getIteration();
+			Optional<Tag> fromTag = tags.filter(iteration.getTrain()).findTag(it);
 
 			if (!fromTag.isPresent()) {
+
+				// commercial releases might not have a previous tag as commercial releases are seeded without OSS tags.
+				if (supportStatus == SupportStatus.COMMERCIAL && (it.isServiceIteration() || it.isGAIteration())) {
+
+					Branch from = Branch.from(iteration.getModule(project));
+					Iterable<RevCommit> commits = git.log().add(repo.resolve(from.toString())).call();
+
+					Optional<RevCommit> first = Streamable.of(commits).stream()
+							.filter(rev -> rev.getFullMessage().contains("Seed " + from + " branch")).findFirst();
+
+					if (first.isPresent()) {
+						return first.get();
+					}
+				}
 
 				// fall back to main
 				return repo.parseCommit(repo.resolve(Branch.MAIN.toString()));

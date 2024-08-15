@@ -107,6 +107,10 @@ public class Iteration implements Comparable<Iteration> {
 		return (Iteration) ReflectionUtils.getField(field, null);
 	}
 
+	public static Iteration getServiceRelease(int iterationValue) {
+		return valueOf("SR" + iterationValue);
+	}
+
 	public boolean isGAIteration() {
 		return this.equals(GA);
 	}
@@ -226,5 +230,20 @@ public class Iteration implements Comparable<Iteration> {
 		}
 
 		return EQUAL;
+	}
+
+	/**
+	 * Returns the previous iteration for GA or Service Releases.
+	 *
+	 * @return
+	 * @throws IllegalStateException if the current iteration is not a service release.
+	 */
+	public Iteration getPrevious() {
+
+		if (isServiceIteration()) {
+			return getIterationValue() == 1 ? Iteration.GA : Iteration.getServiceRelease(getIterationValue() - 1);
+		}
+
+		throw new IllegalStateException(String.format("Cannot determine previous iteration for %s", this));
 	}
 }
