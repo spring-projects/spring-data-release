@@ -32,7 +32,6 @@ import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.util.StringUtils;
-import org.springframework.web.util.UriTemplate;
 
 /**
  * Information about a deployment.
@@ -83,11 +82,6 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 		}
 
 		return String.format("%s-%s-release-%s", getBuildName(module.getSupportedProject()), branch, actualBuildNumber);
-	}
-
-	@Override
-	public DeploymentInformation withModule(ModuleIteration module) {
-		return new DefaultDeploymentInformation(module, properties, buildNumber, stagingRepositoryId, authentication);
 	}
 
 	/*

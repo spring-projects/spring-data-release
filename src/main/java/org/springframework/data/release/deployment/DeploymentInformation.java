@@ -80,7 +80,5 @@ public interface DeploymentInformation {
 	 */
 	Map<String, Object> getBuildInfoParameters();
 
-	DeploymentInformation withModule(ModuleIteration module);
-
 	boolean isMavenCentral();
 }
