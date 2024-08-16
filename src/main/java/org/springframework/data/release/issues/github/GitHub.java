@@ -272,8 +272,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	}
 
 	private Ticket doCreateTicket(ModuleIteration moduleIteration, String subject, String description,
-			TicketType ticketType,
-			boolean assignToCurrentUser) {
+			TicketType ticketType, boolean assignToCurrentUser) {
 
 		String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
 		Milestone milestone = getMilestone(moduleIteration);
@@ -571,7 +570,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		logger.log(module, "Preparing GitHub Release …");
 
 		String releaseMarkdown = createReleaseMarkdown(module, ticketIds);
-
 		createOrUpdateRelease(module, releaseMarkdown);
 
 		logger.log(module, "GitHub Release up to date");
@@ -593,7 +591,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		String releaseMarkdown;
 		if (module.getProject() == Projects.BOM || module.getProject() == Projects.BUILD) {
-			// We don't ship Javadoc/reference doc for build and BOM
 
 			if (module.getProject() == Projects.BOM) {
 				String participatingModules = createParticipatingModules(module.getTrainIteration());
@@ -615,9 +612,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 				.comparing(moduleIteration -> moduleIteration.getSupportedProject().getName());
 		return iteration.stream().sorted(comparator).map(module -> {
 
+			GitProject project = GitProject.of(module);
 			Tag tag = VersionTags.empty(module.getProject()).createTag(module);
 			return String.format("* [Spring Data %s %s](%s%s/releases/tag/%s)%n", module.getSupportedProject().getName(),
-					tag.getName(), GitServer.INSTANCE.getUri(), module.getSupportedProject().getFolderName(), tag.getName());
+					tag.getName(), GitServer.INSTANCE.getUri(), project.getRepositoryName(), tag.getName());
 		}).collect(Collectors.joining());
 	}
 
@@ -677,6 +675,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		if (!entity.getStatusCode().is2xxSuccessful()) {
 			throw new IllegalStateException(String.format("Cannot obtain Workflows. Status: %s", entity.getStatusCode()));
 		}
+
 		GitHubWorkflows workflows = entity.getBody();
 		for (GitHubWorkflow workflow : workflows.getWorkflows()) {
 
@@ -688,7 +687,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 				return workflow;
 			}
-
 		}
 
 		throw new NoSuchElementException("Cannot resolve Antora workflow");
@@ -767,8 +765,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", release.getId());
 
-		operations.exchange(RELEASE_BY_ID_URI_TEMPLATE, HttpMethod.PATCH, new HttpEntity<>(release), GitHubRelease.class,
-				parameters);
+		operations.exchange(RELEASE_BY_ID_URI_TEMPLATE, HttpMethod.PATCH, new HttpEntity<>(release), Map.class, parameters);
 	}
 
 	private Stream<GitHubReadIssue> getIssuesFor(ModuleIteration moduleIteration, boolean forCurrentUser,
