@@ -17,17 +17,23 @@ package org.springframework.data.release.deployment;
 
 import lombok.Value;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Mark Paluch
  */
 @Value
-public class ArtifactoryReleaseBundle {
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+class ArtifactoryReleaseBundle {
 
 	@JsonProperty("release_bundle_name") String name;
 
 	@JsonProperty("release_bundle_version") String version;
+
+	@JsonProperty("project_key") String projectKey;
+
+	@JsonProperty("repository_key") String repositoryKey;
 
 	@JsonProperty("source_type") String source_type;
 

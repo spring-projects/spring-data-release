@@ -118,7 +118,7 @@ class ArtifactoryClient {
 		operations.delete(information.getDeleteBuildResource());
 	}
 
-	public void createRelease(ModuleIteration iteration, ArtifactoryReleaseBundle releaseBundle,
+	public void createRelease(String context, ArtifactoryReleaseBundle releaseBundle,
 			Authentication authentication) {
 
 		HttpHeaders headers = new HttpHeaders();
@@ -131,14 +131,14 @@ class ArtifactoryClient {
 					.postForEntity(authentication.getServer().getUri() + CREATE_RELEASE_BUNDLE_PATH, entity, Map.class);
 
 			if (!response.getStatusCode().is2xxSuccessful()) {
-				logger.warn(iteration, "Artifactory request failed: %d %s", response.getStatusCode().value(),
+				logger.warn(context, "Artifactory request failed: %d %s", response.getStatusCode().value(),
 						response.getBody());
 			} else {
-				logger.log(iteration, "Artifactory request succeeded: %s %s", releaseBundle.getName(),
+				logger.log(context, "Artifactory request succeeded: %s %s", releaseBundle.getName(),
 						releaseBundle.getVersion());
 			}
 		} catch (HttpStatusCodeException e) {
-			logger.warn(iteration, "Artifactory request failed: %d %s", e.getStatusCode().value(),
+			logger.warn(context, "Artifactory request failed: %d %s", e.getStatusCode().value(),
 					e.getResponseBodyAsString());
 		}
 	}

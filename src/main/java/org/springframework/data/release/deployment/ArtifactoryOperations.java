@@ -18,10 +18,14 @@ package org.springframework.data.release.deployment;
 import lombok.SneakyThrows;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.TrainIteration;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,16 +51,44 @@ class ArtifactoryOperations {
 	public void createArtifactoryRelease(ModuleIteration module) {
 
 		ArtifactoryReleaseBundle releaseBundle = createReleaseBundle(module);
-		client.createRelease(module, releaseBundle, authentication);
+		client.createRelease(module.getProject().getName(), releaseBundle, authentication);
+	}
+
+	@SneakyThrows
+	public void createArtifactoryReleaseAggregator(TrainIteration train) {
+
+		ModuleIteration bom = train.getModule(Projects.BOM);
+		String releaseName = "TNZ-spring-data-commercial-release";
+		String version = ArtifactVersion.of(bom).toString();
+
+		List<ArtifactoryReleaseBundle> releaseBundles = train.stream().map(this::createReleaseBundleRef)
+				.collect(Collectors.toList());
+		ArtifactoryReleaseBundle aggregator = new ArtifactoryReleaseBundle(releaseName, version, null, null,
+				"release_bundles", Collections.singletonMap("release_bundles", releaseBundles));
+
+		client.createRelease(train.toString(), aggregator, authentication);
 	}
 
 	ArtifactoryReleaseBundle createReleaseBundle(ModuleIteration module) {
 
-		String projectName = module.getProject().getName().toLowerCase(Locale.ROOT);
-		String releaseName = String.format("TNZ-spring-data-%s-commercial", projectName);
+		String releaseName = getReleaseName(module);
 		String version = ArtifactVersion.of(module).toString();
 		String aql = aqlWriter.createFindAqlStatement(module);
 
-		return new ArtifactoryReleaseBundle(releaseName, version, "aql", Collections.singletonMap("aql", aql));
+		return new ArtifactoryReleaseBundle(releaseName, version, null, null, "aql", Collections.singletonMap("aql", aql));
+	}
+
+	ArtifactoryReleaseBundle createReleaseBundleRef(ModuleIteration module) {
+
+		String releaseName = getReleaseName(module);
+		String version = ArtifactVersion.of(module).toString();
+		String aql = aqlWriter.createFindAqlStatement(module);
+
+		return new ArtifactoryReleaseBundle(releaseName, version, "spring", "spring-release-bundles-v2", null, null);
+	}
+
+	private static String getReleaseName(ModuleIteration module) {
+		String projectName = module.getProject().getName().toLowerCase(Locale.ROOT);
+		return String.format("TNZ-spring-data-%s-commercial", projectName);
 	}
 }
