@@ -46,7 +46,7 @@ class ArtifactoryCommands extends TimedCommand {
 		Stream.of(SupportStatus.OSS, SupportStatus.COMMERCIAL).forEach(deployment::verifyAuthentication);
 	}
 
-	@CliCommand(value = "artifactory create releases")
+	@CliCommand(value = "artifactory release create")
 	@SneakyThrows
 	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
@@ -55,5 +55,11 @@ class ArtifactoryCommands extends TimedCommand {
 		} */
 
 		operations.createArtifactoryReleaseAggregator(trainIteration);
+	}
+
+	@CliCommand(value = "artifactory release distribute")
+	@SneakyThrows
+	public void distributeArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
+		operations.distributeArtifactoryReleaseAggregator(trainIteration);
 	}
 }

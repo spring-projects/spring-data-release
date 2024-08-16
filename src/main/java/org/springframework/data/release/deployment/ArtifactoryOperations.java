@@ -69,6 +69,15 @@ class ArtifactoryOperations {
 		client.createRelease(train.toString(), aggregator, authentication);
 	}
 
+	public void distributeArtifactoryReleaseAggregator(TrainIteration train) {
+
+		ModuleIteration bom = train.getModule(Projects.BOM);
+		String releaseName = "TNZ-spring-data-commercial-release";
+		String version = ArtifactVersion.of(bom).toString();
+
+		client.distributeRelease(train, releaseName, version, authentication);
+	}
+
 	ArtifactoryReleaseBundle createReleaseBundle(ModuleIteration module) {
 
 		String releaseName = getReleaseName(module);
@@ -91,4 +100,5 @@ class ArtifactoryOperations {
 		String projectName = module.getProject().getName().toLowerCase(Locale.ROOT);
 		return String.format("TNZ-spring-data-%s-commercial", projectName);
 	}
+
 }
