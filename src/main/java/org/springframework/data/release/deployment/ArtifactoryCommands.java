@@ -23,8 +23,10 @@ import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 
@@ -39,6 +41,7 @@ class ArtifactoryCommands extends TimedCommand {
 
 	private final @NonNull DeploymentOperations deployment;
 	private final @NonNull ArtifactoryOperations operations;
+	private final @NonNull Logger log;
 
 	@CliCommand(value = "artifactory verify", help = "Verifies authentication at Artifactory.")
 	public void verify() {
@@ -50,16 +53,29 @@ class ArtifactoryCommands extends TimedCommand {
 	@SneakyThrows
 	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
-		/*for (ModuleIteration moduleIteration : trainIteration) {
-			operations.createArtifactoryRelease(moduleIteration);
-		} */
+		if (trainIteration.isCommercial()) {
 
-		operations.createArtifactoryReleaseAggregator(trainIteration);
+			log.log(trainIteration, "Creating Artifactory Release Bundles");
+
+			for (ModuleIteration moduleIteration : trainIteration) {
+				operations.createArtifactoryRelease(moduleIteration);
+			}
+
+			operations.createArtifactoryReleaseAggregator(trainIteration);
+		} else {
+			log.log(trainIteration, "Skipping Artifactory Release Bundle Creation as it is not a commercial release");
+		}
 	}
 
 	@CliCommand(value = "artifactory release distribute")
 	@SneakyThrows
 	public void distributeArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
-		operations.distributeArtifactoryReleaseAggregator(trainIteration);
+
+		if (trainIteration.isCommercial()) {
+			log.log(trainIteration, "Distributing Release Aggregator");
+			operations.distributeArtifactoryReleaseAggregator(trainIteration);
+		} else {
+			log.log(trainIteration, "Skipping Release Aggregator Distribution as it is not a commercial release");
+		}
 	}
 }
