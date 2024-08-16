@@ -163,7 +163,8 @@ class ArtifactoryClient {
 
 		try {
 			ResponseEntity<Map> response = operations
-					.postForEntity(authentication.getServer().getUri() + DISTRIBUTE_RELEASE_BUNDLE_PATH, entity, Map.class);
+					.postForEntity(authentication.getServer().getUri() + DISTRIBUTE_RELEASE_BUNDLE_PATH, entity, Map.class,
+							parameters);
 
 			if (!response.getStatusCode().is2xxSuccessful()) {
 				logger.warn(train, "Artifactory request failed: %d %s", response.getStatusCode().value(), response.getBody());
