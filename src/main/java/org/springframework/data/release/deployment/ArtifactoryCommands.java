@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
-import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.core.annotation.CliCommand;
@@ -51,8 +50,10 @@ class ArtifactoryCommands extends TimedCommand {
 	@SneakyThrows
 	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
-		for (ModuleIteration moduleIteration : trainIteration) {
+		/*for (ModuleIteration moduleIteration : trainIteration) {
 			operations.createArtifactoryRelease(moduleIteration);
-		}
+		} */
+
+		operations.createArtifactoryReleaseAggregator(trainIteration);
 	}
 }
