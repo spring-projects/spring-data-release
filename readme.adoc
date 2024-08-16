@@ -73,9 +73,6 @@ Goto https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/relea
 |Action
 |Command
 
-| Finally, push the commit that changed `release.properties` to `main`
-| `$ git push origin main` (where you've checked out `spring-data-release`)
-
 |Close release tickets.
 |`$ tracker close $trainIteration`
 
