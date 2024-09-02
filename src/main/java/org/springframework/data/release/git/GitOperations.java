@@ -58,7 +58,9 @@ import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialItem.CharArrayType;
 import org.eclipse.jgit.transport.CredentialItem.InformationalMessage;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.URIish;
 
@@ -76,6 +78,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Component to execute Git related operations.
@@ -270,8 +273,33 @@ public class GitOperations {
 
 			call(git.push() //
 					.setRemote("origin") //
-					.setRefSpecs(new RefSpec(ref.getName())));
+					.setRefSpecs(new RefSpec(ref.getName()))).forEach(pushResult -> {
+						handlePushResult(module, pushResult);
+					});
 		});
+	}
+
+	private void handlePushResult(ModuleIteration module, PushResult pushResult) {
+
+		Set<RemoteRefUpdate.Status> success = new HashSet<>(Arrays.asList(RemoteRefUpdate.Status.AWAITING_REPORT,
+				RemoteRefUpdate.Status.NOT_ATTEMPTED, RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE));
+
+		if (StringUtils.hasText(pushResult.getMessages())) {
+			logger.log(module, pushResult.getMessages());
+		}
+
+		for (RemoteRefUpdate remoteUpdate : pushResult.getRemoteUpdates()) {
+
+			if (success.contains(remoteUpdate.getStatus())) {
+
+				logger.log(module, String.format("✅️ Push done: %s %s", remoteUpdate.getStatus(),
+						StringUtils.hasText(remoteUpdate.getMessage()) ? remoteUpdate.getMessage() : ""));
+
+				continue;
+			}
+
+			logger.warn(module, String.format("⚠️ Push failed: %s %s", remoteUpdate.getStatus(), remoteUpdate.getMessage()));
+		}
 	}
 
 	public void pushTags(Train train) {
@@ -793,7 +821,7 @@ public class GitOperations {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		logger.log(project, "git add \"filepattern\"");
+		logger.log(project, "git add \"%s\"", filepattern);
 
 		doWithGit(project, git -> {
 

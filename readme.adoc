@@ -223,6 +223,15 @@ To distribute `ci/pipeline.properties` from Spring Data Build across all modules
 $ infra distribute ci-properties $trainIteration
 ----
 
+===== GitHub Workflow Distribution
+
+To distribute `.github/workflows/project.yml` from Spring Data Build across all modules:
+
+----
+$ infra distribute gh-workflow $trainIteration
+----
+
+Note that your GitHub token to authenticate against GitHub must have the `workflow` permission.
 
 ===== Broken Link Report
 

@@ -67,20 +67,23 @@ public class Projects {
 				.withAdditionalArtifacts(
 						ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-mongodb-cross-store", "spring-data-mongodb-log4j"));
 
-		NEO4J = new Project("DATAGRAPH", "Neo4j", Tracker.GITHUB).withDependencies(COMMONS);
+		NEO4J = new Project("DATAGRAPH", "Neo4j", Tracker.GITHUB).withDependencies(COMMONS)
+				.withMaintainer(ProjectMaintainer.COMMUNITY);
 
 		SOLR = new Project("DATASOLR", "Solr", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
 				.withFullName("Spring Data for Apache Solr");
 
-		COUCHBASE = new Project("DATACOUCH", "Couchbase", Tracker.GITHUB).withDependencies(COMMONS);
+		COUCHBASE = new Project("DATACOUCH", "Couchbase", Tracker.GITHUB).withDependencies(COMMONS)
+				.withMaintainer(ProjectMaintainer.COMMUNITY);
 
 		CASSANDRA = new Project("DATACASS", "Cassandra", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
 				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-cql"))
 				.withFullName("Spring Data for Apache Cassandra");
 
-		ELASTICSEARCH = new Project("DATAES", "Elasticsearch", Tracker.GITHUB).withDependencies(COMMONS);
+		ELASTICSEARCH = new Project("DATAES", "Elasticsearch", Tracker.GITHUB).withDependencies(COMMONS)
+				.withMaintainer(ProjectMaintainer.COMMUNITY);
 
 		KEY_VALUE = new Project("DATAKV", "KeyValue", Tracker.GITHUB).withDependencies(COMMONS);
 

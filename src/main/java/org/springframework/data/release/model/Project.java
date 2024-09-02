@@ -45,6 +45,7 @@ public class Project implements Comparable<Project>, Named {
 	private final @With ArtifactCoordinates additionalArtifacts;
 	private final @With boolean skipTests;
 	private final @Getter @With boolean useShortVersionMilestones; // use a short version 2.3.0-RC1 instead of 2.3 RC1 if
+	private final @Getter @With ProjectMaintainer maintainer;
 																																	// true
 
 	Project(String key, String name, Tracker tracker) {
@@ -53,13 +54,14 @@ public class Project implements Comparable<Project>, Named {
 
 	private Project(String key, String name, String fullName, Tracker tracker) {
 		this(new ProjectKey(key), name, fullName, Collections.emptySet(), tracker, ArtifactCoordinates.SPRING_DATA, true,
-				false);
+				false, ProjectMaintainer.CORE);
 	}
 
 	@java.beans.ConstructorProperties({ "key", "name", "fullName", "dependencies", "tracker", "additionalArtifacts",
-			"skipTests", "plainVersionMilestones" })
+			"skipTests", "plainVersionMilestones", "owner" })
 	private Project(ProjectKey key, String name, String fullName, Collection<Project> dependencies, Tracker tracker,
-			ArtifactCoordinates additionalArtifacts, boolean skipTests, boolean useShortVersionMilestones) {
+			ArtifactCoordinates additionalArtifacts, boolean skipTests, boolean useShortVersionMilestones,
+			ProjectMaintainer maintainer) {
 
 		this.key = key;
 		this.name = name;
@@ -69,6 +71,7 @@ public class Project implements Comparable<Project>, Named {
 		this.additionalArtifacts = additionalArtifacts;
 		this.skipTests = skipTests;
 		this.useShortVersionMilestones = useShortVersionMilestones;
+		this.maintainer = maintainer;
 	}
 
 	public boolean uses(Tracker tracker) {
@@ -110,7 +113,7 @@ public class Project implements Comparable<Project>, Named {
 
 	public Project withDependencies(Project... project) {
 		return new Project(key, name, fullName, Arrays.asList(project), tracker, additionalArtifacts, skipTests,
-				useShortVersionMilestones);
+				useShortVersionMilestones, maintainer);
 	}
 
 	/**

@@ -107,4 +107,22 @@ public class InfrastructureCommands extends TimedCommand {
 		infra.distributeCiProperties(iteration);
 	}
 
+	/**
+	 * Distribute GH workflows across all modules using Build as template.
+	 *
+	 * @param iteration
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	@CliCommand(value = "infra distribute gh-workflow")
+	public void distributeGhWorkflow(@CliOption(key = "", mandatory = true) TrainIteration iteration)
+			throws IOException, InterruptedException {
+
+		logger.log(iteration, "Distributing GH Workflow for Spring Data…");
+
+		git.prepare(iteration);
+
+		infra.distributeGhWorkflow(iteration);
+	}
+
 }

@@ -28,8 +28,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Predicate;
 
 import org.apache.commons.io.FileUtils;
+
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.Branch;
 import org.springframework.data.release.git.GitOperations;
@@ -39,10 +41,10 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
-import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.data.util.Predicates;
 import org.springframework.data.util.Streamable;
 import org.springframework.stereotype.Component;
 
@@ -70,11 +72,19 @@ public class InfrastructureOperations extends TimedCommand {
 	 * @param iteration
 	 */
 	void distributeCiProperties(TrainIteration iteration) {
+		distributeFile(iteration, "ci/pipeline.properties", "CI Properties", Predicates.isTrue());
+	}
 
-		File master = workspace.getFile(CI_PROPERTIES, iteration.getSupportedProject(Projects.BUILD));
+	void distributeGhWorkflow(TrainIteration iteration) {
+		distributeFile(iteration, ".github/workflows/project.yml", "GitHub Actions", project -> project != Projects.BOM);
+	}
+
+	private void distributeFile(TrainIteration iteration, String file, String description,
+			Predicate<Project> projectFilter) {
+		File master = workspace.getFile(file, iteration.getSupportedProject(Projects.BUILD));
 
 		if (!master.exists()) {
-			throw new IllegalStateException(String.format("CI Properties file %s does not exist", master));
+			throw new IllegalStateException(String.format("%s file %s does not exist", description, master));
 		}
 
 		ExecutionUtils.run(executor, iteration, module -> {
@@ -86,29 +96,33 @@ public class InfrastructureOperations extends TimedCommand {
 			git.checkout(project, branch);
 		});
 
-		verifyExistingPropertyFiles(iteration.getTrain(), master);
+		Streamable<ModuleIteration> projects = Streamable.of(iteration.getModulesExcept(Projects.BUILD))
+				.filter(it -> projectFilter.test(it.getProject())).filter(it -> it.getProject().getMaintainer().isCore());
 
-		ExecutionUtils.run(executor, Streamable.of(iteration.getModulesExcept(Projects.BUILD)), module -> {
+		verifyExistingFiles(projects, file, description);
 
-			File target = workspace.getFile(CI_PROPERTIES, module.getSupportedProject());
+		ExecutionUtils.run(executor, projects, module -> {
+
+			File target = workspace.getFile(file, module.getSupportedProject());
 			target.delete();
 
 			FileUtils.copyFile(master, target);
 
-			git.add(module.getSupportedProject(), CI_PROPERTIES);
-			git.commit(module, "Update CI properties.", Optional.empty(), false);
+			git.add(module.getSupportedProject(), file);
+			git.commit(module, String.format("Update %s.", description), Optional.empty(), false);
 			git.push(module);
 		});
 	}
 
-	private void verifyExistingPropertyFiles(Train train, File master) {
+	private void verifyExistingFiles(Streamable<ModuleIteration> train, String file, String description) {
 
-		for (SupportedProject project : train) {
+		for (ModuleIteration moduleIteration : train) {
 
-			File target = workspace.getFile(CI_PROPERTIES, project);
+			File target = workspace.getFile(file, moduleIteration.getSupportedProject());
 
 			if (!target.exists()) {
-				throw new IllegalStateException(String.format("CI Properties file %s does not exist", master));
+				throw new IllegalStateException(
+						String.format("%s file %s does not exist in %s", description, file, moduleIteration.getSupportedProject()));
 			}
 		}
 	}
