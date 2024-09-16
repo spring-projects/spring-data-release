@@ -10,6 +10,8 @@ The <<pre-release,*Pre-Release tasks*>> and <<post-release,*Post-Release tasks*>
 
 The <<build,*Build and publish the release*>> phase is what's covered by the CI server.
 
+Note many steps of the release process use SSL connections. If you are "using" a tool that performs a MITM attack on SSL connections by adding extra root certificates in your browsers but not in the Java keychain, the process will fail with some error indicating the inability to establish a secure conection.
+
 [[pre-release]]
 === 🍃 Pre-Release tasks
 
