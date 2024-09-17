@@ -75,6 +75,7 @@ import org.xmlbeam.io.StreamInput;
  * Operations for dependency management.
  *
  * @author Mark Paluch
+ * @author Jens Schauder
  */
 @Component
 @RequiredArgsConstructor
@@ -476,7 +477,8 @@ public class DependencyOperations {
 				Dependency dependency = projectDependency.getDependency();
 
 				if (!(project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams")
-						|| project == Projects.NEO4J || project == Projects.BUILD || project == Projects.JPA)) {
+						|| project == Projects.NEO4J || project == Projects.BUILD || project == Projects.JPA
+						|| project == Projects.RELATIONAL)) {
 
 					if (it.getDependencyVersion(dependency.getArtifactId()) == null
 							&& it.getManagedDependency(dependency.getArtifactId()) == null) {
