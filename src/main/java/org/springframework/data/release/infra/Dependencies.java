@@ -22,6 +22,7 @@ import org.springframework.util.ReflectionUtils;
 
 /**
  * @author Mark Paluch
+ * @author Jens Schauder
  */
 public class Dependencies {
 
@@ -133,6 +134,21 @@ public class Dependencies {
 			"org.springframework.ldap:spring-ldap-core");
 
 	public static final Dependency MAVEN = Dependency.of("Maven Wrapper", "org.apache.maven:apache-maven");
+
+	public static final Dependency H2 = Dependency.of("H2 Database", "com.h2database:h2");
+	public static final Dependency H2_R2DBC = Dependency.of("H2 R2DBC Driver", "io.r2dbc:r2dbc-h2");
+	public static final Dependency HSQLDB = Dependency.of("HSQL Database", "org.hsqldb:hsqldb");
+	public static final Dependency DB2_JDBC = Dependency.of("DB2 JDBC Driver", "com.ibm.db2:jcc");
+	public static final Dependency MARIADB_JDBC = Dependency.of("MariaDB JDBC Driver", "org.mariadb.jdbc:mariadb-java-client");
+	public static final Dependency MARIADB_R2DBC = Dependency.of("MariaDB R2DBC Driver", "rg.mariadb:r2dbc-mariadb");
+	public static final Dependency MS_SQLSERVER_JDBC = Dependency.of("Microsoft SqlServer JDBC Driver", "com.microsoft.sqlserver:mssql-jdbc");
+	public static final Dependency MS_SQLSERVER_R2DBC = Dependency.of("Microsoft SqlServer R2DBC Driver", "io.r2dbc:r2dbc-mssql");
+	public static final Dependency MYSQL_JDBC = Dependency.of("MySql JDBC Driver", "mysql:mysql-connector-java");
+	public static final Dependency MYSQL_R2DBC = Dependency.of("MySql R2DBC Driver", "io.asyncer:r2dbc-mysql");
+	public static final Dependency POSTGRES_JDBC = Dependency.of("Postgres JDBC Driver", "org.postgresql:postgresql");
+	public static final Dependency POSTGRES_R2DBC = Dependency.of("Postgres R2DBC Driver", "org.postgresql:r2dbc-postgresql");
+	public static final Dependency ORACLE_JDBC = Dependency.of("Oracle JDBC Driver", "com.oracle.database.jdbc:ojdbc11");
+	public static final Dependency ORACLE_R2DBC = Dependency.of("Oracle R2DBC Driver", "com.oracle.database.r2dbc:oracle-r2dbc");
 
 	static {
 

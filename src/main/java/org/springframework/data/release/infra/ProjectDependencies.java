@@ -31,6 +31,7 @@ import org.springframework.util.MultiValueMap;
  * Configuration of dependencies for a specific project.
  *
  * @author Mark Paluch
+ * @author Jens Schauder
  */
 public class ProjectDependencies implements Streamable<ProjectDependencies.ProjectDependency> {
 
@@ -99,6 +100,22 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 				ProjectDependency.ofProperty("elasticsearch-java", Dependencies.ELASTICSEARCH_REST_CLIENT));
 
 		config.add(Projects.LDAP, ProjectDependency.ofProperty("spring-ldap", Dependencies.SPRING_LDAP));
+
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("h2.version", Dependencies.H2));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("hsqldb.version", Dependencies.HSQLDB));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("db2.version", Dependencies.DB2_JDBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("mariadb-java-client.version", Dependencies.MARIADB_JDBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("mssql.version", Dependencies.MS_SQLSERVER_JDBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("mysql-connector-java.version", Dependencies.MYSQL_JDBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("postgresql.version", Dependencies.POSTGRES_JDBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("oracle.version", Dependencies.ORACLE_JDBC));
+
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("r2dbc-postgresql.version", Dependencies.POSTGRES_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("r2dbc-h2.version", Dependencies.H2_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("r2dbc-mariadb.version", Dependencies.MARIADB_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("r2dbc-mssql.version", Dependencies.MS_SQLSERVER_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("r2dbc-mysql.version", Dependencies.MYSQL_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.ofProperty("oracle-r2dbc.version", Dependencies.ORACLE_R2DBC));
 	}
 
 	private final List<ProjectDependency> dependencies;
