@@ -29,7 +29,7 @@ public class Version implements Comparable<Version> {
 	private Version(BigDecimal... parts) {
 
 		Assert.notNull(parts, "Parts must not be null!");
-		Assert.isTrue(parts.length > 0 && parts.length < 5, "We need at least 1 at most 4 parts!");
+		Assert.isTrue(parts.length > 0, "We need at least 1 part!");
 
 		this.major = parts[0];
 		this.minor = parts.length > 1 ? parts[1] : BigDecimal.ZERO;
