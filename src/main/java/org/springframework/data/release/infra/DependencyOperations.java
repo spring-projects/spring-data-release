@@ -29,12 +29,15 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -468,6 +471,9 @@ public class DependencyOperations {
 		File pom = getPomFile(supportedProject);
 		ProjectDependencies dependencies = ProjectDependencies.get(supportedProject);
 
+		Set<Project> skipDependencyDeclarationCheck = new HashSet<>(
+				Arrays.asList(Projects.NEO4J, Projects.BUILD, Projects.JPA, Projects.RELATIONAL));
+
 		return doWithPom(pom, Pom.class, it -> {
 
 			Map<Dependency, DependencyVersion> versions = new LinkedHashMap<>();
@@ -477,8 +483,7 @@ public class DependencyOperations {
 				Dependency dependency = projectDependency.getDependency();
 
 				if (!(project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams")
-						|| project == Projects.NEO4J || project == Projects.BUILD || project == Projects.JPA
-						|| project == Projects.RELATIONAL)) {
+						|| skipDependencyDeclarationCheck.contains(project))) {
 
 					if (it.getDependencyVersion(dependency.getArtifactId()) == null
 							&& it.getManagedDependency(dependency.getArtifactId()) == null) {
