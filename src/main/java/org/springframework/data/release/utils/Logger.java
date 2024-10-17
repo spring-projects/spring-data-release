@@ -23,6 +23,7 @@ import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.support.logging.HandlerUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author Oliver Gierke
@@ -56,7 +57,8 @@ public class Logger {
 	}
 
 	public void log(String context, Object template, Object... args) {
-		LOGGER.info(String.format(PREFIX_TEMPLATE, context, String.format(template.toString(), args)));
+		LOGGER.info(String.format(PREFIX_TEMPLATE, context,
+				ObjectUtils.isEmpty(args) ? template.toString() : String.format(template.toString(), args)));
 	}
 
 	public void warn(ModuleIteration module, Object template, Object... args) {
@@ -76,6 +78,7 @@ public class Logger {
 	}
 
 	public void warn(String context, Object template, Object... args) {
-		LOGGER.warning(String.format(PREFIX_TEMPLATE, context, String.format(template.toString(), args)));
+		LOGGER.warning(String.format(PREFIX_TEMPLATE, context,
+				ObjectUtils.isEmpty(args) ? template.toString() : String.format(template.toString(), args)));
 	}
 }

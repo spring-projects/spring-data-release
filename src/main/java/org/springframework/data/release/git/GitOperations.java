@@ -292,14 +292,33 @@ public class GitOperations {
 
 			if (success.contains(remoteUpdate.getStatus())) {
 
-				logger.log(module, String.format("✅️ Push done: %s %s", remoteUpdate.getStatus(),
+				logger.log(module.getProject().getName(), String.format("✅️ Push done: %s %s", getMessage(remoteUpdate),
 						StringUtils.hasText(remoteUpdate.getMessage()) ? remoteUpdate.getMessage() : ""));
 
 				continue;
 			}
 
-			logger.warn(module, String.format("⚠️ Push failed: %s %s", remoteUpdate.getStatus(), remoteUpdate.getMessage()));
+			logger.warn(module.getProject().getName(),
+					String.format("⚠️ Push failed: %s %s", getMessage(remoteUpdate), remoteUpdate.getMessage()));
 		}
+	}
+
+	private static String getMessage(RemoteRefUpdate remoteUpdate) {
+
+		RemoteRefUpdate.Status status = remoteUpdate.getStatus();
+
+		switch (status) {
+			case UP_TO_DATE:
+				return "Branch up-to-date";
+			case REJECTED_REMOTE_CHANGED:
+				return "Remote branch changed";
+			case NON_EXISTING:
+				return "Remote branch does not exist";
+			case AWAITING_REPORT:
+				return "Awaiting report…";
+		}
+
+		return status.name();
 	}
 
 	public void pushTags(Train train) {
