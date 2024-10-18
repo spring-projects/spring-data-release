@@ -7,10 +7,6 @@ node {
 pipeline {
 	agent none
 
-	triggers {
-        pollSCM 'H/10 * * * *'
-    }
-
 	options {
 		disableConcurrentBuilds()
 		buildDiscarder(logRotator(numToKeepStr: '14'))
@@ -19,14 +15,12 @@ pipeline {
 	stages {
 
 		stage('Build the Spring Data release tools container') {
+
 			when {
 				anyOf {
 					changeset 'ci/Dockerfile'
 					changeset 'ci/java-tools.properties'
 				}
-			}
-			agent {
-				label 'data'
 			}
 
 			steps {
@@ -40,14 +34,17 @@ pipeline {
 		}
 
 		stage('Ship It') {
+
 			when {
 				branch 'release'
 			}
+
 			agent {
 				docker {
 					image 'springci/spring-data-release-tools:0.17'
 				}
 			}
+
 			options { timeout(time: 4, unit: 'HOURS') }
 
 			environment {
@@ -67,7 +64,6 @@ pipeline {
 			steps {
 				script {
 					sh "ci/build-spring-data-release-cli.bash"
-
 					sh "ci/build-and-distribute.bash ${p['release.version']}"
 
 					slackSend(
@@ -84,10 +80,6 @@ pipeline {
 	post {
 		changed {
 			script {
-				slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#spring-data-dev',
-						message: "${currentBuild.fullDisplayName} - `${currentBuild.currentResult}`\n${env.BUILD_URL}")
 				emailext(
 						subject: "[${currentBuild.fullDisplayName}] ${currentBuild.currentResult}",
 						mimeType: 'text/html',
