@@ -65,6 +65,7 @@ pipeline {
 				script {
 					sh "ci/build-spring-data-release-cli.bash"
 					sh "ci/build-and-distribute.bash ${p['release.version']}"
+				}
 			}
 		}
 	}
