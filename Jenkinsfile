@@ -65,13 +65,6 @@ pipeline {
 				script {
 					sh "ci/build-spring-data-release-cli.bash"
 					sh "ci/build-and-distribute.bash ${p['release.version']}"
-
-					slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#spring-data-dev',
-						message: (currentBuild.currentResult == 'SUCCESS')
-								? "`${env.BUILD_URL}` - Build and distribute ${p['release.version']} passed! Release the build (if needed)."
-								: "`${env.BUILD_URL}` - Build and distribute ${p['release.version']} failed!")
 				}
 			}
 		}
