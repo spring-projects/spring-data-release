@@ -4,6 +4,7 @@
 # Utility to install Java and Maven into the build container image #
 ####################################################################
 
+echo $HOME
 source $HOME/.sdkman/bin/sdkman-init.sh
 JAVA_TOOLS_PROPERTIES=java-tools.properties
 
