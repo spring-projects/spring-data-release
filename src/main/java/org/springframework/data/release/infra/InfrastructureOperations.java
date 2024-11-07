@@ -135,8 +135,6 @@ public class InfrastructureOperations extends TimedCommand {
 			throw new IllegalStateException("No version to upgrade found!");
 		}
 
-		git.checkout(iteration.getTrain(), false);
-
 		List<Project> projectsToUpgrade = dependencies
 				.getProjectsToUpgradeMavenWrapper(dependencyVersions.get(Dependencies.MAVEN), iteration);
 

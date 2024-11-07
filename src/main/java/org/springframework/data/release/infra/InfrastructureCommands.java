@@ -93,6 +93,8 @@ public class InfrastructureCommands extends TimedCommand {
 
 		logger.log(iteration, "Applying Maven wrapper upgrades to Spring Data…");
 
+		git.prepare(iteration);
+
 		infra.upgradeMavenVersion(iteration);
 	}
 
