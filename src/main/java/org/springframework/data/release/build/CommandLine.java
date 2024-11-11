@@ -20,7 +20,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,7 +40,7 @@ import org.springframework.util.Assert;
  * @author Oliver Gierke
  */
 @Value
-class CommandLine {
+public class CommandLine {
 
 	@NonNull List<Goal> goals;
 	@NonNull List<Argument> arguments;

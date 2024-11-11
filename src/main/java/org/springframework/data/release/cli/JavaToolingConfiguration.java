@@ -15,6 +15,8 @@
  */
 package org.springframework.data.release.cli;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,7 +27,12 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.release.build.MavenProperties;
 import org.springframework.data.release.build.MavenRuntime;
+import org.springframework.data.release.build.MavenRuntimes;
+import org.springframework.data.release.io.JavaRuntimes;
+import org.springframework.data.release.io.Workspace;
+import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.util.StringUtils;
 
 /**
  * Configuration to verify build infrastructure.
@@ -33,9 +40,13 @@ import org.springframework.data.release.utils.Logger;
  * @author Mark Paluch
  */
 @Configuration
+@RequiredArgsConstructor
 class JavaToolingConfiguration {
 
 	private static final Resource javaTools = new FileSystemResource("ci/java-tools.properties");
+
+	private final Workspace workspace;
+	private final Logger logger;
 
 	@Bean
 	PropertiesFactoryBean javaTools() {
@@ -51,8 +62,50 @@ class JavaToolingConfiguration {
 	}
 
 	@Bean
-	JavaToolingVerifier verifier(@Qualifier("javaTools") Properties javaTools, MavenRuntime mavenRuntime,
-			MavenProperties mavenProperties, Logger logger) {
-		return new JavaToolingVerifier(javaTools, mavenRuntime, mavenProperties, logger);
+	JavaVersions javaVersions(@Qualifier("javaTools") Properties javaTools) {
+
+		JavaVersions javaVersions = new JavaVersions(JavaVersions.parse(javaTools));
+
+		logger.log("JavaTooling", "🕵️ Checking presence of JDKs %s…",
+				StringUtils.collectionToDelimitedString(javaVersions.getExpectedVersions(), ", "));
+
+		for (String jdk : javaVersions.getExpectedVersions()) {
+
+			JavaVersion javaVersion = JavaVersion.of(jdk.trim());
+
+			JavaRuntimes.JdkInstallation jdkInstallation = javaVersions.getInstallation(javaVersion);
+			logger.log("JavaTooling", "✅ Found %s by %s", javaVersion.getName(), jdkInstallation.getImplementor());
+		}
+
+		return javaVersions;
 	}
+
+	@Bean
+	MavenVersion mavenVersion(@Qualifier("javaTools") Properties javaTools) {
+		return MavenVersion.parse(javaTools);
+	}
+
+	@Bean
+	public MavenRuntime mavenRuntime(JavaVersions javaVersions, MavenVersion mavenVersion, MavenProperties properties) {
+
+		logger.log("JavaTooling", "🕵️ Checking presence of Maven %s…", mavenVersion.getExpectedVersion());
+
+		String firstJdk = javaVersions.getExpectedVersions().get(0);
+		JavaRuntimes.JdkInstallation installation = javaVersions.getInstallation(firstJdk);
+
+		MavenRuntimes.Selector selector;
+		if (properties.getMavenHome() != null) {
+			selector = MavenRuntimes.Selector.builder(MavenRuntimes.detector(properties.getMavenHome()));
+		} else {
+			selector = MavenRuntimes.Selector.builder();
+		}
+
+		MavenRuntimes.MavenInstallation mavenInstallation = selector.version(mavenVersion.getExpectedVersion())
+				.getRequiredMavenInstallation(installation);
+
+		logger.log("JavaTooling", "✅ Found Maven %s", mavenInstallation);
+
+		return new MavenRuntime(workspace, logger, mavenInstallation, properties);
+	}
+
 }

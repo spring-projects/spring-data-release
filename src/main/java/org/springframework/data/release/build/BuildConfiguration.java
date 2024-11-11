@@ -49,4 +49,5 @@ class BuildConfiguration {
 
 		return new XBProjector(config, Flags.TO_STRING_RENDERS_XML);
 	}
+
 }
