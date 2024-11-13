@@ -131,13 +131,13 @@
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
 			<artifactId>org.eclipse.jgit</artifactId>
-			<version>5.13.1.202206130422-r</version>
+			<version>5.13.3.202401111512-r</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
 			<artifactId>org.eclipse.jgit.gpg.bc</artifactId>
-			<version>5.13.1.202206130422-r</version>
+			<version>5.13.3.202401111512-r</version>
 		</dependency>
 
 		<dependency>
