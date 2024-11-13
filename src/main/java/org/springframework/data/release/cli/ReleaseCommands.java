@@ -206,12 +206,24 @@ class ReleaseCommands extends TimedCommand {
 				BranchMapping branches = git.createMaintenanceBranches(iteration, true);
 
 				// Set project version to maintenance once
-				setupMaintenanceVersions(iteration);
-			}
-		}
 				setupMaintenanceVersions(iteration, branches);
 			}
 		}
+	}
+
+	@CliCommand(value = "release create-branches")
+	public void createBranches(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+
+		if (!iteration.getTrain().isAlwaysUseBranch()) {
+			throw new IllegalArgumentException(
+					String.format("Cannot create branches as train %s does not use branches.", iteration.getTrain().getCalver()));
+		}
+
+		// Create bugfix branches
+		BranchMapping branchMapping = git.createMaintenanceBranches(iteration, false);
+
+		// Set project version to maintenance once
+		setupMaintenanceVersions(iteration, branchMapping);
 	}
 
 	@CliCommand(value = "release documentation")
