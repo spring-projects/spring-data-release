@@ -39,6 +39,7 @@ import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
+import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.api.TransportCommand;
@@ -925,18 +926,41 @@ public class GitOperations {
 		logger.log(project, "Checkout done!");
 	}
 
-	public void createMaintenanceBranches(TrainIteration iteration) {
+	public BranchMapping createMaintenanceBranches(TrainIteration iteration, boolean checkout) {
 
-		if (!iteration.getIteration().isGAIteration()) {
-			return;
+		if (checkout && !iteration.getIteration().isGAIteration()) {
+			return BranchMapping.NONE;
 		}
 
-		checkout(iteration);
+		if (checkout) {
+			checkout(iteration);
+		}
+
+		return createBranch(iteration);
+	}
+
+	public BranchMapping createBranch(TrainIteration iteration) {
+
+		BranchMapping branches = new BranchMapping();
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
-			Branch branch = createMaintenanceBranch(module);
-			checkout(module.getSupportedProject(), branch, BranchCheckoutMode.CREATE_ONLY);
+			Branch current = getCurrentBranch(module);
+			Branch newBranch = createBranch(module);
+			checkout(module.getSupportedProject(), newBranch, BranchCheckoutMode.CREATE_ONLY);
+
+			synchronized (branches) {
+				branches.add(module.getProject(), current, newBranch);
+			}
+		});
+
+		return branches;
+	}
+
+	private Branch getCurrentBranch(ModuleIteration module) {
+
+		return doWithGit(module.getSupportedProject(), git -> {
+			return Branch.from(git.getRepository().getBranch());
 		});
 	}
 
@@ -1012,13 +1036,26 @@ public class GitOperations {
 	 * @param module must not be {@literal null}.
 	 * @return
 	 */
-	private Branch createMaintenanceBranch(ModuleIteration module) {
+	private Branch createBranch(ModuleIteration module) {
 
 		Assert.notNull(module, "Module iteration must not be null!");
 
 		Branch branch = Branch.from(module.getVersion());
 
 		doWithGit(module.getSupportedProject(), git -> {
+
+			List<String> existingBranches = git.branchList().setListMode(ListBranchCommand.ListMode.ALL) //
+					.call() //
+					.stream() //
+					.filter(ref -> ref.getName().startsWith("refs/heads/")) //
+					.map(it -> it.getName().substring(11)) //
+					.collect(Collectors.toList());
+
+			if (existingBranches.contains(branch.toString())) {
+				logger.log(module, "Branch %s already exists, skipping creation.", branch);
+				return;
+			}
+
 			logger.log(module, "git checkout -b %s", branch);
 			git.branchCreate().setName(branch.toString()).call();
 		});

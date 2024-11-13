@@ -30,6 +30,7 @@ import org.springframework.data.release.build.BuildOperations;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.DeploymentOperations;
 import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.git.BranchMapping;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.IssueTrackerCommands;
 import org.springframework.data.release.issues.github.GitHubCommands;
@@ -188,7 +189,7 @@ class ReleaseCommands extends TimedCommand {
 		git.tagRelease(iteration);
 
 		if (iteration.getTrain().isAlwaysUseBranch()) {
-			setupMaintenanceVersions(iteration);
+			setupMaintenanceVersions(iteration, BranchMapping.NONE);
 		} else {
 
 			build.prepareVersions(iteration, Phase.CLEANUP);
@@ -202,10 +203,13 @@ class ReleaseCommands extends TimedCommand {
 			if (iteration.getIteration().isGAIteration()) {
 
 				// Create bugfix branches
-				git.createMaintenanceBranches(iteration);
+				BranchMapping branches = git.createMaintenanceBranches(iteration, true);
 
 				// Set project version to maintenance once
 				setupMaintenanceVersions(iteration);
+			}
+		}
+				setupMaintenanceVersions(iteration, branches);
 			}
 		}
 	}
@@ -229,10 +233,9 @@ class ReleaseCommands extends TimedCommand {
 				gitHub.triggerAntoraWorkflow(project);
 			}
 		});
-
 	}
 
-	private void setupMaintenanceVersions(TrainIteration iteration) throws Exception {
+	private void setupMaintenanceVersions(TrainIteration iteration, BranchMapping branches) throws Exception {
 
 		// Set project version to maintenance once
 		build.prepareVersions(iteration, Phase.MAINTENANCE);
@@ -240,6 +243,11 @@ class ReleaseCommands extends TimedCommand {
 
 		// Update inter-project dependencies and repositories
 		build.updateProjectDescriptors(iteration, Phase.MAINTENANCE);
+
+		if (branches.hasBranches()) {
+			build.updateBuildConfig(iteration, branches);
+		}
+
 		git.commit(iteration, "After release cleanups.");
 
 		// Back to main branch

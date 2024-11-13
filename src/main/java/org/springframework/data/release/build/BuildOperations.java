@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.assertj.core.util.VisibleForTesting;
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.git.BranchMapping;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.ProjectAware;
@@ -74,6 +75,16 @@ public class BuildOperations {
 				(system, it) -> system.updateProjectDescriptors(it, updateInformation));
 
 		logger.log(iteration, "Update Project Descriptors done: %s", summary);
+	}
+
+	public void updateBuildConfig(TrainIteration iteration, BranchMapping branches) throws Exception {
+
+		Assert.notNull(iteration, "Train iteration must not be null!");
+
+		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
+				(system, it) -> system.updateBuildConfig(it, branches));
+
+		logger.log(iteration, "Update Build config done: %s", summary);
 	}
 
 	/**
@@ -414,4 +425,5 @@ public class BuildOperations {
 		return function.apply(buildSystem.withJavaVersion(executor.detectJavaVersion(module.getSupportedProject())),
 				module);
 	}
+
 }

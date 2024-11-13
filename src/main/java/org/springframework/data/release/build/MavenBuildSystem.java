@@ -21,6 +21,7 @@ import static org.springframework.data.release.model.Projects.*;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 
 import java.io.BufferedInputStream;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -51,6 +53,9 @@ import org.springframework.data.release.deployment.DeploymentProperties;
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.deployment.DeploymentProperties.MavenCentral;
 import org.springframework.data.release.deployment.StagingRepository;
+import org.springframework.data.release.git.Branch;
+import org.springframework.data.release.git.BranchMapping;
+import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
@@ -122,6 +127,42 @@ class MavenBuildSystem implements BuildSystem {
 				updater.updateRepository(pom);
 			});
 		}
+
+		return module;
+	}
+
+	@Override
+	@SneakyThrows
+	public ModuleIteration updateBuildConfig(ModuleIteration module, BranchMapping branches) {
+
+		File jenkinsfile = workspace.getFile("Jenkinsfile", module.getSupportedProject());
+		if (!jenkinsfile.exists()) {
+			logger.warn(module, "No Jenkinsfile found, skipping Jenkinsfile update.");
+		}
+
+		byte[] bytes = Files.readAllBytes(jenkinsfile.toPath());
+		String content = new String(bytes, StandardCharsets.UTF_8);
+
+		for (ModuleIteration participatingModule : module.getTrainIteration()) {
+
+			Branch source = branches.getSourceBranch(participatingModule.getProject());
+			Branch target = branches.getTargetBranch(participatingModule.getProject());
+
+			if (source == null || target == null) {
+				continue;
+			}
+
+			GitProject project = GitProject.of(participatingModule.getSupportedProject());
+
+			String dependency = String.format("%s/%s", project.getRepositoryName(), source);
+			String replacement = String.format("%s/%s", project.getRepositoryName(), target);
+
+			content = content.replace(dependency, replacement);
+		}
+
+		Files.write(jenkinsfile.toPath(), content.getBytes(StandardCharsets.UTF_8));
+
+		logger.warn(module, "Jenkinsfile updated.");
 
 		return module;
 	}

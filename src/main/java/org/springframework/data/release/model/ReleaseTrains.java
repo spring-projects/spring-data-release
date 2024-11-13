@@ -126,7 +126,8 @@ public class ReleaseTrains {
 				.withCalver("2025.0");
 
 		Z = Y.next("Z", Transition.MAJOR) //
-				.withCalver("2025.1");
+				.withCalver("2025.1") //
+				.withAlwaysUseBranch(true);
 
 		// Trains
 
