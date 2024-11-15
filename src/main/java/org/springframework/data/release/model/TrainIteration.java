@@ -105,7 +105,12 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 	 */
 	@Override
 	public String toString() {
-		return String.format("%s %s", getName(), iteration.getName());
+
+		if (getTrain().usesCalver()) {
+			return getCalver().toMajorMinorBugfix();
+		}
+
+		return String.format("%s %s", getTrain().getName(), iteration.getName());
 	}
 
 	public Version getCalver() {
