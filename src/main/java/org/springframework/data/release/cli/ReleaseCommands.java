@@ -35,6 +35,7 @@ import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.IssueTrackerCommands;
 import org.springframework.data.release.issues.github.GitHubCommands;
 import org.springframework.data.release.misc.ReleaseOperations;
+import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
@@ -203,7 +204,8 @@ class ReleaseCommands extends TimedCommand {
 			if (iteration.getIteration().isGAIteration()) {
 
 				// Create bugfix branches
-				BranchMapping branches = git.createMaintenanceBranches(iteration, true);
+				BranchMapping branches = git.createMaintenanceBranches(iteration,
+						iteration.getTrain().getIteration(Iteration.SR1));
 
 				// Set project version to maintenance once
 				setupMaintenanceVersions(iteration, branches);
@@ -212,18 +214,19 @@ class ReleaseCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "release create-branches")
-	public void createBranches(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+	public void createBranches(@CliOption(key = "from", mandatory = true) TrainIteration from,
+			@CliOption(key = "from", mandatory = true) TrainIteration to) throws Exception {
 
-		if (!iteration.getTrain().isAlwaysUseBranch()) {
+		if (!to.getTrain().isAlwaysUseBranch()) {
 			throw new IllegalArgumentException(
-					String.format("Cannot create branches as train %s does not use branches.", iteration.getTrain().getCalver()));
+					String.format("Cannot create branches as train %s does not use branches.", to.getTrain().getCalver()));
 		}
 
 		// Create bugfix branches
-		BranchMapping branchMapping = git.createMaintenanceBranches(iteration, false);
+		BranchMapping branchMapping = git.createMaintenanceBranches(from, to);
 
 		// Set project version to maintenance once
-		setupMaintenanceVersions(iteration, branchMapping);
+		setupMaintenanceVersions(to, branchMapping);
 	}
 
 	@CliCommand(value = "release documentation")

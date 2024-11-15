@@ -926,26 +926,25 @@ public class GitOperations {
 		logger.log(project, "Checkout done!");
 	}
 
-	public BranchMapping createMaintenanceBranches(TrainIteration iteration, boolean checkout) {
+	public BranchMapping createMaintenanceBranches(TrainIteration from, TrainIteration to) {
 
-		if (checkout && !iteration.getIteration().isGAIteration()) {
+		if (!from.getIteration().isGAIteration()) {
 			return BranchMapping.NONE;
 		}
 
-		if (checkout) {
-			checkout(iteration);
-		}
+		checkout(from);
 
-		return createBranch(iteration);
+		return createBranch(from, to);
 	}
 
-	public BranchMapping createBranch(TrainIteration iteration) {
+	public BranchMapping createBranch(TrainIteration from, TrainIteration to) {
 
 		BranchMapping branches = new BranchMapping();
 
-		ExecutionUtils.run(executor, iteration, module -> {
+		ExecutionUtils.run(executor, to, module -> {
 
-			Branch current = getCurrentBranch(module);
+			ModuleIteration fromIteration = from.getModule(module.getProject());
+			Branch current = from.getIteration().isGAIteration() ? Branch.MAIN : Branch.from(fromIteration.getVersion());
 			Branch newBranch = createBranch(module);
 			checkout(module.getSupportedProject(), newBranch, BranchCheckoutMode.CREATE_ONLY);
 
