@@ -97,7 +97,7 @@ public class InfrastructureOperations extends TimedCommand {
 		});
 
 		Streamable<ModuleIteration> projects = Streamable.of(iteration.getModulesExcept(Projects.BUILD))
-				.filter(it -> projectFilter.test(it.getProject())).filter(it -> it.getProject().getMaintainer().isCore());
+				.filter(it -> projectFilter.test(it.getProject()));
 
 		verifyExistingFiles(projects, file, description);
 
