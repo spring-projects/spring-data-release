@@ -190,7 +190,7 @@ class ReleaseCommands extends TimedCommand {
 		git.tagRelease(iteration);
 
 		if (iteration.getTrain().isAlwaysUseBranch()) {
-			setupMaintenanceVersions(iteration, BranchMapping.NONE);
+			setupMaintenanceVersions(iteration, BranchMapping.NONE, true);
 		} else {
 
 			build.prepareVersions(iteration, Phase.CLEANUP);
@@ -208,25 +208,27 @@ class ReleaseCommands extends TimedCommand {
 						iteration.getTrain().getIteration(Iteration.SR1));
 
 				// Set project version to maintenance once
-				setupMaintenanceVersions(iteration, branches);
+				setupMaintenanceVersions(iteration, branches, true);
 			}
 		}
 	}
 
 	@CliCommand(value = "release create-branches")
 	public void createBranches(@CliOption(key = "from", mandatory = true) TrainIteration from,
-			@CliOption(key = "from", mandatory = true) TrainIteration to) throws Exception {
+			@CliOption(key = "to", mandatory = true) TrainIteration to) throws Exception {
 
 		if (!to.getTrain().isAlwaysUseBranch()) {
 			throw new IllegalArgumentException(
 					String.format("Cannot create branches as train %s does not use branches.", to.getTrain().getCalver()));
 		}
 
+		git.prepare(from);
+
 		// Create bugfix branches
-		BranchMapping branchMapping = git.createMaintenanceBranches(from, to);
+		BranchMapping branchMapping = git.createBranch(from, to);
 
 		// Set project version to maintenance once
-		setupMaintenanceVersions(to, branchMapping);
+		setupMaintenanceVersions(to, branchMapping, false);
 	}
 
 	@CliCommand(value = "release documentation")
@@ -250,7 +252,8 @@ class ReleaseCommands extends TimedCommand {
 		});
 	}
 
-	private void setupMaintenanceVersions(TrainIteration iteration, BranchMapping branches) throws Exception {
+	private void setupMaintenanceVersions(TrainIteration iteration, BranchMapping branches, boolean checkoutIteration)
+			throws Exception {
 
 		// Set project version to maintenance once
 		build.prepareVersions(iteration, Phase.MAINTENANCE);
@@ -265,8 +268,10 @@ class ReleaseCommands extends TimedCommand {
 
 		git.commit(iteration, "After release cleanups.");
 
-		// Back to main branch
-		git.checkout(iteration);
+		if (checkoutIteration) {
+			// Back to main branch
+			git.checkout(iteration);
+		}
 	}
 
 	/**
