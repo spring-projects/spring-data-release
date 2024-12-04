@@ -114,7 +114,8 @@ public class ReleaseTrains {
 
 		VAUGHAN = ULLMAN.next("Vaughan", Transition.MINOR) //
 				.withDocumentationFormat(DocumentationFormat.ANTORA) //
-				.withCalver("2023.1");
+				.withCalver("2023.1") //
+				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		W = VAUGHAN.next("W", Transition.MINOR) //
 				.withCalver("2024.0");
