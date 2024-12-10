@@ -26,6 +26,7 @@ import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.Logger;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,11 +41,13 @@ class ArtifactoryOperations {
 	private final AqlWriter aqlWriter;
 	private final DeploymentProperties.Authentication authentication;
 	private final ArtifactoryClient client;
+	private final Logger log;
 
-	public ArtifactoryOperations(DeploymentProperties properties, ArtifactoryClient client) {
+	public ArtifactoryOperations(DeploymentProperties properties, ArtifactoryClient client, Logger log) {
 		this.authentication = properties.getCommercial();
 		this.aqlWriter = new AqlWriter(authentication, objectMapper);
 		this.client = client;
+		this.log = log;
 	}
 
 	@SneakyThrows
@@ -67,15 +70,8 @@ class ArtifactoryOperations {
 				"release_bundles", Collections.singletonMap("release_bundles", releaseBundles));
 
 		client.createRelease(train.toString(), aggregator, authentication);
-	}
 
-	public void distributeArtifactoryReleaseAggregator(TrainIteration train) {
-
-		ModuleIteration bom = train.getModule(Projects.BOM);
-		String releaseName = "TNZ-spring-data-commercial-release";
-		String version = ArtifactVersion.of(bom).toString();
-
-		client.distributeRelease(train, releaseName, version, authentication);
+		log.log(train, "Created Artifactory Release '%s %s'", releaseName, version);
 	}
 
 	ArtifactoryReleaseBundle createReleaseBundle(ModuleIteration module) {
@@ -91,7 +87,6 @@ class ArtifactoryOperations {
 
 		String releaseName = getReleaseName(module);
 		String version = ArtifactVersion.of(module).toString();
-		String aql = aqlWriter.createFindAqlStatement(module);
 
 		return new ArtifactoryReleaseBundle(releaseName, version, "spring", "spring-release-bundles-v2", null, null);
 	}

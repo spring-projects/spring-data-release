@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.issues.github.GitHub;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.TrainIteration;
@@ -34,6 +35,7 @@ import org.springframework.shell.core.annotation.CliOption;
  * Commands to interact with Artifactory.
  *
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 @CliComponent
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ class ArtifactoryCommands extends TimedCommand {
 	private final @NonNull DeploymentOperations deployment;
 	private final @NonNull ArtifactoryOperations operations;
 	private final @NonNull Logger log;
+	private final @NonNull GitHub gitHub;
 
 	@CliCommand(value = "artifactory verify", help = "Verifies authentication at Artifactory.")
 	public void verify() {
@@ -63,7 +66,7 @@ class ArtifactoryCommands extends TimedCommand {
 
 			operations.createArtifactoryReleaseAggregator(trainIteration);
 		} else {
-			log.log(trainIteration, "Skipping Artifactory Release Bundle Creation as it is not a commercial release");
+			log.log(trainIteration, "Skipping Artifactory Release Bundle Creation as it is not a Commercial release");
 		}
 	}
 
@@ -72,10 +75,10 @@ class ArtifactoryCommands extends TimedCommand {
 	public void distributeArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
 		if (trainIteration.isCommercial()) {
-			log.log(trainIteration, "Distributing Release Aggregator");
-			operations.distributeArtifactoryReleaseAggregator(trainIteration);
+			log.log(trainIteration, "Triggering Release Aggregator Distribution");
+			gitHub.triggerArtifactoryDistributeWorkflow(trainIteration);
 		} else {
-			log.log(trainIteration, "Skipping Release Aggregator Distribution as it is not a commercial release");
+			log.log(trainIteration, "Skipping Release Aggregator Distribution as it is not a Commercial release");
 		}
 	}
 }

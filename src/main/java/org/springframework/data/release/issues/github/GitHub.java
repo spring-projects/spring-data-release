@@ -641,11 +641,33 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		logger.log("GitHub", "Triggering Antora workflow for %s…", project.getName());
 
-		GitHubWorkflow workflow = getWorkflow(project.getSupportStatus());
+		doTriggerWorkflow(getAntoraWorkflow(project.getSupportStatus()),
+				Collections.singletonMap("module", project.getName().toLowerCase(Locale.ROOT)));
+
+		logger.log("GitHub", "Antora workflow for %s started…", project.getName());
+	}
+
+	/**
+	 * Trigger the Artifactory Release Distribution workflow for the given train iteration.
+	 */
+	public void triggerArtifactoryDistributeWorkflow(TrainIteration trainIteration) {
+
+		ModuleIteration bom = trainIteration.getModule(Projects.BOM);
+		String version = ArtifactVersion.of(bom).toString();
+
+		logger.log("GitHub", "Triggering Artifactory Release Distribution workflow for %s…", version);
+
+		doTriggerWorkflow(getWorkflow(it -> it.getPath().endsWith("distribute-commercial-bundle.yml")),
+				Collections.singletonMap("version", version));
+
+		logger.log("GitHub", "Artifactory Release Distribution workflow for %s started…", version);
+	}
+
+	private void doTriggerWorkflow(GitHubWorkflow workflow, Map<String, Object> inputs) {
 
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("ref", "main");
-		body.put("inputs", Collections.singletonMap("module", project.getName().toLowerCase(Locale.ROOT)));
+		body.put("inputs", inputs);
 
 		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("workflow_id", workflow.getId());
@@ -654,14 +676,29 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 				Map.class, parameters);
 
 		if (!entity.getStatusCode().is2xxSuccessful()) {
-			throw new IllegalStateException("Cannot trigger Antora workflow. Status: " + entity.getStatusCode());
+			throw new IllegalStateException(
+					String.format("Cannot trigger %s workflow. Status: %s", workflow.getName(), entity.getStatusCode()));
 		}
-
-		logger.log("GitHub", "Antora workflow for %s started…", project.getName());
 	}
 
 	@Cacheable("get-workflow")
-	public GitHubWorkflow getWorkflow(SupportStatus supportStatus) {
+	public GitHubWorkflow getAntoraWorkflow(SupportStatus supportStatus) {
+
+		return getWorkflow(workflow -> {
+
+			if (supportStatus == SupportStatus.OSS && workflow.getPath().endsWith("antora-oss-site.yml")) {
+				return true;
+			}
+
+			if (supportStatus == SupportStatus.COMMERCIAL && workflow.getPath().endsWith("antora-commercial-site.yml")) {
+				return true;
+			}
+
+			return false;
+		});
+	}
+
+	private GitHubWorkflow getWorkflow(Predicate<GitHubWorkflow> filter) {
 
 		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE);
 
@@ -672,26 +709,17 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		GitHubWorkflows workflows = entity.getBody();
 		for (GitHubWorkflow workflow : workflows.getWorkflows()) {
 
-			if (supportStatus == SupportStatus.OSS && workflow.getPath().endsWith("antora-oss-site.yml")) {
+			if (filter.test(workflow)) {
 
 				if (!workflow.getState().equals("active")) {
-					throw new IllegalStateException("Antora workflow is not active");
-				}
-
-				return workflow;
-			}
-
-			if (supportStatus == SupportStatus.COMMERCIAL && workflow.getPath().endsWith("antora-commercial-site.yml")) {
-
-				if (!workflow.getState().equals("active")) {
-					throw new IllegalStateException("Antora workflow is not active");
+					throw new IllegalStateException("workflow is not active");
 				}
 
 				return workflow;
 			}
 		}
 
-		throw new NoSuchElementException("Cannot resolve Antora workflow");
+		throw new NoSuchElementException("Cannot resolve workflow");
 	}
 
 	private String getDocumentationLinks(ModuleIteration module, DocumentationMetadata documentation) {
