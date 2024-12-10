@@ -112,13 +112,14 @@ public class GitHubCommands extends TimedCommand {
 		return gitHub.createReleaseMarkdown(module, ticketReferences);
 	}
 
+	public void triggerAntoraWorkflow(SupportedProject project) {
+		gitHub.triggerAntoraWorkflow(project);
+	}
+
 	private void createOrUpdateRelease(ModuleIteration module, TrainIteration previousIteration) {
 		List<TicketReference> ticketReferences = git.getTicketReferencesBetween(module.getSupportedProject(),
 				previousIteration, module.getTrainIteration());
 		gitHub.createOrUpdateRelease(module, ticketReferences);
 	}
 
-	public void triggerAntoraWorkflow(Project project) {
-		gitHub.triggerAntoraWorkflow(project);
-	}
 }

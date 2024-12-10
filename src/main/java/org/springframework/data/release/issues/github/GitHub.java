@@ -41,8 +41,8 @@ import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.DocumentationMetadata;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.Train;
@@ -76,9 +76,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private static final String RELEASE_URI_TEMPLATE = "/repos/spring-projects/{repoName}/releases";
 	private static final String RELEASE_BY_ID_URI_TEMPLATE = "/repos/spring-projects/{repoName}/releases/{id}";
 
-	private static final String WORKFLOWS = "/repos/spring-projects/spring-data-dev-tools/actions/workflows";
-
-	private static final String WORKFLOW_DISPATCH = "/repos/spring-projects/spring-data-dev-tools/actions/workflows/{workflow_id}/dispatches";
+	private static final String WORKFLOWS = "/repos/spring-projects/spring-data-release-commercial/actions/workflows";
+	private static final String WORKFLOW_DISPATCH = "/repos/spring-projects/spring-data-release-commercial/actions/workflows/{workflow_id}/dispatches";
 
 	private static final ParameterizedTypeReference<List<Milestone>> MILESTONES_TYPE = new ParameterizedTypeReference<List<Milestone>>() {};
 	private static final ParameterizedTypeReference<List<GitHubReadIssue>> ISSUES_TYPE = new ParameterizedTypeReference<List<GitHubReadIssue>>() {};
@@ -226,7 +225,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		logger.log(moduleIteration, "Creating GitHub milestone %s", githubMilestone);
 
 		HttpHeaders httpHeaders = new HttpHeaders();
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 
 		operations.exchange(MILESTONES_URI_TEMPLATE, HttpMethod.POST,
@@ -286,7 +285,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 			gitHubIssue = gitHubIssue.withAssignees(Collections.singletonList(properties.getUsername()));
 		}
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 
 		GitHubReadIssue body = operations.exchange(ISSUES_URI_TEMPLATE, HttpMethod.POST,
@@ -315,7 +314,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		}
 
 		String repositoryName = GitProject.of(project).getRepositoryName();
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", stripHash(ticket));
 
@@ -368,7 +367,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		String repositoryName = GitProject.of(module).getRepositoryName();
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", stripHash(ticket));
 
@@ -380,12 +379,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private String stripHash(Ticket ticket) {
 		return ticket.getId().startsWith("#") ? ticket.getId().substring(1) : ticket.getId();
-	}
-
-	private Map<String, Object> newUrlTemplateVariables() {
-
-		Map<String, Object> parameters = new HashMap<>();
-		return parameters;
 	}
 
 	private Optional<Milestone> findMilestone(ModuleIteration moduleIteration) {
@@ -413,7 +406,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		for (String state : Arrays.asList("open", "closed")) {
 
-			Map<String, Object> parameters = newUrlTemplateVariables();
+			Map<String, Object> parameters = new HashMap<>();
 			parameters.put("repoName", repositoryName);
 			parameters.put("state", state);
 
@@ -473,7 +466,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 					logger.log(module, "Marking milestone %s as released.", milestone);
 
-					Map<String, Object> parameters = newUrlTemplateVariables();
+					Map<String, Object> parameters = new HashMap<>();
 					parameters.put("repoName", project.getRepositoryName());
 					parameters.put("id", milestone.getNumber());
 
@@ -547,7 +540,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	 */
 	private GitHubReadIssue findTicket(String repositoryName, String ticketId) {
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", ticketId.startsWith("#") ? ticketId.substring(1) : ticketId);
 
@@ -628,7 +621,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		String repositoryName = GitProject.of(train.getSupportedProject(Projects.BUILD)).getRepositoryName();
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 
 		// /user requires authentication
@@ -644,17 +637,17 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	/**
 	 * Trigger the Antora workflow for the given module.
 	 */
-	public void triggerAntoraWorkflow(Project project) {
+	public void triggerAntoraWorkflow(SupportedProject project) {
 
 		logger.log("GitHub", "Triggering Antora workflow for %s…", project.getName());
 
-		GitHubWorkflow workflow = getWorkflow();
+		GitHubWorkflow workflow = getWorkflow(project.getSupportStatus());
 
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("ref", "main");
 		body.put("inputs", Collections.singletonMap("module", project.getName().toLowerCase(Locale.ROOT)));
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("workflow_id", workflow.getId());
 
 		ResponseEntity<Map> entity = operations.exchange(WORKFLOW_DISPATCH, HttpMethod.POST, new HttpEntity<>(body),
@@ -668,7 +661,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	}
 
 	@Cacheable("get-workflow")
-	public GitHubWorkflow getWorkflow() {
+	public GitHubWorkflow getWorkflow(SupportStatus supportStatus) {
 
 		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE);
 
@@ -679,7 +672,16 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		GitHubWorkflows workflows = entity.getBody();
 		for (GitHubWorkflow workflow : workflows.getWorkflows()) {
 
-			if (workflow.getPath().endsWith("antora-site.yml")) {
+			if (supportStatus == SupportStatus.OSS && workflow.getPath().endsWith("antora-oss-site.yml")) {
+
+				if (!workflow.getState().equals("active")) {
+					throw new IllegalStateException("Antora workflow is not active");
+				}
+
+				return workflow;
+			}
+
+			if (supportStatus == SupportStatus.COMMERCIAL && workflow.getPath().endsWith("antora-commercial-site.yml")) {
 
 				if (!workflow.getState().equals("active")) {
 					throw new IllegalStateException("Antora workflow is not active");
@@ -733,7 +735,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private GitHubRelease findRelease(String repositoryName, String tagName) {
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("tag", tagName);
 
@@ -752,7 +754,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private void createRelease(String repositoryName, GitHubRelease release) {
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 
 		operations.exchange(RELEASE_URI_TEMPLATE, HttpMethod.POST, new HttpEntity<>(release), GitHubRelease.class,
@@ -761,7 +763,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private void updateRelease(String repositoryName, GitHubRelease release) {
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", release.getId());
 
@@ -781,7 +783,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Milestone milestone = optionalMilestone.orElseThrow(() -> noSuchMilestone(moduleIteration));
 
-		Map<String, Object> parameters = newUrlTemplateVariables();
+		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("repoName", repositoryName);
 		parameters.put("id", milestone.getNumber());
 

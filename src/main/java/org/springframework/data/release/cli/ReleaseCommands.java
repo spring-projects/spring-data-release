@@ -247,7 +247,7 @@ class ReleaseCommands extends TimedCommand {
 			}
 
 			if (module == null || module.equalsIgnoreCase(project.getName())) {
-				gitHub.triggerAntoraWorkflow(project);
+				gitHub.triggerAntoraWorkflow(it.getSupportedProject());
 			}
 		});
 	}

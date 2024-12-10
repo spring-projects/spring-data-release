@@ -23,9 +23,9 @@ import java.util.List;
  * @author Mark Paluch
  */
 @Value
-class GitHubWorkflows {
+public class GitHubWorkflows {
 
-	private List<GitHubWorkflow> workflows;
+	List<GitHubWorkflow> workflows;
 
 	@Value
 	static class GitHubWorkflow {
