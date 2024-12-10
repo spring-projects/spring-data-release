@@ -361,7 +361,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.staging-repository").withValue(authentication.getStagingRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getPassword()),
+				arg("artifactory.password").withValue(authentication.getApiKey()),
 				arg("artifactory.build-name").withQuotedValue(information.getBuildName()),
 				arg("artifactory.build-number").withValue(information.getBuildNumber()),
 				arg("gpg.executable").withValue(gpg.getExecutable()), //
@@ -508,7 +508,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getPassword()))
+				arg("artifactory.password").withValue(authentication.getApiKey()))
 				.andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
 				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));
@@ -518,7 +518,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getPassword()))
+				arg("artifactory.password").withValue(authentication.getApiKey()))
 				.andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
 				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));

@@ -123,12 +123,11 @@ public class DeploymentProperties implements InitializingBean {
 		String distributionRepository;
 		String project;
 		String username;
-		Password password;
-		String apiKey;
+		Password apiKey;
 		String repositoryPrefix = "";
 
 		public boolean hasCredentials() {
-			return StringUtils.hasText(username) && password != null;
+			return StringUtils.hasText(username) && apiKey != null;
 		}
 
 		public void validate() {

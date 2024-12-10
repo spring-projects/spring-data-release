@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
-import org.springframework.data.release.model.Password;
 import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.data.release.utils.Logger;
@@ -53,7 +52,7 @@ class DeploymentConfiguration {
 			if (authentication.hasCredentials()) {
 
 				HttpBasicCredentials credentials = new HttpBasicCredentials(authentication.getUsername(),
-						Password.of(authentication.getApiKey()));
+						authentication.getApiKey());
 				builder = builder.withAuthentication(uri, credentials);
 
 			} else {
