@@ -22,9 +22,6 @@ pipeline {
 					changeset 'ci/java-tools.properties'
 				}
 			}
-			agent {
-				label 'e2-standard-4'
-			}
 
 			steps {
 				script {
@@ -43,7 +40,6 @@ pipeline {
 			}
 
 			agent {
-				label 'e2-standard-4'
 				docker {
 					image 'springci/spring-data-release-tools:0.20'
 				}
