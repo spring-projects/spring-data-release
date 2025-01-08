@@ -15,8 +15,6 @@
  */
 package org.springframework.data.release.projectservice;
 
-import java.util.concurrent.Executor;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -39,9 +37,8 @@ class ProjectServiceConfiguration {
 	@Autowired Logger logger;
 
 	@Bean
-	public ProjectServiceOperations saganOperations(GitOperations operations, ProjectService projectService,
-			Executor executor) {
-		return new ProjectServiceOperations(operations, executor, projectService, logger);
+	public ProjectServiceOperations saganOperations(GitOperations operations, ProjectService projectService) {
+		return new ProjectServiceOperations(operations, projectService, logger);
 	}
 
 	@Bean

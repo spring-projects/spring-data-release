@@ -44,9 +44,6 @@ pipeline {
 
 			agent {
 				label 'e2-standard-4'
-				docker {
-					image 'springci/spring-data-release-tools:0.20'
-				}
 			}
 
 			options { timeout(time: 4, unit: 'HOURS') }
@@ -67,8 +64,10 @@ pipeline {
 
 			steps {
 				script {
-					sh "ci/build-spring-data-release-cli.bash"
-					sh "ci/build-and-distribute.bash ${p['release.version']}"
+					docker.image("springci/spring-data-release-tools:0.20") {
+						sh "ci/build-spring-data-release-cli.bash"
+						sh "ci/build-and-distribute.bash ${p['release.version']}"
+					}
 				}
 			}
 		}

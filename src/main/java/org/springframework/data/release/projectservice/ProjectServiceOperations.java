@@ -16,7 +16,6 @@
 package org.springframework.data.release.projectservice;
 
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
@@ -45,11 +44,12 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
 import org.springframework.util.Assert;
 
+import com.google.common.util.concurrent.MoreExecutors;
+
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
  */
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 class ProjectServiceOperations {
 
@@ -60,6 +60,13 @@ class ProjectServiceOperations {
 	Executor executor;
 	ProjectService client;
 	Logger logger;
+
+	public ProjectServiceOperations(GitOperations git, ProjectService client, Logger logger) {
+		this.git = git;
+		this.executor = MoreExecutors.directExecutor();
+		this.client = client;
+		this.logger = logger;
+	}
 
 	/**
 	 * Updates the project metadata for the modules in the given release {@link Train}s.
