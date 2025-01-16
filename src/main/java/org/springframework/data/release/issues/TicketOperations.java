@@ -82,7 +82,6 @@ public class TicketOperations {
 				});
 			} else {
 
-				logger.log(module, "Creating ticket for %s", summary);
 				Ticket ticket = tracker.createTicket(module, summary, ticketType, true);
 				results.add(ticket);
 			}

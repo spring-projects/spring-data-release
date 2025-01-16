@@ -265,7 +265,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	public Ticket createTicket(ModuleIteration moduleIteration, String subject, String description, TicketType ticketType,
 			boolean assignToCurrentUser) {
 
-		logger.log(moduleIteration, "Creating ticket…");
+		logger.log(moduleIteration, "Creating ticket for %s", subject);
 
 		return doCreateTicket(moduleIteration, subject, description, ticketType, assignToCurrentUser);
 	}
