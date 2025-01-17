@@ -41,6 +41,7 @@ import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.util.Assert;
@@ -60,6 +61,7 @@ class ReleaseCommands extends TimedCommand {
 	@NonNull BuildOperations build;
 	@NonNull IssueTrackerCommands tracker;
 	@NonNull GitHubCommands gitHub;
+	private final Logger logger;
 
 	/**
 	 * Composite command to prepare a release.
@@ -79,6 +81,8 @@ class ReleaseCommands extends TimedCommand {
 		conclude(iteration);
 
 		gitHub.push(iteration);
+
+		logger.log(iteration, "Preparation completed 🤹‍♀️. Ready to ship 🛳️ binaries 💾!");
 	}
 
 	/**
