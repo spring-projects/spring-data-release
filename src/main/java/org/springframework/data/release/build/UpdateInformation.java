@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.data.release.model.ArtifactVersion;
-import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.SupportedProject;
@@ -90,15 +89,6 @@ public class UpdateInformation {
 	}
 
 	public List<Repository> getRepositories() {
-
-		if (phase == Phase.PREPARE) {
-
-			Iteration iteration = train.getIteration();
-
-			if (iteration.isMilestone() || iteration.isReleaseCandidate()) {
-				return Collections.singletonList(Repository.MILESTONE);
-			}
-		}
 
 		if (phase == Phase.CLEANUP || phase == Phase.MAINTENANCE) {
 

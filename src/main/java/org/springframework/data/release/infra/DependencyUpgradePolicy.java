@@ -64,7 +64,7 @@ interface DependencyUpgradePolicy {
 
 			@Override
 			public boolean restrictToMinorVersion() {
-				return iteration.isPublic();
+				return iteration.isGAIteration() || iteration.isServiceIteration();
 			}
 
 		};

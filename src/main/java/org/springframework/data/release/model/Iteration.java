@@ -122,7 +122,7 @@ public class Iteration implements Comparable<Iteration> {
 	 * @return
 	 */
 	public boolean isPublic() {
-		return isServiceIteration() || this.equals(GA);
+		return isMilestone() || isServiceIteration() || this.equals(GA);
 	}
 
 	/**
@@ -131,7 +131,7 @@ public class Iteration implements Comparable<Iteration> {
 	 * @return
 	 */
 	public boolean isPreview() {
-		return !isPublic();
+		return isMilestone() || isReleaseCandidate();
 	}
 
 	public boolean isServiceIteration() {

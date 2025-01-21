@@ -340,16 +340,12 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.notNull(information, "Deployment information must not be null!");
 
-		boolean isCommercialRelease = module.isCommercial();
-
-		if (!module.getIteration().isPreview() && !isCommercialRelease) {
-			logger.log(module,
-					"Not a preview version (milestone or release candidate) or commercial release. Skipping Artifactory deployment.");
+		if (!module.isCommercial()) {
+			logger.log(module, "Not a commercial release. Skipping Artifactory deployment.");
 			return;
 		}
 
-		logger.log(module,
-				String.format("Deploying artifacts to Spring %sArtifactory…", isCommercialRelease ? "Commercial " : ""));
+		logger.log(module, "Deploying artifacts to Spring Commercial Artifactory…");
 
 		Authentication authentication = properties.getAuthentication(module);
 
@@ -386,8 +382,8 @@ class MavenBuildSystem implements BuildSystem {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.notNull(deploymentInformation, "DeploymentInformation iteration must not be null!");
 
-		if (!module.isPublic()) {
-			logger.log(module, "Skipping deployment to Maven Central as it's not a public version or a commercial release!");
+		if (module.isCommercial()) {
+			logger.log(module, "Skipping deployment to Maven Central as it's a commercial release!");
 			return;
 		}
 
@@ -508,8 +504,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getApiKey()))
-				.andIf(deploymentInformation != null, () -> {
+				arg("artifactory.password").withValue(authentication.getApiKey())).andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
 				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));
 
@@ -518,8 +513,7 @@ class MavenBuildSystem implements BuildSystem {
 				arg("artifactory.server").withValue(authentication.getServer().getUri()),
 				arg("artifactory.distribution-repository").withValue(authentication.getDistributionRepository()),
 				arg("artifactory.username").withValue(authentication.getUsername()),
-				arg("artifactory.password").withValue(authentication.getApiKey()))
-				.andIf(deploymentInformation != null, () -> {
+				arg("artifactory.password").withValue(authentication.getApiKey())).andIf(deploymentInformation != null, () -> {
 					return arg("artifactory.build-number").withValue(deploymentInformation.getBuildNumber());
 				}).andIf(!ObjectUtils.isEmpty(properties.getSettingsXml()), () -> settingsXml(properties.getSettingsXml())));
 

@@ -166,7 +166,8 @@ public class GitOperations {
 
 	}
 
-	private Branch getBranch(Train train, Module module, SupportedProject project) {
+	private Branch getBranch(Train train, org.springframework.data.release.model.Module module,
+			SupportedProject project) {
 
 		ModuleIteration gaIteration = train.getModuleIteration(project.getProject(), Iteration.GA);
 		Optional<Tag> gaTag = findTagFor(project, ArtifactVersion.of(gaIteration));

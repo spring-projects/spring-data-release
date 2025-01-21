@@ -156,7 +156,6 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 	 */
 	@Override
 	public boolean isMavenCentral() {
-
 		return !module.isCommercial() && module.getIteration().isPublic();
 	}
 }
