@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -72,20 +74,17 @@ public class InfrastructureOperations extends TimedCommand {
 	 * @param iteration
 	 */
 	void distributeCiProperties(TrainIteration iteration) {
-		distributeFile(iteration, "ci/pipeline.properties", "CI Properties", Predicates.isTrue());
+		distributeFiles(iteration, Arrays.asList("ci/pipeline.properties", ".mvn/extensions.xml", ".mvn/jvm.config"),
+				"CI Properties", Predicates.isTrue());
 	}
 
 	void distributeGhWorkflow(TrainIteration iteration) {
-		distributeFile(iteration, ".github/workflows/project.yml", "GitHub Actions", project -> project != Projects.BOM);
+		distributeFiles(iteration, Collections.singletonList(".github/workflows/project.yml"), "GitHub Actions",
+				project -> project != Projects.BOM);
 	}
 
-	private void distributeFile(TrainIteration iteration, String file, String description,
+	private void distributeFiles(TrainIteration iteration, List<String> files, String description,
 			Predicate<Project> projectFilter) {
-		File master = workspace.getFile(file, iteration.getSupportedProject(Projects.BUILD));
-
-		if (!master.exists()) {
-			throw new IllegalStateException(String.format("%s file %s does not exist", description, master));
-		}
 
 		ExecutionUtils.run(executor, iteration, module -> {
 
@@ -99,16 +98,22 @@ public class InfrastructureOperations extends TimedCommand {
 		Streamable<ModuleIteration> projects = Streamable.of(iteration.getModulesExcept(Projects.BUILD))
 				.filter(it -> projectFilter.test(it.getProject()));
 
-		verifyExistingFiles(projects, file, description);
+		for (String file : files) {
+			verifyExistingFiles(Streamable.of(iteration.getModule(Projects.BUILD)), file, description);
+		}
 
 		ExecutionUtils.run(executor, projects, module -> {
 
-			File target = workspace.getFile(file, module.getSupportedProject());
-			target.delete();
+			for (String file : files) {
 
-			FileUtils.copyFile(master, target);
+				File master = workspace.getFile(file, iteration.getSupportedProject(Projects.BUILD));
+				File target = workspace.getFile(file, module.getSupportedProject());
+				target.delete();
 
-			git.add(module.getSupportedProject(), file);
+				FileUtils.copyFile(master, target);
+				git.add(module.getSupportedProject(), file);
+			}
+
 			git.commit(module, String.format("Update %s.", description), Optional.empty(), false);
 			git.push(module);
 		});
