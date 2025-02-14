@@ -182,17 +182,20 @@ class MavenBuildSystem implements BuildSystem {
 		if (BOM.equals(module.getProject())) {
 
 			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
-					.and(arg("generateBackupPoms").withValue("false")));
+					.and(arg("generateBackupPoms").withValue("false")) //
+					.andIf(module.isCommercial(), profile("spring-enterprise")));
 
 			mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
 					.and(arg("generateBackupPoms").withValue("false")) //
 					.and(arg("processAllModules").withValue("true")) //
-					.and(Argument.of("-pl").withValue("bom")));
+					.and(Argument.of("-pl").withValue("bom")) //
+					.andIf(module.isCommercial(), profile("spring-enterprise")));
 
 		} else {
 			mvn.execute(project,
 					goals.and(arg("newVersion").withValue(information.getProjectVersionToSet(project.getProject())))
-							.and(arg("generateBackupPoms").withValue("false")));
+							.and(arg("generateBackupPoms").withValue("false")) //
+							.andIf(module.isCommercial(), profile("spring-enterprise")));
 		}
 
 		if (BUILD.equals(module.getProject())) {
@@ -201,10 +204,11 @@ class MavenBuildSystem implements BuildSystem {
 				mvn.execute(project, goals.and(arg("newVersion").withValue(information.getReleaseTrainVersion())) //
 						.and(arg("generateBackupPoms").withValue("false")) //
 						.and(arg("groupId").withValue("org.springframework.data")) //
-						.and(arg("artifactId").withValue("spring-data-releasetrain")));
+						.and(arg("artifactId").withValue("spring-data-releasetrain")) //
+						.andIf(module.isCommercial(), profile("spring-enterprise")));
 			}
 
-			mvn.execute(project, CommandLine.of(Goal.INSTALL));
+			mvn.execute(project, CommandLine.of(Goal.INSTALL).andIf(module.isCommercial(), profile("spring-enterprise")));
 		}
 
 		return module;
@@ -277,8 +281,9 @@ class MavenBuildSystem implements BuildSystem {
 	@Override
 	public <M extends ProjectAware> M triggerBuild(M module) {
 
+		Argument profile = module.isCommercial() ? profile("ci,release,spring-enterprise") : profile("ci,release");
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL, //
-				profile("ci,release"), //
+				profile, //
 				arg("gpg.executable").withValue(gpg.getExecutable()), //
 				arg("gpg.keyname").withValue(gpg.getKeyname()), //
 				arg("gpg.passphrase").withValue(gpg.getPassphrase()))//

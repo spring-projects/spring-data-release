@@ -26,6 +26,7 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 
@@ -40,6 +41,7 @@ class ArtifactoryCommands extends TimedCommand {
 
 	private final @NonNull DeploymentOperations deployment;
 	private final @NonNull ArtifactoryOperations operations;
+	private final @NonNull Logger log;
 
 	@CliCommand(value = "artifactory verify", help = "Verifies authentication at Artifactory.")
 	public void verify() {
@@ -51,17 +53,23 @@ class ArtifactoryCommands extends TimedCommand {
 	@SneakyThrows
 	public void createArtifactoryReleases(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
 
-		for (ModuleIteration moduleIteration : trainIteration) {
-			operations.createArtifactoryRelease(moduleIteration);
-		}
+		if (trainIteration.isCommercial()) {
 
-		// aggregator creation requires a bit of time
+			log.log(trainIteration, "Creating Artifactory Release bundle");
+
+			for (ModuleIteration moduleIteration : trainIteration) {
+				operations.createArtifactoryRelease(moduleIteration);
+			}
+
+			// aggregator creation requires a bit of time
 			// otherwise we will see 16:19:04 "message" : "Release Bundle path not found:
 			// spring-release-bundles-v2/TNZ-spring-data-rest-commercial/4.0.15/release-bundle.json.evd"
 			Thread.sleep(2000);
 
 			operations.createArtifactoryReleaseAggregator(trainIteration);
-
+		} else {
+			log.log(trainIteration, "Skipping Artifactory Release bundle creation, not a commercial release");
+		}
 	}
 
 	@CliCommand(value = "artifactory release distribute")
