@@ -170,7 +170,7 @@ public class BuildOperations {
 	 */
 	public StagingRepository openStagingRepository(TrainIteration iteration) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(iteration.getSupportedProject(Projects.BUILD));
+		BuildSystem orchestrator = getRepositoryOrchestrator(iteration.getTrain());
 
 		return iteration.isPublic() ? orchestrator.open(iteration.getTrain()) : StagingRepository.EMPTY;
 	}
@@ -183,11 +183,19 @@ public class BuildOperations {
 	 */
 	public void closeStagingRepository(Train train, StagingRepository stagingRepository) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(train.getSupportedProject(Projects.BUILD));
+		BuildSystem orchestrator = getRepositoryOrchestrator(train);
 
 		if (stagingRepository.isPresent()) {
 			orchestrator.close(train, stagingRepository);
 		}
+	}
+
+	private BuildSystem getRepositoryOrchestrator(Train train) {
+
+		SupportedProject project = train.getSupportedProject(BUILD);
+		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(project);
+
+		return orchestrator.withJavaVersion(executor.detectJavaVersion(project));
 	}
 
 	/**
@@ -199,7 +207,7 @@ public class BuildOperations {
 	 */
 	public void releaseStagingRepository(Train train, StagingRepository stagingRepository) {
 
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(train.getSupportedProject(Projects.BUILD));
+		BuildSystem orchestrator = getRepositoryOrchestrator(train);
 
 		if (stagingRepository.isPresent()) {
 			orchestrator.release(train, stagingRepository);
