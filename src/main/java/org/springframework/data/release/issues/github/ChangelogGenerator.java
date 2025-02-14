@@ -18,7 +18,6 @@ package org.springframework.data.release.issues.github;
 
 import lombok.Getter;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -29,8 +28,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Component;
 
 /**
  * Generates a changelog markdown file which includes bug fixes, enhancements and contributors for a given milestone.
@@ -81,7 +78,8 @@ public class ChangelogGenerator {
 			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 		StringBuilder content = new StringBuilder();
 		addSectionContent(content,
-				this.sections.collate(issues.stream().filter(it -> it.getReference().isIssue()).map(ChangeItem::getIssue).collect(Collectors.toList())),
+				this.sections.collate(issues.stream().filter(it -> it.getReference().isIssue() || it.getReference().isRelated())
+						.map(ChangeItem::getIssue).collect(Collectors.toList())),
 				sectionContentPostProcessor, includeIssueNumbers);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {

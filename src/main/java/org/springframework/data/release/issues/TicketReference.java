@@ -62,6 +62,10 @@ public class TicketReference implements Comparable<TicketReference> {
 		return getReference() == Reference.Ticket;
 	}
 
+	public boolean isRelated() {
+		return getReference() == Reference.Related;
+	}
+
 	public boolean isPullRequest() {
 		return getReference() == Reference.PullRequest;
 	}
