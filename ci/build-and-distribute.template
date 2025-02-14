@@ -1,5 +1,6 @@
 workspace cleanup
 git update ${VERSION}
 release build ${VERSION}
+artifactory release create ${VERSION}
 release distribute ${VERSION}
 quit
