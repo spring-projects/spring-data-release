@@ -19,6 +19,7 @@
 	<properties>
 		<spring-data-bom.version>2023.0.0-M1</spring-data-bom.version>
 		<stagingRepository>orgspringframework-2453</stagingRepository>
+		<mongodb.version>5.3.1</mongodb.version>
 	</properties>
 
 	<dependencies>
