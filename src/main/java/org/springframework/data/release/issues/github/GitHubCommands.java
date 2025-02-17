@@ -78,7 +78,7 @@ public class GitHubCommands extends TimedCommand {
 		}, 2);
 	}
 
-	@CliCommand(value = "github create release")
+	@CliCommand(value = "github release create")
 	public void createOrUpdateRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
 			@CliOption(key = "project") Project project) {
 
@@ -99,7 +99,7 @@ public class GitHubCommands extends TimedCommand {
 		});
 	}
 
-	@CliCommand(value = "github preview release")
+	@CliCommand(value = "github release preview")
 	public String previewRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
 			@CliOption(key = "project", mandatory = true) Project project) {
 
