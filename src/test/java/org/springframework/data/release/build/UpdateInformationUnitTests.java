@@ -56,11 +56,11 @@ class UpdateInformationUnitTests {
 	}
 
 	@Test
-	void noReposContainedForMilestoneRelease() {
+	void milestoneReposContainedForMilestoneRelease() {
 
 		UpdateInformation updateInformation = UpdateInformation.of(hopperM1, Phase.PREPARE);
 
-		assertThat(updateInformation.getRepositories().isEmpty());
+		assertThat(updateInformation.getRepositories()).containsOnly(Repository.MILESTONE);
 	}
 
 	@Test

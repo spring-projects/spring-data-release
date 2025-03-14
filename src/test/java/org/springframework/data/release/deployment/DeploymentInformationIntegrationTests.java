@@ -58,10 +58,10 @@ class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
 
 		DeploymentInformation ossGA = new DefaultDeploymentInformation(
 				ReleaseTrains.VAUGHAN.getIteration(Iteration.GA).getModule(Projects.BUILD), properties);
-		assertThat(ossGA.getBuildNumber()).startsWith("spring-data-build-commercial-3.2.x-release");
+		assertThat(ossGA.getBuildNumber()).startsWith("spring-data-build-main-release");
 
 		DeploymentInformation ossSr1 = new DefaultDeploymentInformation(
 				ReleaseTrains.VAUGHAN.getIteration(Iteration.SR1).getModule(Projects.BUILD), properties);
-		assertThat(ossSr1.getBuildNumber()).startsWith("spring-data-build-commercial-3.2.x");
+		assertThat(ossSr1.getBuildNumber()).startsWith("spring-data-build-3.2.x-release");
 	}
 }
