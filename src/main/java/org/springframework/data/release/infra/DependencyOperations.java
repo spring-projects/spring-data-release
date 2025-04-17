@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -69,6 +68,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestOperations;
+
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.annotation.XBRead;
 import org.xmlbeam.io.FileIO;
@@ -376,7 +376,7 @@ public class DependencyOperations {
 		return Optional.ofNullable(upgradeTickets.isEmpty() ? null : upgradeTickets.get(0));
 	}
 
-	protected static DependencyUpgradeProposal getDependencyUpgradeProposal(DependencyUpgradePolicy policy,
+	static DependencyUpgradeProposal getDependencyUpgradeProposal(DependencyUpgradePolicy policy,
 			DependencyVersion currentVersion, List<DependencyVersion> allVersions) {
 
 		Optional<DependencyVersion> latestMinor = findLatestMinor(policy, currentVersion, allVersions);
@@ -472,7 +472,7 @@ public class DependencyOperations {
 		ProjectDependencies dependencies = ProjectDependencies.get(supportedProject);
 
 		Set<Project> skipDependencyDeclarationCheck = new HashSet<>(
-				Arrays.asList(Projects.NEO4J, Projects.BUILD, Projects.JPA, Projects.RELATIONAL));
+				Collections.singletonList(Projects.BUILD));
 
 		return doWithPom(pom, Pom.class, it -> {
 
@@ -482,8 +482,7 @@ public class DependencyOperations {
 
 				Dependency dependency = projectDependency.getDependency();
 
-				if (!(project == Projects.MONGO_DB && projectDependency.getProperty().equals("mongo.reactivestreams")
-						|| skipDependencyDeclarationCheck.contains(project))) {
+				if (!skipDependencyDeclarationCheck.contains(project) && projectDependency.isVerifyUsage()) {
 
 					if (it.getDependencyVersion(dependency.getArtifactId()) == null
 							&& it.getManagedDependency(dependency.getArtifactId()) == null) {

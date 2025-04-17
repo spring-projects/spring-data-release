@@ -28,11 +28,15 @@ public class Dependencies {
 
 	static final List<Dependency> dependencies = new ArrayList<>();
 
+	public static final Dependency ANTLR = Dependency.of("ANTLR", "org.antlr:antlr4-runtime");
+
 	public static final Dependency APT = Dependency.of("APT", "com.mysema.maven:apt-maven-plugin");
 
 	public static final Dependency ASPECTJ = Dependency.of("AspectJ", "org.aspectj:aspectjrt");
 
 	public static final Dependency ASSERTJ = Dependency.of("AssertJ", "org.assertj:assertj-core");
+
+	public static final Dependency AWAITILITY = Dependency.of("Awaitility", "org.awaitility:awaitility");
 
 	public static final Dependency JACKSON = Dependency.of("Jackson", "com.fasterxml.jackson:jackson-bom");
 
@@ -94,31 +98,21 @@ public class Dependencies {
 
 	public static final Dependency MONGODB_CORE = Dependency.of("MongoDB", "org.mongodb:mongodb-driver-core");
 
-	public static final Dependency MONGODB_LEGACY = Dependency.of("MongoDB", "org.mongodb:mongo-java-driver");
-
-	public static final Dependency MONGODB_SYNC = Dependency.of("MongoDB", "org.mongodb:mongodb-driver-sync");
-
-	public static final Dependency MONGODB_ASYNC = Dependency.of("MongoDB", "org.mongodb:mongodb-driver-async");
-
-	public static final Dependency MONGODB_RS = Dependency.of("MongoDB Reactive Streams",
-			"org.mongodb:mongodb-driver-reactivestreams");
+	public static final Dependency MONGODB_BOM = Dependency.of("MongoDB", "org.mongodb:mongodb-driver-bom");
 
 	public static final Dependency LETTUCE = Dependency.of("Lettuce", "io.lettuce:lettuce-core");
 
 	public static final Dependency JEDIS = Dependency.of("Jedis", "redis.clients:jedis");
+
+	public static final Dependency JSQLPARSER = Dependency.of("JSqlParser", "com.github.jsqlparser:jsqlparser");
 
 	public static final Dependency JMOLECULES = Dependency.of("JMolecules", "org.jmolecules:jmolecules");
 
 	public static final Dependency JMOLECULES_INTEGRATION = Dependency.of("JMolecules",
 			"org.jmolecules.integrations:jmolecules-spring");
 
-	public static final Dependency CASSANDRA_DRIVER3 = Dependency.of("Cassandra Driver",
-			"com.datastax.cassandra:cassandra-driver-core");
-
 	public static final Dependency CASSANDRA_DRIVER4 = Dependency.of("Cassandra Driver",
 			"org.apache.cassandra:java-driver-bom");
-
-	public static final Dependency NEO4J_OGM = Dependency.of("Neo4j OGM", "org.neo4j:neo4j-ogm-api");
 
 	public static final Dependency NEO4J_DRIVER = Dependency.of("Neo4j Driver", "org.neo4j.driver:neo4j-java-driver");
 
@@ -136,18 +130,33 @@ public class Dependencies {
 	public static final Dependency MAVEN = Dependency.of("Maven Wrapper", "org.apache.maven:apache-maven");
 
 	public static final Dependency H2 = Dependency.of("H2 Database", "com.h2database:h2");
+
 	public static final Dependency H2_R2DBC = Dependency.of("H2 R2DBC Driver", "io.r2dbc:r2dbc-h2");
+
 	public static final Dependency HSQLDB = Dependency.of("HSQL Database", "org.hsqldb:hsqldb");
+
 	public static final Dependency DB2_JDBC = Dependency.of("DB2 JDBC Driver", "com.ibm.db2:jcc");
+
 	public static final Dependency MARIADB_JDBC = Dependency.of("MariaDB JDBC Driver", "org.mariadb.jdbc:mariadb-java-client");
+
 	public static final Dependency MARIADB_R2DBC = Dependency.of("MariaDB R2DBC Driver", "rg.mariadb:r2dbc-mariadb");
+
 	public static final Dependency MS_SQLSERVER_JDBC = Dependency.of("Microsoft SqlServer JDBC Driver", "com.microsoft.sqlserver:mssql-jdbc");
+
 	public static final Dependency MS_SQLSERVER_R2DBC = Dependency.of("Microsoft SqlServer R2DBC Driver", "io.r2dbc:r2dbc-mssql");
-	public static final Dependency MYSQL_JDBC = Dependency.of("MySql JDBC Driver", "mysql:mysql-connector-java");
+
+	public static final Dependency LEGACY_MYSQL_JDBC = Dependency.of("MySql JDBC Driver", "mysql:mysql-connector-java");
+
+	public static final Dependency MYSQL_JDBC = Dependency.of("MySql JDBC Driver", "com.mysql:mysql-connector-j");
+
 	public static final Dependency MYSQL_R2DBC = Dependency.of("MySql R2DBC Driver", "io.asyncer:r2dbc-mysql");
+
 	public static final Dependency POSTGRES_JDBC = Dependency.of("Postgres JDBC Driver", "org.postgresql:postgresql");
+
 	public static final Dependency POSTGRES_R2DBC = Dependency.of("Postgres R2DBC Driver", "org.postgresql:r2dbc-postgresql");
+
 	public static final Dependency ORACLE_JDBC = Dependency.of("Oracle JDBC Driver", "com.oracle.database.jdbc:ojdbc11");
+
 	public static final Dependency ORACLE_R2DBC = Dependency.of("Oracle R2DBC Driver", "com.oracle.database.r2dbc:oracle-r2dbc");
 
 	static {
