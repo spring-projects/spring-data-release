@@ -575,6 +575,18 @@ public class GitOperations {
 		if (iteration.contains(project)) {
 
 			Iteration it = iteration.getIteration();
+
+			if (iteration.getTrain().isAlwaysUseBranch()) {
+
+				Branch from = Branch.from(iteration.getModule(project));
+				String message = expandSummary("Release version %s", iteration.getModule(project), iteration);
+
+				RevCommit releaseCommit = findCommit(git, from, message);
+				if (releaseCommit != null) {
+					return releaseCommit;
+				}
+			}
+
 			Optional<Tag> fromTag = tags.filter(iteration.getTrain()).findTag(it);
 
 			if (!fromTag.isPresent()) {
@@ -583,13 +595,11 @@ public class GitOperations {
 				if (supportStatus == SupportStatus.COMMERCIAL && (it.isServiceIteration() || it.isGAIteration())) {
 
 					Branch from = Branch.from(iteration.getModule(project));
-					Iterable<RevCommit> commits = git.log().add(repo.resolve(from.toString())).call();
+					String message = "Seed " + from + " branch";
 
-					Optional<RevCommit> first = Streamable.of(commits).stream()
-							.filter(rev -> rev.getFullMessage().contains("Seed " + from + " branch")).findFirst();
-
-					if (first.isPresent()) {
-						return first.get();
+					RevCommit first = findCommit(git, from, message);
+					if (first != null) {
+						return first;
 					}
 				}
 
@@ -604,6 +614,16 @@ public class GitOperations {
 		}
 
 		return repo.resolve(getFirstCommit(repo));
+	}
+
+	private static RevCommit findCommit(Git git, Branch branch, String message) throws GitAPIException, IOException {
+
+		Iterable<RevCommit> commits = git.log().add(git.getRepository().resolve(branch.toString())).call();
+
+		Optional<RevCommit> first = Streamable.of(commits).stream().filter(rev -> rev.getFullMessage().contains(message))
+				.findFirst();
+
+		return first.orElse(null);
 	}
 
 	protected ObjectId resolveUpperBoundary(ModuleIteration iteration, VersionTags tags, Repository repo)
@@ -1133,7 +1153,7 @@ public class GitOperations {
 	private Optional<Tag> findTagFor(SupportedProject project, ArtifactVersion version) {
 
 		return getTags(project).stream()//
-				.filter(tag -> tag.toArtifactVersion().map(it -> it.equals(version)).orElse(false))//
+				.filter(tag -> tag.getArtifactVersion().map(it -> it.equals(version)).orElse(false))//
 				.findFirst();
 	}
 

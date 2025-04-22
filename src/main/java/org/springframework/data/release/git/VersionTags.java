@@ -159,7 +159,7 @@ public class VersionTags implements Streamable<Tag> {
 
 		for (Tag tag : tags) {
 
-			Optional<ArtifactVersion> artifactVersion = tag.toArtifactVersion();
+			Optional<ArtifactVersion> artifactVersion = tag.getArtifactVersion();
 			if (!artifactVersion.isPresent()) {
 				continue;
 			}

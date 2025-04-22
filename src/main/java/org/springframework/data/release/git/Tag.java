@@ -15,15 +15,14 @@
  */
 package org.springframework.data.release.git;
 
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.lang.Nullable;
 
 /**
  * Value object to represent an SCM tag.
@@ -32,12 +31,34 @@ import org.springframework.data.release.model.ArtifactVersion;
  * @author Mark Paluch
  */
 @EqualsAndHashCode
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@Getter
 public class Tag implements Comparable<Tag> {
 
+	@Getter
 	private final String name;
+	@Getter
 	private final LocalDateTime creationDate;
+
+	private final @Nullable ArtifactVersion artifactVersion;
+
+	private Tag(String name, LocalDateTime creationDate, @Nullable ArtifactVersion artifactVersion) {
+		this.name = name;
+		this.creationDate = creationDate;
+		this.artifactVersion = artifactVersion;
+	}
+
+	private Tag(String name, LocalDateTime creationDate) {
+		this.name = name;
+		this.creationDate = creationDate;
+
+		ArtifactVersion artifactVersion;
+		try {
+			artifactVersion = ArtifactVersion.of(getVersionSource());
+		} catch (Exception e) {
+			artifactVersion = null;
+		}
+
+		this.artifactVersion = artifactVersion;
+	}
 
 	public static Tag of(String source) {
 		return of(source, LocalDateTime.now());
@@ -61,20 +82,20 @@ public class Tag implements Comparable<Tag> {
 	}
 
 	public boolean isVersionTag() {
-		return toArtifactVersion().isPresent();
+		return getArtifactVersion().isPresent();
 	}
 
-	public Optional<ArtifactVersion> toArtifactVersion() {
-
-		try {
-			return Optional.of(getRequiredArtifactVersion());
-		} catch (IllegalArgumentException o_O) {
-			return Optional.empty();
-		}
+	public Optional<ArtifactVersion> getArtifactVersion() {
+		return Optional.ofNullable(artifactVersion);
 	}
 
 	public ArtifactVersion getRequiredArtifactVersion() {
-		return ArtifactVersion.of(getVersionSource());
+
+		if (artifactVersion == null) {
+			throw new IllegalStateException(String.format("Artifact version not set for tag '%s'", name));
+		}
+
+		return this.artifactVersion;
 	}
 
 	/**
@@ -84,7 +105,8 @@ public class Tag implements Comparable<Tag> {
 	 * @return
 	 */
 	public Tag createNew(ArtifactVersion version) {
-		return new Tag(name.startsWith("v") ? "v".concat(version.toString()) : version.toString(), LocalDateTime.now());
+		return new Tag(name.startsWith("v") ? "v".concat(version.toString()) : version.toString(), LocalDateTime.now(),
+				artifactVersion);
 	}
 
 	/*
@@ -105,7 +127,7 @@ public class Tag implements Comparable<Tag> {
 
 		// Prefer artifact versions but fall back to name comparison
 
-		return toArtifactVersion().map(left -> that.toArtifactVersion().map(right -> left.compareTo(right)).//
+		return getArtifactVersion().map(left -> that.getArtifactVersion().map(right -> left.compareTo(right)).//
 				orElse(name.compareTo(that.name))).orElse(name.compareTo(that.name));
 	}
 }

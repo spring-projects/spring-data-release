@@ -207,7 +207,7 @@ class ProjectServiceOperations {
 				.filter(tag -> matches(tag, module.getVersion())).max(Comparator.naturalOrder()) //
 				.map(it -> {
 					MaintainedVersion maintainedVersion = MaintainedVersion.of(module.getProject(),
-							it.toArtifactVersion().get(),
+							it.getRequiredArtifactVersion(),
 							train, it.getCreationDate().toLocalDate(), it.getCreationDate().toLocalDate());
 					return Arrays.asList(maintainedVersion, maintainedVersion.nextDevelopmentVersion());
 				}) //
@@ -227,7 +227,7 @@ class ProjectServiceOperations {
 	 */
 	private static boolean matches(Tag tag, Version version) {
 
-		return tag.toArtifactVersion()//
+		return tag.getArtifactVersion()//
 				.map(it -> it.isVersionWithin(version))//
 				.orElse(false);
 	}
