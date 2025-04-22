@@ -1,4 +1,4 @@
-FROM ubuntu:23.04
+FROM ubuntu:25.04
 
 # Bake a container using sdkman to get all the needed JDKs.
 ARG USER_UID="1100"
