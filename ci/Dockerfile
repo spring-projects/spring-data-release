@@ -1,4 +1,4 @@
-FROM ubuntu:23.04
+FROM ubuntu:25.04
 
 # Bake a container using sdkman to get all the needed JDKs.
 ARG USER_UID="1100"
@@ -32,9 +32,9 @@ RUN curl -s "https://get.sdkman.io" | bash
 RUN bash -c "cd /home/jenkins && \
 	chmod a+x /home/jenkins/java-init.sh && \
 	./java-init.sh && \
-	rm -rf $HOME/.sdkman/archives/* && \
-	rm -rf $HOME/.sdkman/tmp/*"
+	rm -rf /home/jenkins/.sdkman/archives/* && \
+	rm -rf /home/jenkins/.sdkman/tmp/*"
 
-ENV MAVEN_HOME="$HOME/.sdkman/candidates/maven/current"
-ENV JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+ENV MAVEN_HOME="/home/jenkins/.sdkman/candidates/maven/current"
+ENV JAVA_HOME="/home/jenkins/.sdkman/candidates/java/current"
 ENV PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
