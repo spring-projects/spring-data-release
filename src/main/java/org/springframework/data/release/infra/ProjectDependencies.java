@@ -46,6 +46,7 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("jacoco", Dependencies.JACOCO));
 		config.add(Projects.BUILD, ProjectDependency.using("jodatime", Dependencies.JODA_TIME));
 		config.add(Projects.BUILD, ProjectDependency.using("junit5", Dependencies.JUNIT5));
+		config.add(Projects.BUILD, ProjectDependency.using("junit-pioneer", Dependencies.JUNIT_PIONEER));
 		config.add(Projects.BUILD, ProjectDependency.using("jmolecules", Dependencies.JMOLECULES));
 		config.add(Projects.BUILD,
 				ProjectDependency.using("jmolecules-integration", Dependencies.JMOLECULES_INTEGRATION));

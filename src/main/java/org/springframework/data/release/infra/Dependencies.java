@@ -46,6 +46,8 @@ public class Dependencies {
 
 	public static final Dependency JUNIT5 = Dependency.of("JUnit", "org.junit:junit-bom");
 
+	public static final Dependency JUNIT_PIONEER = Dependency.of("JUnit Pioneer", "org.junit-pioneer:junit-pioneer");
+
 	public static final Dependency JUNIT4 = Dependency.of("JUnit", "junit:junit");
 
 	public static final Dependency KOTLIN = Dependency.of("Kotlin", "org.jetbrains.kotlin:kotlin-bom");
