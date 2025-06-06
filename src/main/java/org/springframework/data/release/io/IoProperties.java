@@ -33,14 +33,20 @@ import org.springframework.stereotype.Component;
 @Data
 @Component
 @ConfigurationProperties(prefix = "io")
-class IoProperties {
+public class IoProperties {
 
-	private File workDir, logs;
+	private File workDir, stagingDir, logs;
 
 	public void setWorkDir(String workDir) {
 
 		log.info(String.format("🔧 Using %s as working directory!", workDir));
 		this.workDir = new File(workDir.replace("~", FileUtils.getUserDirectoryPath()));
+	}
+
+	public void setStagingDir(String stagingDir) {
+
+		log.info(String.format("🔧 Using %s as staging directory!", stagingDir));
+		this.stagingDir = new File(stagingDir.replace("~", FileUtils.getUserDirectoryPath()));
 	}
 
 }

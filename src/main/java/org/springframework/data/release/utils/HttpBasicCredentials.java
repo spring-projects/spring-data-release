@@ -38,9 +38,13 @@ public class HttpBasicCredentials {
 	 */
 	public String toString() {
 
+		return "Basic ".concat(encode());
+	}
+
+	public String encode() {
+
 		String header = username.concat(":").concat(password.toString());
 		byte[] encodedAuth = Base64.getEncoder().encode(header.getBytes(StandardCharsets.US_ASCII));
-
-		return "Basic ".concat(new String(encodedAuth));
+		return new String(encodedAuth);
 	}
 }

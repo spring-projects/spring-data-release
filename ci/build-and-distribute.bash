@@ -11,11 +11,13 @@ export PATH="$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH"
 
 export JENKINS_HOME=/tmp/jenkins-home
 export RELEASE_TOOLS_MAVEN_REPOSITORY=$(pwd)/maven-repository
+export WORK_DIR=$(pwd)/work
 export LOGS_DIR=$(pwd)/logs
 export SETTINGS_XML=$(pwd)/ci/settings.xml
 
 mkdir -p ${RELEASE_TOOLS_MAVEN_REPOSITORY}
 mkdir -p ${LOGS_DIR}
+mkdir -p ${WORK_DIR}
 
 export GNUPGHOME=~/.gnupg
 mkdir -p ${GNUPGHOME}

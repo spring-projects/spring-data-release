@@ -29,6 +29,18 @@
 			<username>${env.COMMERCIAL_USR}</username>
 			<password>${env.COMMERCIAL_PSW}</password>
 		</server>
+
+		<server>
+			<id>central-publisher-api</id>
+			<configuration>
+				<httpHeaders>
+					<property>
+						<name>Authorization</name>
+						<value>Bearer ${CENTRAL_BEARER}</value>
+					</property>
+				</httpHeaders>
+			</configuration>
+		</server>
 	</servers>
 
 </settings>
