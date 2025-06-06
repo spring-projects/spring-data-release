@@ -61,7 +61,7 @@ class ReleaseCommands extends TimedCommand {
 	@NonNull BuildOperations build;
 	@NonNull IssueTrackerCommands tracker;
 	@NonNull GitHubCommands gitHub;
-	private final Logger logger;
+	@NonNull Logger logger;
 
 	/**
 	 * Composite command to prepare a release.
@@ -130,32 +130,6 @@ class ReleaseCommands extends TimedCommand {
 		git.commit(iteration, "Release version %s.");
 	}
 
-	@CliCommand(value = "repository open")
-	public void repositoryOpen(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-
-		if (iteration.isPublic()) {
-			build.open(iteration.getModule(Projects.BUILD));
-		}
-	}
-
-	@CliCommand(value = "repository close")
-	public void repositoryClose(@CliOption(key = "", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "stagingRepositoryId", mandatory = true) String stagingRepositoryId) {
-
-		if (iteration.isPublic()) {
-			build.close(iteration.getModule(Projects.BUILD), StagingRepository.of(stagingRepositoryId));
-		}
-	}
-
-	@CliCommand(value = "release repository")
-	public void repositoryRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "stagingRepositoryId", mandatory = true) String stagingRepositoryId) {
-
-		if (iteration.isPublic()) {
-			build.release(iteration.getModule(Projects.BUILD), StagingRepository.of(stagingRepositoryId));
-		}
-	}
-
 	@CliCommand(value = "release build")
 	public void buildRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "project", mandatory = false) String projectName) {
@@ -177,6 +151,38 @@ class ReleaseCommands extends TimedCommand {
 		} else {
 			build.performRelease(iteration).forEach(deployment::promote);
 		}
+	}
+
+	@CliCommand(value = "release local-stage")
+	public void stageRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
+			@CliOption(key = "project", mandatory = false) String projectName) {
+
+		git.checkout(iteration);
+
+		if (!iteration.isPublic()) {
+			deployment.verifyAuthentication(iteration);
+		}
+
+		if (projectName != null) {
+
+			Project project = Projects.requiredByName(projectName);
+			ModuleIteration module = iteration.getModule(project);
+
+			build.stageRelease(module);
+		} else {
+			build.stageRelease(iteration);
+		}
+	}
+
+	@CliCommand(value = "release central upload")
+	public void uploadDeployment(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+		build.uploadDeployment(iteration);
+	}
+
+	@CliCommand(value = "release central validate")
+	public void validateDeployment(@CliOption(key = "", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "deploymentId", mandatory = true) String deploymentId) {
+		build.validateDeployment(iteration, StagingRepository.of(deploymentId));
 	}
 
 	/**

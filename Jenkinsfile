@@ -1,5 +1,6 @@
 def p = [:]
 node {
+	label 'data-release'
 	checkout scm
 	p = readProperties interpolate: true, file: 'ci/release.properties'
 }
@@ -28,7 +29,7 @@ pipeline {
 
 			steps {
 				script {
-					def image = docker.build("springci/spring-data-release-tools:0.23", "ci")
+					def image = docker.build("springci/spring-data-release-tools:0.24", "ci")
 					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
 						image.push()
 					}
@@ -59,14 +60,17 @@ pipeline {
 				MAVEN_SIGNING_KEY_PASSWORD = credentials('spring-gpg-passphrase')
 				GIT_SIGNING_KEY = credentials('spring-gpg-github-private-key-jenkins')
 				GIT_SIGNING_KEY_PASSWORD = credentials('spring-gpg-github-passphrase-jenkins')
-				SONATYPE = credentials('oss-s01-token')
+				CENTRAL_TOKEN = credentials('central-token')
 			}
 
 			steps {
 				script {
-					docker.image("springci/spring-data-release-tools:0.23").inside() {
-						sh "ci/build-spring-data-release-cli.bash"
-						sh "ci/build-and-distribute.bash ${p['release.version']}"
+
+					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
+						docker.image("springci/spring-data-release-tools:0.24").inside() {
+							sh "ci/build-spring-data-release-cli.bash"
+							sh "ci/build-and-distribute.bash ${p['release.version']}"
+						}
 					}
 				}
 			}

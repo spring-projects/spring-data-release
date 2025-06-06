@@ -15,8 +15,6 @@
  */
 package org.springframework.data.release.deployment;
 
-import lombok.Value;
-
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -24,12 +22,19 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Mark Paluch
  */
-@Value(staticConstructor = "of")
 public class StagingRepository {
 
 	public static final StagingRepository EMPTY = StagingRepository.of("");
 
-	String id;
+	private final String id;
+
+	protected StagingRepository(String id) {
+		this.id = id;
+	}
+
+	public static StagingRepository of(String id) {
+		return new StagingRepository(id);
+	}
 
 	public boolean isEmpty() {
 		return ObjectUtils.isEmpty(id);
@@ -47,4 +52,23 @@ public class StagingRepository {
 
 		return "(empty)";
 	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof StagingRepository)) {
+			return false;
+		}
+		StagingRepository that = (StagingRepository) o;
+		return ObjectUtils.nullSafeEquals(id, that.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return ObjectUtils.nullSafeHashCode(id);
+	}
+
 }

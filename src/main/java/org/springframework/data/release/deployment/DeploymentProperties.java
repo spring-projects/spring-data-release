@@ -18,12 +18,14 @@ package org.springframework.data.release.deployment;
 import lombok.Data;
 
 import java.net.URI;
+import java.time.Duration;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;
 import org.springframework.data.release.model.SupportStatusAware;
+import org.springframework.data.release.utils.HttpBasicCredentials;
 import org.springframework.data.util.Streamable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -99,7 +101,10 @@ public class DeploymentProperties implements InitializingBean {
 	@Data
 	public static class MavenCentral {
 
-		private String stagingProfileId;
+		private String username;
+		private Password password;
+		private String centralApiBaseUrl = "https://central.sonatype.com";
+		private Duration validationTimeout = Duration.ofMinutes(5);
 
 		private Gpg gpg;
 
@@ -109,9 +114,17 @@ public class DeploymentProperties implements InitializingBean {
 
 		public void validate() {
 
-			if (!StringUtils.hasText(stagingProfileId)) {
-				throw new IllegalArgumentException("No staging profile Id for Maven Central");
+			if (password == null) {
+				throw new IllegalArgumentException("No Maven Publisher API authentication configured");
 			}
+		}
+
+		public HttpBasicCredentials getHttpCredentials() {
+			return new HttpBasicCredentials(username, password);
+		}
+
+		public Password getBearer() {
+			return Password.of(getHttpCredentials().encode());
 		}
 	}
 

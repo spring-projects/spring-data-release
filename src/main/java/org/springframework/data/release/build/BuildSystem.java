@@ -69,27 +69,6 @@ interface BuildSystem extends Plugin<SupportedProject> {
 	 */
 	<M extends ProjectAware> M triggerPreReleaseCheck(M module);
 
-	/**
-	 * Open a remote repository for staging artifacts.
-	 *
-	 * @param train must not be {@literal null}.
-	 */
-	StagingRepository open(Train train);
-
-	/**
-	 * Close a remote repository for staging artifacts.
-	 *
-	 * @param train must not be {@literal null}.
-	 */
-	void close(Train train, StagingRepository stagingRepository);
-
-	/**
-	 * Release a remote repository of staged artifacts.
-	 *
-	 * @param train must not be {@literal null}.
-	 */
-	void release(Train train, StagingRepository stagingRepository);
-
 	<M extends ProjectAware> M triggerBuild(M module);
 
 	<M extends ProjectAware> M triggerDocumentationBuild(M module);

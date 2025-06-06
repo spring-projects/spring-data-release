@@ -89,7 +89,8 @@ public class MavenRuntime extends MavenRuntimeSupport {
 				mavenLogger.info(String.format("Executing: mvn %s", arguments));
 
 				CommandLine disabledGradleBuildCache = arguments.and(arg("gradle.cache.local.enabled=false"))
-						.and(arg("gradle.cache.remote.enabled=false"));
+						.and(arg("gradle.cache.remote.enabled=false")).and(arg("develocity.cache.local.enabled=false"))
+						.and(arg("develocity.cache.remote.enabled=false"));
 
 				mvn.setGoals(disabledGradleBuildCache.toCommandLine(it -> properties.getFullyQualifiedPlugin(it.getGoal())));
 			});

@@ -18,7 +18,7 @@
 
 	<properties>
 		<spring-data-bom.version>2023.0.0-M1</spring-data-bom.version>
-		<stagingRepository>orgspringframework-2453</stagingRepository>
+		<stagingRepository>deploymentId</stagingRepository>
 		<mongodb.version>5.3.1</mongodb.version>
 	</properties>
 
@@ -73,9 +73,9 @@
 
 			<repositories>
 				<repository>
-					<id>s01.oss.sonatype.org</id>
+					<id>central-publisher-api</id>
 					<url>
-						https://s01.oss.sonatype.org/service/local/repositories/${stagingRepository}/content/
+						https://central.sonatype.com/api/v1/publisher/deployment/${deploymentId}/download/
 					</url>
 				</repository>
 			</repositories>
