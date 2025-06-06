@@ -19,6 +19,7 @@ import static org.springframework.data.release.model.Projects.*;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,9 +28,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.assertj.core.util.VisibleForTesting;
+
 import org.springframework.data.release.deployment.DeploymentInformation;
+import org.springframework.data.release.deployment.MavenPublisher;
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.git.BranchMapping;
+import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.ProjectAware;
@@ -56,6 +60,8 @@ public class BuildOperations {
 	private final @NonNull Logger logger;
 	private final @NonNull MavenProperties properties;
 	private final @NonNull BuildExecutor executor;
+	private final @NonNull MavenPublisher publisher;
+	private final Workspace workspace;
 
 	/**
 	 * Updates all inter-project dependencies based on the given {@link TrainIteration} and release {@link Phase}.
@@ -121,35 +127,6 @@ public class BuildOperations {
 	}
 
 	/**
-	 * Opens a repository to stage artifacts for this {@link ModuleIteration}.
-	 *
-	 * @param iteration must not be {@literal null}.
-	 */
-	public void open(ModuleIteration iteration) {
-
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> buildSystem.open(iteration.getTrain()));
-	}
-
-	/**
-	 * Closes a repository to stage artifacts for this {@link ModuleIteration}.
-	 *
-	 * @param iteration must not be {@literal null}.
-	 * @param stagingRepository must not be {@literal null}.
-	 */
-	public void close(ModuleIteration iteration, StagingRepository stagingRepository) {
-
-		Assert.notNull(stagingRepository, "StagingRepository must not be null");
-		Assert.isTrue(stagingRepository.isPresent(), "StagingRepository must be present");
-
-		Train train = iteration.getTrain();
-
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
-			buildSystem.close(train, stagingRepository);
-			return null;
-		});
-	}
-
-	/**
 	 * Performs a local build for all modules in the given {@link TrainIteration}.
 	 *
 	 * @param iteration must not be {@literal null}.
@@ -163,55 +140,14 @@ public class BuildOperations {
 	}
 
 	/**
-	 * Open a staging repository.
+	 * Promote the staging repository by publishing the deployment.
 	 *
 	 * @param iteration
-	 * @return
-	 */
-	public StagingRepository openStagingRepository(TrainIteration iteration) {
-
-		BuildSystem orchestrator = getRepositoryOrchestrator(iteration.getTrain());
-
-		return iteration.isPublic() ? orchestrator.open(iteration.getTrain()) : StagingRepository.EMPTY;
-	}
-
-	/**
-	 * Close a staging repository.
-	 *
-	 * @param stagingRepository
-	 * @return
-	 */
-	public void closeStagingRepository(Train train, StagingRepository stagingRepository) {
-
-		BuildSystem orchestrator = getRepositoryOrchestrator(train);
-
-		if (stagingRepository.isPresent()) {
-			orchestrator.close(train, stagingRepository);
-		}
-	}
-
-	private BuildSystem getRepositoryOrchestrator(Train train) {
-
-		SupportedProject project = train.getSupportedProject(BUILD);
-		BuildSystem orchestrator = buildSystems.getRequiredPluginFor(project);
-
-		return orchestrator.withJavaVersion(executor.detectJavaVersion(project));
-	}
-
-	/**
-	 * Promote the staging repository.
-	 *
-	 * @param train must not be {@literal null}.
 	 * @param stagingRepository must not be {@literal null}.
 	 * @return
 	 */
-	public void releaseStagingRepository(Train train, StagingRepository stagingRepository) {
-
-		BuildSystem orchestrator = getRepositoryOrchestrator(train);
-
-		if (stagingRepository.isPresent()) {
-			orchestrator.release(train, stagingRepository);
-		}
+	public void publishDeployment(TrainIteration iteration, StagingRepository stagingRepository) {
+		publisher.publish(iteration, stagingRepository);
 	}
 
 	/**
@@ -224,22 +160,6 @@ public class BuildOperations {
 
 		doWithBuildSystem(iteration.getModule(BUILD), (buildSystem, moduleIteration) -> {
 			buildSystem.smokeTests(iteration, stagingRepository);
-			return null;
-		});
-	}
-
-	/**
-	 * Releases a repository of staged artifacts for this {@link ModuleIteration}.
-	 *
-	 * @param iteration
-	 * @param stagingRepository
-	 */
-	public void release(ModuleIteration iteration, StagingRepository stagingRepository) {
-
-		Train train = iteration.getTrain();
-
-		doWithBuildSystem(iteration, (buildSystem, moduleIteration) -> {
-			buildSystem.release(train, stagingRepository);
 			return null;
 		});
 	}
@@ -268,17 +188,14 @@ public class BuildOperations {
 	 */
 	public List<DeploymentInformation> performRelease(TrainIteration iteration) {
 
-		StagingRepository stagingRepository = iteration.isPublic() //
-				? openStagingRepository(iteration) //
-				: StagingRepository.EMPTY;
+		StagingRepository localStaging = iteration.isPublic() ? initializeStagingRepository() : StagingRepository.EMPTY;
+		StagingRepository stagingRepository = StagingRepository.EMPTY;
 
 		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
-				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, stagingRepository));
+				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
 
-		Train train = iteration.getTrain();
-
-		if (stagingRepository.isPresent()) {
-			closeStagingRepository(train, stagingRepository);
+		if (iteration.isPublic()) {
+			stagingRepository = uploadDeployment(iteration.getModule(BOM), localStaging);
 		}
 
 		smokeTests(iteration, stagingRepository);
@@ -286,12 +203,81 @@ public class BuildOperations {
 		logger.log(iteration, "Release: %s", summary);
 
 		if (stagingRepository.isPresent()) {
-			releaseStagingRepository(train, stagingRepository);
+			publishDeployment(iteration, stagingRepository);
 		}
 
-		return summary.getExecutions().stream()
-				.map(BuildExecutor.ExecutionResult::getResult)
-				.collect(Collectors.toList());
+		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+	}
+
+	/**
+	 * Performs the staging build for all modules in the given {@link TrainIteration} without deploying artifacts
+	 * remotely.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @return
+	 */
+	public List<DeploymentInformation> stageRelease(TrainIteration iteration) {
+
+		StagingRepository localStaging = initializeStagingRepository();
+
+		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
+
+		logger.log(iteration, "Release: %s", summary);
+
+		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+	}
+
+	/**
+	 * Performs the staging build for {@link ModuleIteration} without deploying artifacts remotely.
+	 *
+	 * @param module must not be {@literal null}.
+	 * @return
+	 */
+	public DeploymentInformation stageRelease(ModuleIteration module) {
+
+		StagingRepository localStaging = initializeStagingRepository();
+
+		return doWithBuildSystem(module,
+				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
+	}
+
+	public void uploadDeployment(TrainIteration iteration) {
+
+		StagingRepository localStaging = publisher.getStagingRepository();
+		StagingRepository stagingRepository = uploadDeployment(iteration.getModule(BOM), localStaging);
+
+		logger.log(iteration, "Created deployment: %s", stagingRepository);
+	}
+
+	@SneakyThrows
+	public void validateDeployment(TrainIteration iteration, StagingRepository deploymentId) {
+
+		MavenPublisher.DeploymentStatus status = publisher.validate(iteration, deploymentId);
+		logger.log(iteration, "Deployment validated: %s, \n%s", status.getDeploymentState(),
+				status.getPurls().stream().map(it -> "    * " + it).collect(Collectors.joining(System.lineSeparator())));
+	}
+
+	@SneakyThrows
+	private StagingRepository uploadDeployment(ModuleIteration iteration, StagingRepository localStaging) {
+
+		String deploymentName;
+
+		if (iteration.getProject() == BOM) {
+			deploymentName = String.format("Spring Data %s", iteration.getTrainIteration().getName());
+		} else {
+			deploymentName = String.format("Spring Data %s", iteration);
+		}
+
+		StagingRepository deploymentId = publisher.upload(iteration, deploymentName, localStaging);
+		publisher.validate(iteration.getTrainIteration(), deploymentId);
+
+		return deploymentId;
+	}
+
+	@SneakyThrows
+	private StagingRepository initializeStagingRepository() {
+		return publisher.initializeStagingRepository();
 	}
 
 	/**
@@ -420,8 +406,7 @@ public class BuildOperations {
 	 * @param function must not be {@literal null}.
 	 * @return
 	 */
-	private <T, S extends ProjectAware> T doWithBuildSystem(S module,
-			BiFunction<BuildSystem, S, T> function) {
+	private <T, S extends ProjectAware> T doWithBuildSystem(S module, BiFunction<BuildSystem, S, T> function) {
 
 		Assert.notNull(module, "ModuleIteration must not be null!");
 

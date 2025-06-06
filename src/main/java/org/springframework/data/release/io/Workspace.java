@@ -15,8 +15,6 @@
  */
 package org.springframework.data.release.io;
 
-import static org.springframework.data.release.utils.StreamUtils.*;
-
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -31,17 +29,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
@@ -52,6 +47,7 @@ import org.springframework.util.Assert;
  * Abstraction of the workspace that is used to work with the {@link Project}'s repositories, execute builds, etc.
  *
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 @Component
 @RequiredArgsConstructor
@@ -61,7 +57,6 @@ public class Workspace {
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 	@NonNull IoProperties ioProperties;
-	@NonNull ResourcePatternResolver resolver;
 	@NonNull Logger logger;
 
 	/**
@@ -71,6 +66,15 @@ public class Workspace {
 	 */
 	public File getWorkingDirectory() {
 		return ioProperties.getWorkDir();
+	}
+
+	/**
+	 * Returns the current staging directory.
+	 *
+	 * @return
+	 */
+	public File getStagingDirectory() {
+		return ioProperties.getStagingDir();
 	}
 
 	/**
@@ -90,34 +94,22 @@ public class Workspace {
 	public void cleanup() throws IOException {
 
 		delete(getWorkingDirectory().toPath(), "workspace");
+		delete(getStagingDirectory().toPath(), "staging");
 		delete(getLogsDirectory().toPath(), "logs");
 	}
 
-	private void delete(Path path, String type) throws IOException {
+	public void delete(Path path, String type) throws IOException {
 
 		logger.log("Workspace", "Cleaning up %s directory at %s.", type, path.toAbsolutePath());
 
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				Files.delete(file);
-				return FileVisitResult.CONTINUE;
-			}
-
-			@Override
-			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-
-				if (!path.equals(dir)) {
-					Files.delete(dir);
-				}
-
-				return FileVisitResult.CONTINUE;
-			}
-		});
+		purge(path, it -> !path.equals(it));
 	}
 
 	public void purge(Path path, Predicate<Path> filter) throws IOException {
+
+		if (!path.toFile().exists()) {
+			return;
+		}
 
 		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 
@@ -185,18 +177,6 @@ public class Workspace {
 		Assert.notNull(project, "Project must not be null!");
 
 		return new File(getProjectDirectory(project), name);
-	}
-
-	public Stream<File> getFiles(String pattern, SupportedProject project) {
-
-		File projectDirectory = getProjectDirectory(project);
-		String patternToLookup = String.format("file:%s/%s", projectDirectory.getAbsolutePath(), pattern);
-
-		try {
-			return Arrays.stream(resolver.getResources(patternToLookup)).map(wrap(Resource::getFile));
-		} catch (IOException o_O) {
-			throw new RuntimeException(o_O);
-		}
 	}
 
 	public boolean processFile(String filename, SupportedProject project, LineCallback callback) {
