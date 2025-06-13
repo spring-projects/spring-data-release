@@ -13,7 +13,7 @@ export JENKINS_HOME=/tmp/jenkins-home
 export RELEASE_TOOLS_MAVEN_REPOSITORY=${JENKINS_HOME}/.m2/spring-data-release-tools
 export LOGS_DIR=${JENKINS_HOME}/spring-data-shell/logs
 export SETTINGS_XML=$(pwd)/ci/settings.xml
-export GNUPGHOME=~/.gnupg/
+export GNUPGHOME=~/.gnupg
 
 if test -f application-local.properties; then
     echo "You are running from dev environment! Using application-local.properties."
