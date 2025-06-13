@@ -15,7 +15,10 @@
  */
 package org.springframework.data.release;
 
+import java.security.Security;
 import java.util.logging.Logger;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -31,6 +34,9 @@ import org.springframework.shell.support.logging.HandlerUtils;
 public class Application {
 
 	public static void main(String[] args) throws Exception {
+
+		// without this, you'll get weird errors like "Cannot find any provider supporting AES/OCB/NoPadding"
+		Security.addProvider(new BouncyCastleProvider());
 
 		SpringApplication application = new SpringApplication(Application.class);
 		application.setWebApplicationType(WebApplicationType.NONE);
