@@ -15,10 +15,9 @@
  */
 package org.springframework.data.release.utils;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
+import org.apache.hc.client5.http.ContextBuilder;
 import org.apache.hc.client5.http.auth.AuthCache;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -27,12 +26,8 @@ import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHost;
 
-import org.springframework.data.util.Lazy;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 /**
@@ -74,21 +69,15 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 	 */
 	public HttpComponentsClientHttpRequestFactory build() {
 
-		Lazy<CloseableHttpClient> lazy = Lazy
-				.of(() -> HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build());
+		CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
 
-		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory() {
-			@Override
-			public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-				setHttpClient(lazy.get());
-				return super.createRequest(uri, httpMethod);
-			}
-		};
+		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
 		factory.setHttpContextFactory((httpMethod, uri) -> {
-			HttpClientContext context = HttpClientContext.create();
-			context.setAuthCache(authCache);
-			return context;
+
+			ContextBuilder contextBuilder = ContextBuilder.create();
+			contextBuilder.useAuthCache(authCache);
+			return contextBuilder.build();
 		});
 
 		return factory;
@@ -97,16 +86,16 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 	private static void addPreemptiveAuth(BasicCredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
 			HttpBasicCredentials credentials) {
 
-		try {
-			HttpHost host = HttpHost.create(requestUrl);
+		HttpHost host = HttpHost.create(URI.create(requestUrl));
 
-			credsProvider.setCredentials(new AuthScope(host),
-					new UsernamePasswordCredentials(credentials.getUsername(), credentials.getPassword().toCharArray()));
+		UsernamePasswordCredentials userPassword = new UsernamePasswordCredentials(credentials.getUsername(),
+				credentials.getPassword().toCharArray());
+		credsProvider.setCredentials(new AuthScope(host), userPassword);
 
-			authCache.put(host, new BasicScheme());
-		} catch (URISyntaxException e) {
-			throw new IllegalArgumentException(e);
-		}
+		BasicScheme basicScheme = new BasicScheme();
+		basicScheme.initPreemptive(userPassword);
+
+		authCache.put(host, basicScheme);
 	}
 
 }
