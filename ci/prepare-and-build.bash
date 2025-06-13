@@ -17,7 +17,7 @@ export SETTINGS_XML=$(pwd)/ci/settings.xml
 mkdir -p ${RELEASE_TOOLS_MAVEN_REPOSITORY}
 mkdir -p ${LOGS_DIR}
 
-export GNUPGHOME=~/.gnupg/
+export GNUPGHOME=~/.gnupg
 mkdir -p ${GNUPGHOME}
 chmod 700 ${GNUPGHOME}
 
