@@ -98,9 +98,12 @@ public class IssueTrackerCommands extends TimedCommand {
 	 * @return
 	 */
 	@CliCommand(value = "tracker setup-next")
-	public String trackerSetupNext(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public String trackerSetupNext(@CliOption(key = "", mandatory = true) TrainIteration iteration)
+			throws InterruptedException {
 
 		createReleaseVersions(iteration);
+
+		Thread.sleep(500); // give GitHub a bit of time to make tickets visible
 
 		return createReleaseTickets(iteration);
 	}
