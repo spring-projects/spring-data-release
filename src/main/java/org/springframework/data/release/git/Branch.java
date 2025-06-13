@@ -19,6 +19,8 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
+import org.eclipse.jgit.lib.Repository;
+
 import org.springframework.data.release.model.IterationVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Tracker;
@@ -95,6 +97,23 @@ public class Branch implements Comparable<Branch> {
 		return new Branch(slashIndex != -1 ? name.substring(slashIndex + 1) : name);
 	}
 
+	/**
+	 * Associate the branch with the given {@link Repository} by prefixing the branch name with the remote name.
+	 *
+	 * @param repo
+	 * @return
+	 */
+	public Branch withRemote(Repository repo) {
+
+		String remote = repo.getRemoteNames().iterator().next();
+
+		if (name.startsWith(remote + "/")) {
+			return this;
+		}
+
+		return new Branch(remote + "/" + name);
+	}
+
 	public boolean isMainBranch() {
 		return MAIN.equals(this);
 	}
@@ -110,20 +129,20 @@ public class Branch implements Comparable<Branch> {
 		Assert.notNull(tracker, "Tracker must not be null!");
 		return name.matches(tracker.getTicketPattern());
 	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
+
 	@Override
 	public String toString() {
 		return name;
 	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
+
 	@Override
 	public int compareTo(Branch o) {
 		return name.compareToIgnoreCase(o.name);

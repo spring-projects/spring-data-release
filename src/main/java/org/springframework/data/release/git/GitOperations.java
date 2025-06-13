@@ -21,6 +21,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -79,6 +80,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 /**
@@ -357,6 +360,7 @@ public class GitOperations {
 	 * @param project must not be {@literal null}.
 	 * @param branch
 	 */
+	@SneakyThrows
 	public void update(SupportedProject project, @Nullable Branch branch) {
 
 		Assert.notNull(project, "Project must not be null!");
@@ -366,23 +370,20 @@ public class GitOperations {
 		GitProject gitProject = getGitProject(project);
 		String repositoryName = gitProject.getRepositoryName();
 
-		doWithGit(gitProject.getProject(), git -> {
+		if (workspace.hasProjectDirectory(project)) {
 
-			if (workspace.hasProjectDirectory(project)) {
+			doWithGit(gitProject.getProject(), git -> {
 
 				logger.log(project, "Found existing repository %s. Obtaining latest changes…", repositoryName);
-
 				checkout(project, branch == null ? Branch.from(git.getRepository().getBranch()) : branch);
 
 				logger.log(project, "git fetch --tags");
+				call(git.fetch().setTagOpt(TagOpt.FETCH_TAGS));
 
-				call(git.fetch() //
-						.setTagOpt(TagOpt.FETCH_TAGS));
-
-			} else {
-				clone(gitProject);
-			}
-		});
+			});
+		} else {
+			clone(gitProject);
+		}
 
 		logger.log(project, "Project update done!");
 	}
@@ -392,18 +393,20 @@ public class GitOperations {
 	 *
 	 * @param project must not be {@literal null}.
 	 */
+	@SneakyThrows
 	public void fetchTags(Project project, Train train) {
 
 		Assert.notNull(project, "Project must not be null!");
 
 		logger.log(project, "Updating project tags…");
 
-		GitProject gitProject = getGitProject(train.getSupportedProject(project));
+		SupportedProject supportedProject = train.getSupportedProject(project);
+		GitProject gitProject = getGitProject(supportedProject);
 		String repositoryName = gitProject.getRepositoryName();
 
-		doWithGit(gitProject.getProject(), git -> {
+		if (workspace.hasProjectDirectory(supportedProject)) {
 
-			if (workspace.hasProjectDirectory(train.getSupportedProject(project))) {
+			doWithGit(gitProject.getProject(), git -> {
 
 				logger.log(project, "Found existing repository %s. Obtaining tags…", repositoryName);
 				logger.log(project, "git fetch --tags");
@@ -411,10 +414,10 @@ public class GitOperations {
 				call(git.fetch() //
 						.setTagOpt(TagOpt.FETCH_TAGS));
 
-			} else {
-				clone(gitProject);
-			}
-		});
+			});
+		} else {
+			clone(gitProject);
+		}
 
 		logger.log(project, "Project tags update done!");
 	}
@@ -630,8 +633,13 @@ public class GitOperations {
 			throws IOException {
 
 		Optional<Tag> tag = tags.filter(iteration.getTrain()).findTag(iteration.getIteration());
-		String rangeEnd = tag.map(Tag::getName).orElse(Branch.from(iteration).toString());
-		return repo.parseCommit(repo.resolve(rangeEnd));
+		String rangeEnd = tag.map(Tag::getName).orElse(Branch.from(iteration).withRemote(repo).toString());
+		ObjectId resolve = repo.resolve(rangeEnd);
+
+		if (resolve == null) {
+			throw new IllegalStateException(String.format("Cannot resolve %s for %s", rangeEnd, iteration));
+		}
+		return repo.parseCommit(resolve);
 	}
 
 	private static String getFirstCommit(Repository repo) throws IOException {
@@ -1159,7 +1167,13 @@ public class GitOperations {
 
 	private Repository getRepository(SupportedProject project) throws IOException {
 
-		Repository repository = FileRepositoryBuilder.create(workspace.getFile(".git", project));
+		File file = workspace.getFile(".git", project);
+		if (!file.exists()) {
+			throw new FileNotFoundException(
+					String.format("No repository found for project '%s' at '%s'", project.getName(), file));
+		}
+
+		Repository repository = FileRepositoryBuilder.create(file);
 
 		// ensure symlink usage to avoid plain text checkouts that would break Git commits from the tooling.
 		repository.getConfig().setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null, ConfigConstants.CONFIG_KEY_SYMLINKS,
