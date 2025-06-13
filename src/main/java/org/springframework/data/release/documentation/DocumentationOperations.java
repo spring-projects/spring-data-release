@@ -40,6 +40,7 @@ import org.jsoup.select.Elements;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -86,7 +87,7 @@ class DocumentationOperations {
 			return new ReportFlags(set);
 		}
 
-		public boolean isIncluded(HttpStatus status) {
+		public boolean isIncluded(HttpStatusCode status) {
 
 			if (flags.contains(ReportFlag.ALL)) {
 				return true;
@@ -125,7 +126,7 @@ class DocumentationOperations {
 			return new PageStats(project, linkStats.filter(reportFlags));
 		}
 
-		public PageStats sort(Comparator<CheckedLink> comparator){
+		public PageStats sort(Comparator<CheckedLink> comparator) {
 			return new PageStats(project, linkStats.sort(comparator));
 		}
 
@@ -150,7 +151,7 @@ class DocumentationOperations {
 		public LinkStats filter(ReportFlags reportFlags) {
 
 			List<CheckedLink> filtered = checkedLinks.stream().filter(entry -> {
-				HttpStatus status = entry.getResult();
+				HttpStatusCode status = entry.getResult();
 				return reportFlags.isIncluded(status);
 			}).collect(Collectors.toList());
 
@@ -168,7 +169,7 @@ class DocumentationOperations {
 	@Value
 	static class CheckedLink {
 		String url;
-		HttpStatus result;
+		HttpStatusCode result;
 	}
 
 	@RequiredArgsConstructor
@@ -198,7 +199,7 @@ class DocumentationOperations {
 
 			logger.log(project, "Found %s links.", links.size());
 
-			Map<String, CompletableFuture<HttpStatus>> resultMap = new LinkedHashMap<>(200);
+			Map<String, CompletableFuture<HttpStatusCode>> resultMap = new LinkedHashMap<>(200);
 
 			links.forEach(link -> {
 				String href = link.attr("href");
@@ -224,7 +225,7 @@ class DocumentationOperations {
 			return stats;
 		}
 
-		private void checkUrl(Map<String, CompletableFuture<HttpStatus>> resultMap, String url) {
+		private void checkUrl(Map<String, CompletableFuture<HttpStatusCode>> resultMap, String url) {
 
 			resultMap.computeIfAbsent(url, key -> webClient.get().uri(url)
 					.exchangeToMono(clientResponse -> clientResponse.toBodilessEntity().thenReturn(clientResponse.statusCode()))

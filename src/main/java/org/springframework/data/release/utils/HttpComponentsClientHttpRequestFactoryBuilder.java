@@ -17,18 +17,19 @@ package org.springframework.data.release.utils;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.auth.AuthCache;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.HttpHost;
+
 import org.springframework.data.util.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -41,8 +42,8 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
  */
 public class HttpComponentsClientHttpRequestFactoryBuilder {
 
-	private final CredentialsProvider credsProvider = new BasicCredentialsProvider();
-	private final AuthCache authCache = new BasicAuthCache();
+	private final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+	private final BasicAuthCache authCache = new BasicAuthCache();
 
 	private HttpComponentsClientHttpRequestFactoryBuilder() {
 
@@ -93,15 +94,19 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 		return factory;
 	}
 
-	private static void addPreemptiveAuth(CredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
+	private static void addPreemptiveAuth(BasicCredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
 			HttpBasicCredentials credentials) {
 
-		HttpHost host = HttpHost.create(requestUrl);
+		try {
+			HttpHost host = HttpHost.create(requestUrl);
 
-		credsProvider.setCredentials(new AuthScope(host),
-				new UsernamePasswordCredentials(credentials.getUsername(), credentials.getPassword().toString()));
+			credsProvider.setCredentials(new AuthScope(host),
+					new UsernamePasswordCredentials(credentials.getUsername(), credentials.getPassword().toCharArray()));
 
-		authCache.put(host, new BasicScheme());
+			authCache.put(host, new BasicScheme());
+		} catch (URISyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 }

@@ -15,14 +15,14 @@
  */
 package org.springframework.data.release.git;
 
+import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 
-import javax.annotation.PostConstruct;
-
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.model.Gpg;
 import org.springframework.data.release.model.Password;

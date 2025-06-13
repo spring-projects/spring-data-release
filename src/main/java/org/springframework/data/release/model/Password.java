@@ -47,6 +47,10 @@ public class Password implements Masked {
 		return new Password(password);
 	}
 
+	public char[] toCharArray() {
+		return value.toCharArray();
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Object#toString()

@@ -36,15 +36,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import javax.annotation.PreDestroy;
-
 import org.apache.commons.io.IOUtils;
+
 import org.springframework.data.release.infra.InfrastructureOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.ProjectAware;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.ListWrapperCollector;
 import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
@@ -63,11 +62,6 @@ class BuildExecutor {
 	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
 	private final ExecutorService executor;
 	private final Workspace workspace;
-
-	@PreDestroy
-	public void shutdown() {
-		executor.shutdown();
-	}
 
 	/**
 	 * Selects the build system for each module contained in the given iteration and executes the given function for it
@@ -155,8 +149,7 @@ class BuildExecutor {
 				.collect(toSummaryCollector());
 	}
 
-	private <T, M extends ProjectAware> CompletableFuture<T> run(M module,
-			BiFunction<BuildSystem, M, T> function) {
+	private <T, M extends ProjectAware> CompletableFuture<T> run(M module, BiFunction<BuildSystem, M, T> function) {
 
 		Assert.notNull(module, "Module must not be null!");
 

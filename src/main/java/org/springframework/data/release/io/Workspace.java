@@ -17,6 +17,7 @@ package org.springframework.data.release.io;
 
 import static org.springframework.data.release.utils.StreamUtils.*;
 
+import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,9 @@ import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;

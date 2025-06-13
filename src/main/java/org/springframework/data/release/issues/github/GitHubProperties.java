@@ -15,14 +15,13 @@
  */
 package org.springframework.data.release.issues.github;
 
+import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-
-import javax.annotation.PostConstruct;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.data.release.git.GitProperties;

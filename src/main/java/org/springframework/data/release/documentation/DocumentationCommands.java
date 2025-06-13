@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Color;
+
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.build.BuildOperations;
@@ -44,7 +45,7 @@ import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.shell.support.table.Table;
@@ -168,7 +169,7 @@ public class DocumentationCommands extends TimedCommand {
 				.thenComparing(CheckedLink::getUrl)).forEach(checkedLink -> {
 
 					Ansi ansi = Ansi.ansi();
-					HttpStatus status = checkedLink.getResult();
+					HttpStatusCode status = checkedLink.getResult();
 					if (status.is2xxSuccessful()) {
 						ansi.fg(Color.GREEN);
 					} else if (status.is4xxClientError()) {
