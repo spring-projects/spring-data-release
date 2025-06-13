@@ -557,19 +557,38 @@ public class GitOperations {
 			}).collect(Collectors.toList());
 		});
 
+		return getUniqueTicketReferences(ticketReferences);
+	}
+
+	static List<TicketReference> getUniqueTicketReferences(List<TicketReference> ticketReferences) {
+
 		// make TicketReference unique
-		Set<String> uniqueIds = new HashSet<>();
+		MultiValueMap<String, TicketReference> collated = new LinkedMultiValueMap<>();
 		List<TicketReference> uniqueTicketReferences = new ArrayList<>();
 
 		for (TicketReference reference : ticketReferences) {
-			if (uniqueIds.add(reference.getId())) {
-				uniqueTicketReferences.add(reference);
-			}
+			collated.add(reference.getId(), reference);
+		}
+
+		for (Map.Entry<String, List<TicketReference>> entry : collated.entrySet()) {
+			uniqueTicketReferences.add(getTicketReference(entry));
 		}
 
 		uniqueTicketReferences.sort(Comparator.<TicketReference> naturalOrder().reversed());
 
 		return uniqueTicketReferences;
+	}
+
+	private static TicketReference getTicketReference(Map.Entry<String, List<TicketReference>> entry) {
+
+		for (TicketReference ticketReference : entry.getValue()) {
+
+			if (ticketReference.isIssue()) {
+				return ticketReference;
+			}
+		}
+
+		return entry.getValue().get(0);
 	}
 
 	protected ObjectId resolveLowerBoundary(SupportStatus supportStatus, Project project, TrainIteration iteration,

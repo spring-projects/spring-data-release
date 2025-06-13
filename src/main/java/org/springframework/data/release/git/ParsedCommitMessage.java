@@ -106,9 +106,9 @@ class ParsedCommitMessage {
 			}
 		}
 
-		List<TicketReference> relatedTickets = parseRelatedTickets(body,
+		List<TicketReference> relatedTickets = parseRelatedTickets(summary, body,
 				Arrays.asList(gitHubCloseMatcher, gitHubSeeMatcher));
-		Optional<TicketReference> optionalOriginalPr = parsePullRequestReference(body);
+		Optional<TicketReference> optionalOriginalPr = parsePullRequestReference(summary, body);
 
 		if (optionalOriginalPr.isPresent()) {
 
@@ -161,6 +161,7 @@ class ParsedCommitMessage {
 
 			MatchResult mr = gitHubPrefixMatcher.toMatchResult();
 			if (mr.start(1) == 0) {
+
 				int summaryStart = findSummaryIndex(summary, mr.end(1));
 
 				return Optional.of(new TicketReference(gitHubPrefixMatcher.group(1).toUpperCase(Locale.ROOT),
@@ -193,21 +194,22 @@ class ParsedCommitMessage {
 		return Optional.empty();
 	}
 
-	protected static Optional<TicketReference> parsePullRequestReference(String body) {
+	protected static Optional<TicketReference> parsePullRequestReference(String summary, String body) {
 
 		if (body != null) {
 
 			Matcher prMatcher = ORIGINAL_PULL_REQUEST.matcher(body);
 
 			if (prMatcher.find()) {
-				return extractTicket(prMatcher.group(1), TicketReference.Reference.PullRequest);
+				return extractTicket(prMatcher.group(1), summary, TicketReference.Reference.PullRequest);
 			}
 		}
 
 		return Optional.empty();
 	}
 
-	protected static List<TicketReference> parseRelatedTickets(String body, Collection<Matcher> gitHubMatcher) {
+	protected static List<TicketReference> parseRelatedTickets(String summary, String body,
+			Collection<Matcher> gitHubMatcher) {
 
 		List<TicketReference> relatedTickets = new ArrayList<>();
 		if (body != null) {
@@ -218,14 +220,14 @@ class ParsedCommitMessage {
 				String[] ticketIds = relatedTicketsMatcher.group(1).split(",");
 
 				for (String ticketId : ticketIds) {
-					extractTicket(ticketId.trim(), TicketReference.Reference.Related).ifPresent(relatedTickets::add);
+					extractTicket(ticketId.trim(), summary, TicketReference.Reference.Related).ifPresent(relatedTickets::add);
 				}
 			}
 
 			for (Matcher matcher : gitHubMatcher) {
 
 				while (matcher.find()) {
-					extractTicket(matcher.group(1), TicketReference.Reference.Related).ifPresent(relatedTickets::add);
+					extractTicket(matcher.group(1), summary, TicketReference.Reference.Related).ifPresent(relatedTickets::add);
 				}
 			}
 
@@ -234,14 +236,15 @@ class ParsedCommitMessage {
 		return relatedTickets;
 	}
 
-	protected static Optional<TicketReference> extractTicket(String ticketId, TicketReference.Reference reference) {
+	protected static Optional<TicketReference> extractTicket(String ticketId, String summary,
+			TicketReference.Reference reference) {
 
 		if (GITHUB_TICKET.matcher(ticketId.trim()).matches()) {
-			return Optional.of(new TicketReference(ticketId, null, TicketReference.Style.GitHub, reference));
+			return Optional.of(new TicketReference(ticketId, summary, TicketReference.Style.GitHub, reference));
 		}
 
 		if (JIRA_TICKET.matcher(ticketId.trim()).matches()) {
-			return Optional.of(new TicketReference(ticketId, null, TicketReference.Style.Jira, reference));
+			return Optional.of(new TicketReference(ticketId, summary, TicketReference.Style.Jira, reference));
 		}
 
 		return Optional.empty();

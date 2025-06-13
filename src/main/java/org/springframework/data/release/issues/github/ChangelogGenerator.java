@@ -77,10 +77,9 @@ public class ChangelogGenerator {
 	private String generateContent(List<ChangeItem> issues,
 			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 		StringBuilder content = new StringBuilder();
-		addSectionContent(content,
-				this.sections.collate(issues.stream().filter(it -> it.getReference().isIssue() || it.getReference().isRelated())
-						.map(ChangeItem::getIssue).collect(Collectors.toList())),
-				sectionContentPostProcessor, includeIssueNumbers);
+		addSectionContent(content, this.sections.collate(issues.stream()
+				.filter(it -> it.getReference().isIssue() || it.getReference().isPullRequest() || it.getReference().isRelated())
+				.map(ChangeItem::getIssue).collect(Collectors.toList())), sectionContentPostProcessor, includeIssueNumbers);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {
 			addContributorsContent(content, contributors);
@@ -107,6 +106,11 @@ public class ChangelogGenerator {
 
 	private String getFormattedIssue(GitHubReadIssue issue, boolean includeIssueNumbers) {
 		String title = issue.getTitle();
+
+		if (title.endsWith(".")) {
+			title = title.substring(0, title.length() - 1); // Remove trailing period
+		}
+
 		title = ghUserMentionPattern.matcher(title).replaceAll("$1`$2`");
 		return includeIssueNumbers ? String.format("- %s %s%n", title, getLinkToIssue(issue))
 				: String.format("- %s%n", title);
