@@ -777,7 +777,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Optional<Milestone> optionalMilestone = findMilestone(moduleIteration);
 
-		if (ignoreMissingMilestone && !optionalMilestone.isPresent()) {
+		if (ignoreMissingMilestone && optionalMilestone.isEmpty()) {
 			return Stream.empty();
 		}
 

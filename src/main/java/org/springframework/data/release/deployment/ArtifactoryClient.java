@@ -151,10 +151,24 @@ class ArtifactoryClient {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
-		String body = "{\n" + "\t\"auto_create_missing_repositories\": \"false\",\n" + "\t\"distribution_rules\": [\n"
-				+ "\t\t{\n" + "\t\t\t\"site_name\": \"JP-SaaS\"\n" + "\t\t}\n" + "\t],\n" + "\t\"modifications\": {\n"
-				+ "\t\t\"mappings\": [\n" + "\t\t\t{\n" + "\t\t\t\t\"input\": \"spring-enterprise-maven-prod-local/(.*)\",\n"
-				+ "\t\t\t\t\"output\": \"spring-enterprise/$1\"\n" + "\t\t\t}\n" + "\t\t]\n" + "\t}\n" + "}";
+		String body = """
+				{
+					"auto_create_missing_repositories": "false",
+					"distribution_rules": [
+						{
+							"site_name": "JP-SaaS"
+						}
+					],
+					"modifications": {
+						"mappings": [
+							{
+								"input": "spring-enterprise-maven-prod-local/(.*)",
+								"output": "spring-enterprise/$1"
+							}
+						]
+					}
+				}\
+				""";
 		HttpEntity<String> entity = new HttpEntity<>(body, headers);
 
 		Map<String, Object> parameters = new LinkedHashMap<>();

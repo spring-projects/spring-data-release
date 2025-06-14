@@ -21,7 +21,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -79,7 +79,7 @@ public class InfrastructureCommands extends TimedCommand {
 
 		DependencyUpgradeProposals proposals = operations.getMavenWrapperDependencyUpgradeProposals(iteration);
 
-		Files.write(Paths.get(InfrastructureOperations.MAVEN_PROPERTIES), proposals.asProperties(iteration).getBytes());
+		Files.write(Path.of(InfrastructureOperations.MAVEN_PROPERTIES), proposals.asProperties(iteration).getBytes());
 
 		Table summary = proposals.toTable(reportAll == null ? false : reportAll);
 

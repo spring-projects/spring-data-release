@@ -81,7 +81,7 @@ public class DocumentationCommands extends TimedCommand {
 					return path.map(it -> operations.checkDocumentation(module.getProject(), it));
 				});
 
-		return render(optionals.stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList()),
+		return render(optionals.stream().flatMap(Optional::stream).collect(Collectors.toList()),
 				options);
 	}
 
