@@ -496,8 +496,8 @@ class MavenBuildSystem implements BuildSystem {
 			return module;
 		}
 
-		DefaultDeploymentInformation deploymentInformation = module instanceof ModuleIteration
-				? new DefaultDeploymentInformation((ModuleIteration) module, properties)
+		DefaultDeploymentInformation deploymentInformation = module instanceof ModuleIteration mi
+				? new DefaultDeploymentInformation(mi, properties)
 				: null;
 
 		logger.log(project, "Triggering distribution build…");

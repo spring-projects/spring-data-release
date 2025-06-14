@@ -22,7 +22,7 @@ import lombok.experimental.FieldDefaults;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -139,7 +139,7 @@ public class DependencyCommands extends TimedCommand {
 
 	private DependencyVersions loadDependencyUpgrades(ModuleIteration iteration) throws IOException {
 
-		if (!Files.exists(Paths.get(BUILD_PROPERTIES))) {
+		if (!Files.exists(Path.of(BUILD_PROPERTIES))) {
 			logger.log(iteration, "Cannot upgrade dependencies: " + BUILD_PROPERTIES + " does not exist.");
 		}
 
@@ -168,7 +168,7 @@ public class DependencyCommands extends TimedCommand {
 			proposals = proposals.mergeWith(operations.getDependencyUpgradeProposals(project, iteration.getIteration()));
 		}
 
-		Files.write(Paths.get(propertiesFile), proposals.asProperties(iteration).getBytes());
+		Files.write(Path.of(propertiesFile), proposals.asProperties(iteration).getBytes());
 
 		Table summary = proposals.toTable(reportAll);
 
@@ -188,7 +188,7 @@ public class DependencyCommands extends TimedCommand {
 		SupportedProject project = iteration.getSupportedProject(Projects.BUILD);
 		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(project, iteration.getIteration());
 
-		Files.write(Paths.get(propertiesFile), proposals.asProperties(iteration).getBytes());
+		Files.write(Path.of(propertiesFile), proposals.asProperties(iteration).getBytes());
 
 		Table summary = proposals.toTable(reportAll);
 
