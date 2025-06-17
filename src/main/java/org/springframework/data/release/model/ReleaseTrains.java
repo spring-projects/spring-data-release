@@ -104,8 +104,7 @@ public class ReleaseTrains {
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		W = VAUGHAN.next("W", Transition.MINOR) //
-				.withCalver("2024.0") //
-				.withSupportStatus(SupportStatus.COMMERCIAL);
+				.withCalver("2024.0");
 
 		X = W.next("X", Transition.MINOR) //
 				.withCalver("2024.1");
