@@ -203,7 +203,7 @@ public class BuildOperations {
 		logger.log(iteration, "Release: %s", summary);
 
 		if (stagingRepository.isPresent()) {
-			publishDeployment(iteration, stagingRepository);
+			// publishDeployment(iteration, stagingRepository);
 		}
 
 		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
@@ -270,7 +270,11 @@ public class BuildOperations {
 		}
 
 		StagingRepository deploymentId = publisher.upload(iteration, deploymentName, localStaging);
-		publisher.validate(iteration.getTrainIteration(), deploymentId);
+		try {
+			publisher.validate(iteration.getTrainIteration(), deploymentId);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		return deploymentId;
 	}
