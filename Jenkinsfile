@@ -6,9 +6,7 @@ node {
 }
 
 pipeline {
-	agent {
-		label 'data-release'
-	}
+	agent none
 
 	options {
 		disableConcurrentBuilds()
