@@ -64,7 +64,7 @@ pipeline {
 
 			steps {
 				script {
-					docker.image("springci/spring-data-release-tools:0.24").inside() {
+					docker.withRegistry('', 'hub.docker.com-springbuildmaster').image("springci/spring-data-release-tools:0.24").inside() {
 						sh "ci/build-spring-data-release-cli.bash"
 						sh "ci/build-and-distribute.bash ${p['release.version']}"
 					}
