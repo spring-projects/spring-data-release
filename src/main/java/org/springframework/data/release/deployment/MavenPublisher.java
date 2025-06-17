@@ -403,7 +403,7 @@ public class MavenPublisher {
 		private final File file;
 
 		LocalStagingRepository(File file) {
-			super(String.format("central-staging::default::file://%s", file.getAbsolutePath()));
+			super(String.format("central-staging::file://%s", file.getAbsolutePath()));
 			this.file = file;
 		}
 
