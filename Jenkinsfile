@@ -59,7 +59,7 @@ pipeline {
 				MAVEN_SIGNING_KEY_PASSWORD = credentials('spring-gpg-passphrase')
 				GIT_SIGNING_KEY = credentials('spring-gpg-github-private-key-jenkins')
 				GIT_SIGNING_KEY_PASSWORD = credentials('spring-gpg-github-passphrase-jenkins')
-				CENTRAL_TOKEN = credentials('central-token')
+				SONATYPE = credentials('central-token')
 			}
 
 			steps {
