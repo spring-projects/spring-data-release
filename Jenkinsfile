@@ -1,5 +1,6 @@
 def p = [:]
 node {
+	label 'data-release'
 	checkout scm
 	p = readProperties interpolate: true, file: 'ci/release.properties'
 }
