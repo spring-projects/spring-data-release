@@ -23,7 +23,7 @@ import lombok.experimental.FieldDefaults;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -160,7 +160,7 @@ public class InfrastructureOperations extends TimedCommand {
 	@SneakyThrows
 	private DependencyVersions loadDependencyUpgrades(TrainIteration iteration) {
 
-		if (!Files.exists(Paths.get(MAVEN_PROPERTIES))) {
+		if (!Files.exists(Path.of(MAVEN_PROPERTIES))) {
 			logger.log(iteration, "Cannot upgrade dependencies: " + MAVEN_PROPERTIES + " does not exist.");
 		}
 
