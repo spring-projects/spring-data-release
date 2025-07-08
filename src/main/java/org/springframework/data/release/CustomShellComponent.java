@@ -65,8 +65,8 @@ class CustomShellComponent extends JLineShellComponent {
 			synchronized (mutex) {
 				Assert.isTrue(isReadyForCommands(), "SimpleExecutionStrategy not yet ready for commands");
 				Object target = parseResult.getInstance();
-				if (target instanceof ExecutionProcessor) {
-					ExecutionProcessor processor = ((ExecutionProcessor) target);
+				if (target instanceof ExecutionProcessor executionProcessor) {
+					ExecutionProcessor processor = executionProcessor;
 					parseResult = processor.beforeInvocation(parseResult);
 					try {
 						Object result = invoke(parseResult);
@@ -94,11 +94,11 @@ class CustomShellComponent extends JLineShellComponent {
 		}
 
 		private Object handleThrowable(Throwable th) {
-			if (th instanceof Error) {
-				throw ((Error) th);
+			if (th instanceof Error error) {
+				throw error;
 			}
-			if (th instanceof RuntimeException) {
-				throw ((RuntimeException) th);
+			if (th instanceof RuntimeException exception) {
+				throw exception;
 			}
 			throw new RuntimeException(th);
 		}

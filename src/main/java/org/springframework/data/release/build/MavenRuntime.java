@@ -107,8 +107,8 @@ public class MavenRuntime extends MavenRuntimeSupport {
 
 			return invocationResult;
 		} catch (Exception e) {
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException) e;
+			if (e instanceof RuntimeException exception) {
+				throw exception;
 			}
 			throw new RuntimeException(e);
 		}

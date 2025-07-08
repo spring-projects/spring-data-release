@@ -175,7 +175,7 @@ public class GitOperations {
 		ModuleIteration gaIteration = train.getModuleIteration(project.getProject(), Iteration.GA);
 		Optional<Tag> gaTag = findTagFor(project, ArtifactVersion.of(gaIteration));
 
-		if (!gaTag.isPresent()) {
+		if (gaTag.isEmpty()) {
 			logger.log(project, "Checking out main branch as no GA release tag could be found!");
 		}
 
@@ -611,7 +611,7 @@ public class GitOperations {
 
 			Optional<Tag> fromTag = tags.filter(iteration.getTrain()).findTag(it);
 
-			if (!fromTag.isPresent()) {
+			if (fromTag.isEmpty()) {
 
 				// commercial releases might not have a previous tag as commercial releases are seeded without OSS tags.
 				if (supportStatus == SupportStatus.COMMERCIAL && (it.isServiceIteration() || it.isGAIteration())) {
@@ -1020,7 +1020,7 @@ public class GitOperations {
 
 			Optional<Tag> tag = findTagFor(project, artifactVersion);
 
-			if (!tag.isPresent()) {
+			if (tag.isEmpty()) {
 				logger.log(module, "No tag %s found project %s, skipping.", artifactVersion, project);
 				return;
 			}
@@ -1335,8 +1335,8 @@ public class GitOperations {
 			}
 
 			for (CredentialItem item : items) {
-				if (item instanceof CharArrayType) {
-					((CharArrayType) item).setValueNoCopy(gpg.getPassphrase().toString().toCharArray());
+				if (item instanceof CharArrayType type) {
+					type.setValueNoCopy(gpg.getPassphrase().toString().toCharArray());
 
 					return true;
 				}

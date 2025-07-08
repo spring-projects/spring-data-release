@@ -80,7 +80,7 @@ class BuildCommands extends TimedCommand {
 
 		project.ifPresent(it -> build.triggerBuild(iteration.getModule(it)));
 
-		if (!project.isPresent()) {
+		if (project.isEmpty()) {
 			build.build(iteration);
 		}
 	}

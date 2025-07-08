@@ -541,8 +541,8 @@ public class DependencyOperations {
 
 		} catch (Exception o_O) {
 
-			if (o_O instanceof HttpClientErrorException) {
-				if (((HttpClientErrorException) o_O).getStatusCode() == HttpStatus.NOT_FOUND) {
+			if (o_O instanceof HttpClientErrorException exception) {
+				if (exception.getStatusCode() == HttpStatus.NOT_FOUND) {
 					return Collections.emptyList();
 				}
 			}
