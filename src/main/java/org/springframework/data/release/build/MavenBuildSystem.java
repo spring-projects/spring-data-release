@@ -154,8 +154,8 @@ class MavenBuildSystem implements BuildSystem {
 
 			GitProject project = GitProject.of(participatingModule.getSupportedProject());
 
-			String dependency = String.format("%s/%s", project.getRepositoryName(), source);
-			String replacement = String.format("%s/%s", project.getRepositoryName(), target);
+			String dependency = "%s/%s".formatted(project.getRepositoryName(), source);
+			String replacement = "%s/%s".formatted(project.getRepositoryName(), target);
 
 			content = content.replace(dependency, replacement);
 		}
@@ -506,7 +506,7 @@ class MavenBuildSystem implements BuildSystem {
 				List<Artifact> snapshotDependencies = pom.getSnapshotDependencies();
 
 				if (!snapshotDependencies.isEmpty()) {
-					throw new IllegalStateException(String.format("Found snapshot dependencies %s!", snapshotDependencies));
+					throw new IllegalStateException("Found snapshot dependencies %s!".formatted(snapshotDependencies));
 				}
 			}
 
@@ -638,8 +638,8 @@ class MavenBuildSystem implements BuildSystem {
 			s = s.replaceAll(Pattern.quote("standalone=\"no\"?><"), "standalone=\"no\"?>" + IOUtils.LINE_SEPARATOR + "<");
 		}
 
-		s = s.replace(String.format("<repositories>%n\t\t%n\t</repositories>"),
-				String.format("<repositories>%n\t</repositories>"));
+		s = s.replace("<repositories>%n\t\t%n\t</repositories>".formatted(),
+				"<repositories>%n\t</repositories>".formatted());
 
 		if (!s.endsWith(IOUtils.LINE_SEPARATOR)) {
 			s += IOUtils.LINE_SEPARATOR;

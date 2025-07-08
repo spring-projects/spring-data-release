@@ -155,7 +155,7 @@ public class DependencyUpgradeProposals {
 		if (!verificationTrain.equals(iteration.getTrain().getName())
 				|| !verificationIteration.equals(iteration.getIteration().getName())) {
 			throw new IllegalArgumentException(
-					String.format("Verification failed: Dependency upgrade descriptor reports %s %s", verificationTrain,
+					"Verification failed: Dependency upgrade descriptor reports %s %s".formatted(verificationTrain,
 							verificationIteration));
 		}
 
@@ -170,7 +170,7 @@ public class DependencyUpgradeProposals {
 			Matcher matcher = keyPattern.matcher(k.toString());
 
 			if (!matcher.matches()) {
-				throw new IllegalArgumentException(String.format("Unexpected key: %s", k));
+				throw new IllegalArgumentException("Unexpected key: %s".formatted(k));
 			}
 
 			String groupId = matcher.group(1);
@@ -183,8 +183,7 @@ public class DependencyUpgradeProposals {
 		DependencyVersions dependencyVersions = new DependencyVersions(result);
 
 		if (expectedUpgradeCount != result.size()) {
-			throw new IllegalStateException(String.format(
-					"The number of expected upgrades (dependency.upgrade.count=%s) does not match the number of actual upgrades (%s): %n%n%s",
+			throw new IllegalStateException("The number of expected upgrades (dependency.upgrade.count=%s) does not match the number of actual upgrades (%s): %n%n%s".formatted(
 					expectedUpgradeCount, result.size(), dependencyVersions.toString(1)));
 		}
 

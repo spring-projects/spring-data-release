@@ -58,7 +58,7 @@ public class Ticket {
 	 */
 	@Override
 	public String toString() {
-		return String.format("%14s - %s (%s)", id, summary, url);
+		return "%14s - %s (%s)".formatted(id, summary, url);
 	}
 
 	public boolean isResolved() {

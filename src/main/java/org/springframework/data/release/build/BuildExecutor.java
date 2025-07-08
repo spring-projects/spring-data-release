@@ -155,7 +155,7 @@ class BuildExecutor {
 
 		CompletableFuture<T> result = new CompletableFuture<>();
 		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
-				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
+				"No build system plugin found for project %s!".formatted(module.getSupportedProject()));
 
 		BuildSystem buildSystem = buildSystems //
 				.getPluginFor(module.getSupportedProject(), exception) //
@@ -182,7 +182,7 @@ class BuildExecutor {
 		File ciProperties = workspace.getFile(InfrastructureOperations.CI_PROPERTIES, project);
 
 		if (!ciProperties.exists()) {
-			throw new IllegalStateException(String.format("Cannot find %s for project %s", ciProperties, project));
+			throw new IllegalStateException("Cannot find %s for project %s".formatted(ciProperties, project));
 		}
 
 		Properties properties = new Properties();
@@ -228,7 +228,7 @@ class BuildExecutor {
 
 		@Override
 		public String toString() {
-			return String.format("%-14s - %s", project.getName(),
+			return "%-14s - %s".formatted(project.getName(),
 					isSuccessful() ? "🆗 Successful" : "🧨 Error: " + failure.getMessage());
 		}
 

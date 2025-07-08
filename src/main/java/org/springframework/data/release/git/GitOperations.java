@@ -214,7 +214,7 @@ public class GitOperations {
 			ArtifactVersion artifactVersion = ArtifactVersion.of(module);
 
 			Tag tag = findTagFor(project, artifactVersion).orElseThrow(() -> new IllegalStateException(
-					String.format("No tag found for version %s of project %s, aborting.", artifactVersion, project)));
+					"No tag found for version %s of project %s, aborting.".formatted(artifactVersion, project)));
 
 			doWithGit(project, git -> {
 
@@ -297,14 +297,14 @@ public class GitOperations {
 
 			if (success.contains(remoteUpdate.getStatus())) {
 
-				logger.log(module.getProject().getName(), String.format("✅️ Push done: %s %s", getMessage(remoteUpdate),
+				logger.log(module.getProject().getName(), "✅️ Push done: %s %s".formatted(getMessage(remoteUpdate),
 						StringUtils.hasText(remoteUpdate.getMessage()) ? remoteUpdate.getMessage() : ""));
 
 				continue;
 			}
 
 			logger.warn(module.getProject().getName(),
-					String.format("⚠️ Push failed: %s %s", getMessage(remoteUpdate), remoteUpdate.getMessage()));
+					"⚠️ Push failed: %s %s".formatted(getMessage(remoteUpdate), remoteUpdate.getMessage()));
 		}
 	}
 
@@ -476,7 +476,7 @@ public class GitOperations {
 		Assert.notNull(project, "Project must not be null!");
 
 		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
+				() -> "No issue tracker found for project %s!".formatted(project));
 
 		return doWithGit(project, git -> {
 
@@ -630,7 +630,7 @@ public class GitOperations {
 			}
 
 			Tag tag = fromTag.orElseThrow(() -> new IllegalStateException(
-					String.format("Cannot determine from tag for %s %s", project.getName(), iteration)));
+					"Cannot determine from tag for %s %s".formatted(project.getName(), iteration)));
 
 			return repo.parseCommit(repo.resolve(tag.getName()));
 		}
@@ -656,7 +656,7 @@ public class GitOperations {
 		ObjectId resolve = repo.resolve(rangeEnd);
 
 		if (resolve == null) {
-			throw new IllegalStateException(String.format("Cannot resolve %s for %s", rangeEnd, iteration));
+			throw new IllegalStateException("Cannot resolve %s for %s".formatted(rangeEnd, iteration));
 		}
 		return repo.parseCommit(resolve);
 	}
@@ -788,7 +788,7 @@ public class GitOperations {
 
 		SupportedProject project = module.getSupportedProject();
 		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
+				() -> "No issue tracker found for project %s!".formatted(project));
 		Ticket ticket = tracker.getReleaseTicketFor(module);
 
 		commit(module, ticket, summary, details, true);
@@ -809,7 +809,7 @@ public class GitOperations {
 
 		SupportedProject project = module.getSupportedProject();
 		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
+				() -> "No issue tracker found for project %s!".formatted(project));
 		Ticket ticket = tracker.getReleaseTicketFor(module);
 
 		commit(module, ticket, summary, details, all);
@@ -1129,7 +1129,7 @@ public class GitOperations {
 		Predicate<RevCommit> trigger = calculateFilter(module, summary);
 
 		return findCommit(module, summary).orElseThrow(() -> new IllegalStateException(
-				String.format("Did not find a commit with summary starting with '%s' for project %s",
+				"Did not find a commit with summary starting with '%s' for project %s".formatted(
 						module.getSupportedProject(), trigger)));
 	}
 
@@ -1156,7 +1156,7 @@ public class GitOperations {
 
 		SupportedProject project = module.getSupportedProject();
 		Ticket releaseTicket = issueTracker
-				.getRequiredPluginFor(project, () -> String.format("No issue tracker found for project %s!", project))//
+				.getRequiredPluginFor(project, () -> "No issue tracker found for project %s!".formatted(project))//
 				.getReleaseTicketFor(module);
 
 		return revCommit -> {
@@ -1189,7 +1189,7 @@ public class GitOperations {
 		File file = workspace.getFile(".git", project);
 		if (!file.exists()) {
 			throw new FileNotFoundException(
-					String.format("No repository found for project '%s' at '%s'", project.getName(), file));
+					"No repository found for project '%s' at '%s'".formatted(project.getName(), file));
 		}
 
 		Repository repository = FileRepositoryBuilder.create(file);
@@ -1243,7 +1243,7 @@ public class GitOperations {
 	}
 
 	private static String expandSummary(String summary, ModuleIteration module, TrainIteration iteration) {
-		return summary.contains("%s") ? String.format(summary, module.getMediumVersionString()) : summary;
+		return summary.contains("%s") ? summary.formatted(module.getMediumVersionString()) : summary;
 	}
 
 	private <T> T doWithGit(SupportedProject project, GitCallback<T> callback) {

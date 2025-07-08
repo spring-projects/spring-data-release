@@ -51,7 +51,7 @@ public class GitProject {
 	 */
 	public String getRepositoryName() {
 
-		String logicalName = String.format("%s-%s", PROJECT_PREFIX,
+		String logicalName = "%s-%s".formatted(PROJECT_PREFIX,
 				project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase());
 
 		return project.isCommercial() ? logicalName + "-commercial" : logicalName;

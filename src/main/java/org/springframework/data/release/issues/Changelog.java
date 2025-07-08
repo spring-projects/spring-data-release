@@ -51,7 +51,7 @@ public class Changelog {
 	public String toString(boolean header, String indentation) {
 		ArtifactVersion version = ArtifactVersion.of(module);
 
-		String headline = String.format("Changes in version %s (%s)", version,
+		String headline = "Changes in version %s (%s)".formatted(version,
 				new DateFormatter("YYYY-MM-dd").print(new Date(), Locale.US));
 
 		StringBuilder builder = new StringBuilder();

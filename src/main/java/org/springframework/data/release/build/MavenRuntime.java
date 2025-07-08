@@ -85,8 +85,8 @@ public class MavenRuntime extends MavenRuntimeSupport {
 			InvocationResult result = doWithMaven(invoker, mvn -> {
 
 				mvn.setBaseDirectory(workspace.getProjectDirectory(project));
-				mavenLogger.info(String.format("Java Home: %s", getJavaHome()));
-				mavenLogger.info(String.format("Executing: mvn %s", arguments));
+				mavenLogger.info("Java Home: %s".formatted(getJavaHome()));
+				mavenLogger.info("Executing: mvn %s".formatted(arguments));
 
 				CommandLine disabledGradleBuildCache = arguments.and(arg("gradle.cache.local.enabled=false"))
 						.and(arg("gradle.cache.remote.enabled=false")).and(arg("develocity.cache.local.enabled=false"))

@@ -85,7 +85,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 		Assert.notNull(project, "Project must not be null!");
 
 		return getModuleIfAvailable(project).orElseThrow(() -> new IllegalArgumentException(
-				String.format("No module found for project %s in release train %s!", project.getName(), this.name)));
+				"No module found for project %s in release train %s!".formatted(project.getName(), this.name)));
 	}
 
 	/**
@@ -246,7 +246,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 	public TrainIteration getIteration(Iteration iteration) {
 
 		Assert.isTrue(iterations.contains(iteration),
-				String.format("Iteration %s is not a valid one for the configured iterations %s!", iteration, iterations));
+				"Iteration %s is not a valid one for the configured iterations %s!".formatted(iteration, iterations));
 
 		return doGetTrainIteration(iteration);
 	}
@@ -317,7 +317,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 			return iterations.stream().//
 					filter(iteration -> iteration.getName().equalsIgnoreCase(name)).//
 					findFirst()
-					.orElseThrow(() -> new IllegalArgumentException(String.format("No iteration found with name %s!", name)));
+					.orElseThrow(() -> new IllegalArgumentException("No iteration found with name %s!".formatted(name)));
 		}
 
 		Iteration getPreviousIteration(Iteration iteration) {
@@ -325,7 +325,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 			return iterations.stream().//
 					filter(candidate -> candidate.isNext(iteration)).//
 					findFirst().orElseThrow(() -> new IllegalArgumentException(
-							String.format("Could not find previous iteration for %s!", iteration)));
+					"Could not find previous iteration for %s!".formatted(iteration)));
 		}
 
 		boolean contains(Iteration iteration) {

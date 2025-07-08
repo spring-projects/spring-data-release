@@ -96,7 +96,7 @@ public class JavaRuntimes {
 		List<JdkInstallation> jdks = JDKS.get();
 
 		return jdks.stream().filter(filter).findFirst()
-				.orElseThrow(() -> new NoSuchJavaRuntimeException(String.format("%s%nAvailable JDK: %s", message.get(), jdks),
+				.orElseThrow(() -> new NoSuchJavaRuntimeException("%s%nAvailable JDK: %s".formatted(message.get(), jdks),
 						jdks, runtimeName));
 	}
 
@@ -412,7 +412,7 @@ public class JavaRuntimes {
 			}
 
 			return new FailureAnalysis("⚠️ A required JDK was not found: " + cause.getRequiredJdk(),
-					String.format(action, cause.getRequiredJdk(), detectedRuntimes), cause);
+					action.formatted(cause.getRequiredJdk(), detectedRuntimes), cause);
 		}
 	}
 

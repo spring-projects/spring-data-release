@@ -59,7 +59,7 @@ class DependencyUpgradeProposal {
 			return latest.toString();
 		}
 
-		return String.format("%s, %s", latestMinor, latest);
+		return "%s, %s".formatted(latestMinor, latest);
 	}
 
 	public boolean isUpgradeAvailable() {

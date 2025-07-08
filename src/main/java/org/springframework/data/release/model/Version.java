@@ -153,7 +153,7 @@ public class Version implements Comparable<Version> {
 	}
 
 	public String toMajorMinorBugfix() {
-		return String.format("%s.%s.%s", major, minor, bugfix);
+		return "%s.%s.%s".formatted(major, minor, bugfix);
 	}
 
 	/*

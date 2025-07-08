@@ -39,7 +39,7 @@ public class IoProperties {
 
 	public void setWorkDir(String workDir) {
 
-		log.info(String.format("🔧 Using %s as working directory!", workDir));
+		log.info("🔧 Using %s as working directory!".formatted(workDir));
 		this.workDir = new File(workDir.replace("~", FileUtils.getUserDirectoryPath()));
 	}
 
