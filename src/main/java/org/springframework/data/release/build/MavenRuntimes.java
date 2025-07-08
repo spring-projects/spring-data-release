@@ -85,7 +85,7 @@ public class MavenRuntimes {
 		List<MavenInstallation> jdks = getMavenInstallations(jdk);
 
 		return jdks.stream().filter(filter).findFirst().orElseThrow(() -> new NoSuchMavenRuntimeException(
-				String.format("%s%nAvailable Maven: %s", message.get(), jdks), jdks, runtimeName));
+				"%s%nAvailable Maven: %s".formatted(message.get(), jdks), jdks, runtimeName));
 	}
 
 	public List<MavenInstallation> getMavenInstallations(JavaRuntimes.JdkInstallation jdk) {
@@ -395,7 +395,7 @@ public class MavenRuntimes {
 			}
 
 			return new FailureAnalysis("⚠️ A required Maven version was not found: " + cause.getRequiredMavenVersion(),
-					String.format(action, cause.getRequiredMavenVersion(), detectedRuntimes), cause);
+					action.formatted(cause.getRequiredMavenVersion(), detectedRuntimes), cause);
 		}
 	}
 

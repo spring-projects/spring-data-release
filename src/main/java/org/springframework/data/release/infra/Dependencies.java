@@ -181,14 +181,14 @@ public class Dependencies {
 	public static Dependency getRequiredByName(String name) {
 
 		return dependencies.stream().filter(it -> it.getName().equals(name)).findFirst()
-				.orElseThrow(() -> new IllegalArgumentException(String.format("No such dependency: %s", name)));
+				.orElseThrow(() -> new IllegalArgumentException("No such dependency: %s".formatted(name)));
 	}
 
 	public static Dependency getRequiredDepependency(String groupId, String artifactId) {
 
 		return dependencies.stream().filter(it -> it.getGroupId().equals(groupId) && it.getArtifactId().equals(artifactId))
 				.findFirst()
-				.orElseThrow(() -> new IllegalArgumentException(String.format("No such dependency: %s", artifactId)));
+				.orElseThrow(() -> new IllegalArgumentException("No such dependency: %s".formatted(artifactId)));
 	}
 
 }

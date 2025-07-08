@@ -81,7 +81,7 @@ public class DefaultDeploymentInformation implements DeploymentInformation {
 			branch = Branch.MAIN;
 		}
 
-		return String.format("%s-%s-release-%s", getBuildName(module.getSupportedProject()), branch, actualBuildNumber);
+		return "%s-%s-release-%s".formatted(getBuildName(module.getSupportedProject()), branch, actualBuildNumber);
 	}
 
 	/*

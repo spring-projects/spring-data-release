@@ -103,7 +103,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 			int updated = updateLicense(year, module);
 
 			if (updated > 0) {
-				commitAndPushWithTicket(module, String.format("Extend license header copyright years to %d", year));
+				commitAndPushWithTicket(module, "Extend license header copyright years to %d".formatted(year));
 			}
 		});
 	}
@@ -185,7 +185,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 					modified++;
 				}
 			} catch (IOException e) {
-				throw new IllegalStateException(String.format("Cannot modify contents of %s", file), e);
+				throw new IllegalStateException("Cannot modify contents of %s".formatted(file), e);
 			}
 		}
 

@@ -114,7 +114,7 @@ public class InfrastructureOperations extends TimedCommand {
 				git.add(module.getSupportedProject(), file);
 			}
 
-			git.commit(module, String.format("Update %s.", description), Optional.empty(), false);
+			git.commit(module, "Update %s.".formatted(description), Optional.empty(), false);
 			git.push(module);
 		});
 	}
@@ -127,7 +127,7 @@ public class InfrastructureOperations extends TimedCommand {
 
 			if (!target.exists()) {
 				throw new IllegalStateException(
-						String.format("%s file %s does not exist in %s", description, file, moduleIteration.getSupportedProject()));
+						"%s file %s does not exist in %s".formatted(description, file, moduleIteration.getSupportedProject()));
 			}
 		}
 	}

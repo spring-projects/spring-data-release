@@ -147,27 +147,27 @@ public class DeploymentProperties implements InitializingBean {
 
 			if (!StringUtils.hasText(stagingRepository)) {
 				throw new IllegalArgumentException(
-						String.format("No staging repository for server authentication %s provided", server));
+						"No staging repository for server authentication %s provided".formatted(server));
 			}
 
 			if (!StringUtils.hasText(targetRepository)) {
 				throw new IllegalArgumentException(
-						String.format("No target repository for server authentication %s provided", server));
+						"No target repository for server authentication %s provided".formatted(server));
 			}
 
 			if (!StringUtils.hasText(distributionRepository)) {
 				throw new IllegalArgumentException(
-						String.format("No distribution repository for server authentication %s provided", server));
+						"No distribution repository for server authentication %s provided".formatted(server));
 			}
 
 			if (!StringUtils.hasText(server.uri)) {
 				throw new IllegalArgumentException(
-						String.format("No server URI for server authentication %s provided", server));
+						"No server URI for server authentication %s provided".formatted(server));
 			}
 
 			if (!StringUtils.hasText(server.verificationResource)) {
 				throw new IllegalArgumentException(
-						String.format("No verification resource for server authentication %s provided", server));
+						"No verification resource for server authentication %s provided".formatted(server));
 			}
 		}
 

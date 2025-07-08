@@ -201,7 +201,7 @@ public class DependencyOperations {
 
 			if (!matcher.find()) {
 				throw new IllegalStateException(
-						String.format("Invalid distribution URL in %s: %s", project.getName(), distributionUrl));
+						"Invalid distribution URL in %s: %s".formatted(project.getName(), distributionUrl));
 			}
 
 			return DependencyVersion.of(matcher.group(1));
@@ -547,7 +547,7 @@ public class DependencyOperations {
 				}
 			}
 
-			throw new RuntimeException(String.format("Cannot determine available versions for %s", dependency), o_O);
+			throw new RuntimeException("Cannot determine available versions for %s".formatted(dependency), o_O);
 		}
 	}
 

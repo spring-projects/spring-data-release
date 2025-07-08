@@ -78,7 +78,7 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		if (getTrain().usesCalver()) {
 
 			if (getIteration().isMilestone() || getIteration().isReleaseCandidate()) {
-				return String.format("%s-%s", getCalver().toMajorMinorBugfix(), iteration);
+				return "%s-%s".formatted(getCalver().toMajorMinorBugfix(), iteration);
 			}
 
 			return getCalver().toMajorMinorBugfix();
@@ -87,8 +87,8 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		String trainName = getTrain().getName();
 
 		return iteration.isGAIteration()
-				? String.format("%s-RELEASE", trainName)
-				: String.format("%s-%s", trainName, iteration);
+				? "%s-RELEASE".formatted(trainName)
+				: "%s-%s".formatted(trainName, iteration);
 	}
 
 	public SupportedProject getSupportedProject(Project project) {

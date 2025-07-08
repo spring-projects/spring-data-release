@@ -92,7 +92,7 @@ public class Tag implements Comparable<Tag> {
 	public ArtifactVersion getRequiredArtifactVersion() {
 
 		if (artifactVersion == null) {
-			throw new IllegalStateException(String.format("Artifact version not set for tag '%s'", name));
+			throw new IllegalStateException("Artifact version not set for tag '%s'".formatted(name));
 		}
 
 		return this.artifactVersion;

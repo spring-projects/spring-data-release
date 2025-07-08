@@ -90,7 +90,7 @@ public class Module implements VersionAware, Comparable<Module> {
 	 */
 	@Override
 	public String toString() {
-		return String.format("Spring Data %s %s - %s", project.getName(), version, project.getKey());
+		return "Spring Data %s %s - %s".formatted(project.getName(), version, project.getKey());
 	}
 
 }

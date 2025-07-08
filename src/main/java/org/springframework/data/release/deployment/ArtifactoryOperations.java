@@ -98,7 +98,7 @@ class ArtifactoryOperations {
 
 	private static String getReleaseName(ModuleIteration module) {
 		String projectName = module.getProject().getName().toLowerCase(Locale.ROOT);
-		return String.format("TNZ-spring-data-%s-commercial", projectName);
+		return "TNZ-spring-data-%s-commercial".formatted(projectName);
 	}
 
 }

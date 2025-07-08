@@ -154,7 +154,7 @@ public class Projects {
 	public static Project requiredByName(String name) {
 
 		return byName(name).//
-				orElseThrow(() -> new IllegalArgumentException(String.format("No project named %s available!", name)));
+				orElseThrow(() -> new IllegalArgumentException("No project named %s available!".formatted(name)));
 	}
 
 	public static List<Project> all() {

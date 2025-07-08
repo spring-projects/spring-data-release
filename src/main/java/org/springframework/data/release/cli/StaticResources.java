@@ -42,7 +42,7 @@ public class StaticResources {
 		GitProject gitProject = GitProject.of(module);
 		Tag tag = VersionTags.empty(module.getProject()).createTag(module);
 
-		this.releaseUrl = String.format("%s/releases/tag/%s", gitProject.getProjectUri(), tag.getName());
+		this.releaseUrl = "%s/releases/tag/%s".formatted(gitProject.getProjectUri(), tag.getName());
 	}
 
 	public String getDocumentationUrl() {

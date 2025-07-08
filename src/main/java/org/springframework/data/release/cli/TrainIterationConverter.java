@@ -71,7 +71,7 @@ public class TrainIterationConverter implements Converter<TrainIteration> {
 		String[] parts = value.split(" ");
 
 		if (parts.length != 2) {
-			throw new IllegalArgumentException(String.format("Cannot resolve TrainIteration from '%s'", value));
+			throw new IllegalArgumentException("Cannot resolve TrainIteration from '%s'".formatted(value));
 		}
 
 		Train train = ReleaseTrains.getTrainByName(parts[0].trim());

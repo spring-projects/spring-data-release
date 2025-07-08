@@ -99,7 +99,7 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 			try {
 				version = Version.parse(versionString);
 			} catch (RuntimeException e) {
-				throw new IllegalArgumentException(String.format("Cannot parse version number %s", versionString), e);
+				throw new IllegalArgumentException("Cannot parse version number %s".formatted(versionString), e);
 			}
 
 			modifier = versionMatcher.group(2);
@@ -109,7 +109,7 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 					counter != null ? Integer.parseInt(counter) : 0, null);
 		}
 
-		throw new IllegalArgumentException(String.format("Cannot parse version identifier %s", identifier));
+		throw new IllegalArgumentException("Cannot parse version identifier %s".formatted(identifier));
 	}
 
 	public boolean isNewer(DependencyVersion other) {

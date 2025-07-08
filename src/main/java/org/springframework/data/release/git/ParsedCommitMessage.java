@@ -56,7 +56,7 @@ class ParsedCommitMessage {
 	private static final Pattern GITHUB_PREFIX_SYNTAX = Pattern.compile("^((?>#|gh-)\\d+)");
 
 	private static final Pattern A_TICKET = Pattern
-			.compile(String.format("(%s|%s)", JIRA_TICKET.pattern(), GITHUB_TICKET.pattern()), Pattern.CASE_INSENSITIVE);
+			.compile("(%s|%s)".formatted(JIRA_TICKET.pattern(), GITHUB_TICKET.pattern()), Pattern.CASE_INSENSITIVE);
 
 	private static final Pattern ORIGINAL_PULL_REQUEST = Pattern
 			.compile("Original (?>pull request|PR|pullrequest)[:]*(?>\\s+)?" + A_TICKET.pattern(), Pattern.CASE_INSENSITIVE);

@@ -63,10 +63,10 @@ public class DocumentationMetadata {
 		String format = project.isCommercial() ? COMMERICIAL_JAVADOC : JAVADOC;
 
 		if (Projects.BUILD.equals(project.getProject())) { // Report Commons Docs for Spring Data Build
-			return String.format(format, getProjectName(Projects.COMMONS), getDocumentationVersion());
+			return format.formatted(getProjectName(Projects.COMMONS), getDocumentationVersion());
 		}
 
-		return String.format(format,
+		return format.formatted(
 				project.getProject() == Projects.R2DBC ? "r2dbc" : getProjectName(project.getProject()),
 				getDocumentationVersion());
 	}
@@ -110,11 +110,11 @@ public class DocumentationMetadata {
 			}
 
 			String format = this.project.isCommercial() ? COMMERICIAL_DOCS : DOCS;
-			return String.format(format, getProjectName(project), getDocumentationVersion());
+			return format.formatted(getProjectName(project), getDocumentationVersion());
 		}
 
 		String format = this.project.isCommercial() ? COMMERCIAL_ANTORA_BASE : ANTORA_BASE;
-		return String.format(format, getProjectName(project), this.version.getMajorMinor(true));
+		return format.formatted(getProjectName(project), this.version.getMajorMinor(true));
 	}
 
 	public String getVersionOrTrainName(Train train) {

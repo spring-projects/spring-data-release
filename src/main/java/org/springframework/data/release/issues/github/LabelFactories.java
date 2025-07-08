@@ -30,7 +30,7 @@ public class LabelFactories {
 	public static final LabelFactory HAS_LABEL = (name, description) -> create("has:", name, description, "dfdfdf");
 
 	private static Label create(String prefix, String labelName, String description, String color) {
-		return new Label(String.format("%s %s", prefix, labelName), description, color);
+		return new Label("%s %s".formatted(prefix, labelName), description, color);
 	}
 
 	interface LabelFactory extends BiFunction<String, String, Label> {

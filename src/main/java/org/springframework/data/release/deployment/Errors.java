@@ -40,7 +40,7 @@ public class Errors {
 		private int status;
 
 		public String toString() {
-			return String.format("%s - %s", status, message);
+			return "%s - %s".formatted(status, message);
 		}
 	}
 
@@ -50,7 +50,7 @@ public class Errors {
 		private String level, message;
 
 		public String toString() {
-			return String.format("%s - %s", level, message);
+			return "%s - %s".formatted(level, message);
 		}
 	}
 }

@@ -28,6 +28,6 @@ public interface Masked {
 	 * @return
 	 */
 	default String masked() {
-		return String.format("******** (%s)", getClass().getSimpleName());
+		return "******** (%s)".formatted(getClass().getSimpleName());
 	}
 }
