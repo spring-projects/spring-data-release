@@ -38,7 +38,11 @@ public class Dependencies {
 
 	public static final Dependency AWAITILITY = Dependency.of("Awaitility", "org.awaitility:awaitility");
 
-	public static final Dependency JACKSON = Dependency.of("Jackson", "com.fasterxml.jackson:jackson-bom");
+	public static final Dependency JACKSON_ANNOTATIONS = Dependency.of("Jackson Annotations", "com.fasterxml.jackson.core:jackson-annotations");
+
+	public static final Dependency JACKSON3 = Dependency.of("Jackson 3", "tools.jackson:jackson-bom");
+
+	public static final Dependency JACKSON2 = Dependency.of("Jackson 2", "com.fasterxml.jackson:jackson-databind");
 
 	public static final Dependency JACOCO = Dependency.of("Jacoco", "org.jacoco:jacoco");
 

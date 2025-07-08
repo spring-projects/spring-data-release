@@ -42,7 +42,8 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("apt", Dependencies.APT));
 		config.add(Projects.BUILD, ProjectDependency.using("aspectj", Dependencies.ASPECTJ));
 		config.add(Projects.BUILD, ProjectDependency.using("assertj", Dependencies.ASSERTJ));
-		config.add(Projects.BUILD, ProjectDependency.using("jackson", Dependencies.JACKSON));
+		config.add(Projects.BUILD, ProjectDependency.using("jackson", Dependencies.JACKSON2));
+		config.add(Projects.BUILD, ProjectDependency.using("jackson3", Dependencies.JACKSON3));
 		config.add(Projects.BUILD, ProjectDependency.using("jacoco", Dependencies.JACOCO));
 		config.add(Projects.BUILD, ProjectDependency.using("jodatime", Dependencies.JODA_TIME));
 		config.add(Projects.BUILD, ProjectDependency.using("junit5", Dependencies.JUNIT5));
