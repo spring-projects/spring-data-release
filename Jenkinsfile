@@ -29,7 +29,7 @@ pipeline {
 
 			steps {
 				script {
-					def image = docker.build("springci/spring-data-release-tools:0.24", "ci")
+					def image = docker.build("springci/spring-data-release-tools:0.25", "ci")
 					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
 						image.push()
 					}
@@ -67,7 +67,7 @@ pipeline {
 				script {
 
 					docker.withRegistry('', 'hub.docker.com-springbuildmaster') {
-						docker.image("springci/spring-data-release-tools:0.24").inside() {
+						docker.image("springci/spring-data-release-tools:0.25").inside() {
 							sh "ci/build-spring-data-release-cli.bash"
 							sh "ci/build-and-distribute.bash ${p['release.version']}"
 						}
