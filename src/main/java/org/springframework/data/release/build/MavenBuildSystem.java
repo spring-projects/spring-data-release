@@ -638,6 +638,15 @@ class MavenBuildSystem implements BuildSystem {
 			s = s.replaceAll(Pattern.quote("standalone=\"no\"?><"), "standalone=\"no\"?>" + IOUtils.LINE_SEPARATOR + "<");
 		}
 
+		if (s.contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>")) {
+			s = s.replaceAll(Pattern.quote("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"),
+					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+		}
+
+		if (s.contains("--><project ")) {
+			s = s.replaceAll(Pattern.quote("--><project "), "-->" + IOUtils.LINE_SEPARATOR + "<project ");
+		}
+
 		s = s.replace(String.format("<repositories>%n\t\t%n\t</repositories>"),
 				String.format("<repositories>%n\t</repositories>"));
 

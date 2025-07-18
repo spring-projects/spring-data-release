@@ -43,7 +43,7 @@ class MavenBuildSystemUnitTests {
 
 			byte[] bytes = MavenBuildSystem.doWithProjection(projector, is, Pom.class, pom -> {});
 
-			assertThat(new String(bytes)).contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
+			assertThat(new String(bytes)).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 					+ IOUtils.LINE_SEPARATOR + "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" ")
 					.endsWith(IOUtils.LINE_SEPARATOR);
 		}
