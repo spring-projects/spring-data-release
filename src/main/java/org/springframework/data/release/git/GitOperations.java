@@ -304,7 +304,8 @@ public class GitOperations {
 			}
 
 			logger.warn(module.getProject().getName(),
-					"⚠️ Push failed: %s %s".formatted(getMessage(remoteUpdate), remoteUpdate.getMessage()));
+					"⚠️ Push failed: %s %s".formatted(getMessage(remoteUpdate),
+							StringUtils.hasText(remoteUpdate.getMessage()) ? remoteUpdate.getMessage() : ""));
 		}
 	}
 
@@ -312,18 +313,13 @@ public class GitOperations {
 
 		RemoteRefUpdate.Status status = remoteUpdate.getStatus();
 
-		switch (status) {
-			case UP_TO_DATE:
-				return "Branch up-to-date";
-			case REJECTED_REMOTE_CHANGED:
-				return "Remote branch changed";
-			case NON_EXISTING:
-				return "Remote branch does not exist";
-			case AWAITING_REPORT:
-				return "Awaiting report…";
-		}
-
-		return status.name();
+		return switch (status) {
+			case UP_TO_DATE -> "Branch up-to-date";
+			case REJECTED_REMOTE_CHANGED -> "Remote branch changed";
+			case NON_EXISTING -> "Remote branch does not exist";
+			case AWAITING_REPORT -> "Awaiting report…";
+			default -> status.name();
+		};
 	}
 
 	public void pushTags(Train train) {
@@ -640,7 +636,8 @@ public class GitOperations {
 
 	private static RevCommit findCommit(Git git, Branch branch, String message) throws GitAPIException, IOException {
 
-		Iterable<RevCommit> commits = git.log().add(git.getRepository().resolve(branch.toString())).call();
+		String branchRef = branch.withRemote(git.getRepository()).toString();
+		Iterable<RevCommit> commits = git.log().add(git.getRepository().resolve(branchRef)).call();
 
 		Optional<RevCommit> first = Streamable.of(commits).stream().filter(rev -> rev.getFullMessage().contains(message))
 				.findFirst();
@@ -668,7 +665,7 @@ public class GitOperations {
 	private static String getFirstCommit(Repository repo, Branch branch) throws IOException {
 
 		try (RevWalk revWalk = new RevWalk(repo)) {
-			return revWalk.parseCommit(repo.resolve(branch.toString())).getName();
+			return revWalk.parseCommit(repo.resolve(branch.withRemote(repo).toString())).getName();
 		}
 	}
 
