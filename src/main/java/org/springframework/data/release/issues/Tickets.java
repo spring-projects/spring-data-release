@@ -67,7 +67,7 @@ public class Tickets implements Streamable<Ticket> {
 	public Ticket getReleaseTicket(ModuleIteration moduleIteration) {
 
 		return findReleaseTicket(moduleIteration).orElseThrow(
-				() -> new IllegalArgumentException(String.format("Did not find a release ticket for %s containing %s!",
+				() -> new IllegalArgumentException("Did not find a release ticket for %s containing %s!".formatted(
 						moduleIteration, Tracker.releaseTicketSummary(moduleIteration))));
 	}
 
@@ -106,7 +106,7 @@ public class Tickets implements Streamable<Ticket> {
 		StringBuilder builder = new StringBuilder();
 
 		if (header) {
-			builder.append(String.format("Train only tickets: %s of %s", tickets.size(), overallTotal));
+			builder.append("Train only tickets: %s of %s".formatted(tickets.size(), overallTotal));
 			builder.append(IOUtils.LINE_SEPARATOR);
 		}
 		builder.append(tickets.stream().map(it -> "\t" + it).collect(Collectors.joining(IOUtils.LINE_SEPARATOR)));

@@ -63,7 +63,7 @@ public abstract class TimedCommand implements ExecutionProcessor, CommandMarker 
 	private void stopAndLog() {
 
 		watch.stop();
-		System.out.println(String.format("Took: %.2f sec.", watch.getTotalTimeSeconds()));
+		System.out.println("Took: %.2f sec.".formatted(watch.getTotalTimeSeconds()));
 	}
 
 	/**

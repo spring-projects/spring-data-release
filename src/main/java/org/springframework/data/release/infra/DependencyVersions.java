@@ -64,7 +64,7 @@ class DependencyVersions {
 	public DependencyVersion get(Dependency dependency) {
 
 		if (!hasDependency(dependency)) {
-			throw new IllegalArgumentException(String.format("No such dependency: %s", dependency));
+			throw new IllegalArgumentException("No such dependency: %s".formatted(dependency));
 		}
 
 		return versions.get(dependency);

@@ -113,7 +113,7 @@ public class UpdateInformation {
 				return train.getReleaseTrainNameAndVersion();
 			case MAINTENANCE:
 				if (usesCalver) {
-					return String.format("%s-SNAPSHOT", train.getNextBugfixName());
+					return "%s-SNAPSHOT".formatted(train.getNextBugfixName());
 				}
 
 			case CLEANUP:
@@ -121,13 +121,13 @@ public class UpdateInformation {
 				if (usesCalver) {
 
 					if (train.getIteration().isGAIteration()) {
-						return String.format("%s-SNAPSHOT", train.getNextIterationName());
+						return "%s-SNAPSHOT".formatted(train.getNextIterationName());
 					}
 
-					return String.format("%s-SNAPSHOT", train.getNextBugfixName());
+					return "%s-SNAPSHOT".formatted(train.getNextBugfixName());
 				}
 
-				return String.format("%s-BUILD-SNAPSHOT", train.getName());
+				return "%s-BUILD-SNAPSHOT".formatted(train.getName());
 		}
 
 		throw new IllegalStateException("Unexpected phase detected " + phase + " detected!");

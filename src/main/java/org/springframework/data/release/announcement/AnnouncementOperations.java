@@ -65,6 +65,6 @@ public class AnnouncementOperations {
 	}
 
 	private static String getMarkDownLink(String name, String url) {
-		return String.format("[%s](%s)", name, url);
+		return "[%s](%s)".formatted(name, url);
 	}
 }

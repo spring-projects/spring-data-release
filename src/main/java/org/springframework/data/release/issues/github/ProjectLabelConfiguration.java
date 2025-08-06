@@ -177,7 +177,7 @@ public class ProjectLabelConfiguration {
 		for (Project project : Projects.all()) {
 
 			if (!ProjectLabelConfiguration.labelConfigurations.containsKey(project)) {
-				throw new IllegalStateException(String.format("No LabelConfiguration for %s", project.getName()));
+				throw new IllegalStateException("No LabelConfiguration for %s".formatted(project.getName()));
 			}
 		}
 	}

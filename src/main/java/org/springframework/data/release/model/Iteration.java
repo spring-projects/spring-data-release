@@ -244,6 +244,6 @@ public class Iteration implements Comparable<Iteration> {
 			return getIterationValue() == 1 ? Iteration.GA : Iteration.getServiceRelease(getIterationValue() - 1);
 		}
 
-		throw new IllegalStateException(String.format("Cannot determine previous iteration for %s", this));
+		throw new IllegalStateException("Cannot determine previous iteration for %s".formatted(this));
 	}
 }

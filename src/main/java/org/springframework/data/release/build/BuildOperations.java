@@ -411,7 +411,7 @@ public class BuildOperations {
 		Assert.notNull(module, "ModuleIteration must not be null!");
 
 		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
-				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
+				"No build system plugin found for project %s!".formatted(module.getSupportedProject()));
 
 		BuildSystem buildSystem = buildSystems.getPluginFor(module.getSupportedProject(), exception);
 

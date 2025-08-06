@@ -67,7 +67,7 @@ public class JavaVersion {
 		Pattern versionExtractor = Pattern.compile("(:?\\d+(:?u\\d+)?(:?\\.\\d+)*).*");
 		Matcher matcher = versionExtractor.matcher(tagName);
 		if (!matcher.find()) {
-			throw new IllegalStateException(String.format("Cannot parse Java version '%s'", tagName));
+			throw new IllegalStateException("Cannot parse Java version '%s'".formatted(tagName));
 		}
 
 		String plainVersion = matcher.group(1);
@@ -80,6 +80,6 @@ public class JavaVersion {
 	}
 
 	public JavaVersion withImplementor(String implementor) {
-		return of(String.format("%s (%s)", name, implementor), versionDetector, it -> it.contains(implementor));
+		return of("%s (%s)".formatted(name, implementor), versionDetector, it -> it.contains(implementor));
 	}
 }

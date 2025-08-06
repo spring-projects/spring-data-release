@@ -241,7 +241,7 @@ public class MavenRuntimeSupport {
 
 			String goalNames = goals.stream().map(CommandLine.Goal::getGoal).collect(Collectors.joining("-"));
 
-			String filename = String.format("mvn-%s-%s.log", project.getName(), goalNames).replace(':', '.');
+			String filename = "mvn-%s-%s.log".formatted(project.getName(), goalNames).replace(':', '.');
 
 			try {
 				File file = new File(logsDirectory, filename);

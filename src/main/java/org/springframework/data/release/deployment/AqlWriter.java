@@ -64,7 +64,7 @@ public class AqlWriter {
 		Map<String, String> repo = Collections.singletonMap("repo", targetServer.getTargetRepository());
 		Map<String, Object> orMatches = Collections.singletonMap("$or", matches);
 
-		return String.format("items.find(%s, %s)", objectMapper.writeValueAsString(repo),
+		return "items.find(%s, %s)".formatted(objectMapper.writeValueAsString(repo),
 				objectMapper.writeValueAsString(orMatches));
 	}
 

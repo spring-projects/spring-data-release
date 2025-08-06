@@ -52,7 +52,7 @@ class JavaToolingConfiguration {
 	PropertiesFactoryBean javaTools() {
 
 		if (!javaTools.exists()) {
-			throw new IllegalStateException(String.format("%s does not exist", javaTools));
+			throw new IllegalStateException("%s does not exist".formatted(javaTools));
 		}
 
 		PropertiesFactoryBean factory = new PropertiesFactoryBean();
