@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.springframework.data.release.issues.TicketOperations;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
@@ -59,6 +60,7 @@ import org.springframework.util.AntPathMatcher;
 
 /**
  * @author Mark Paluch
+ * @author Chris Bono
  */
 @CliComponent
 @RequiredArgsConstructor
@@ -77,6 +79,28 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 	List<String> filePatterns = Arrays.asList("pom.xml", "**/*.java", "**/*.kt", "**/*.adoc");
 
+	enum FileType {
+
+		POM_XML, JAVA, KOTLIN, ADOC;
+
+		static FileType of(File file) {
+			var fileName = file.getName().toLowerCase(Locale.ROOT);
+			if (fileName.equals("pom.xml")) {
+				return FileType.POM_XML;
+			}
+			if (fileName.endsWith(".adoc")) {
+				return FileType.ADOC;
+			}
+			if (fileName.endsWith(".java")) {
+				return FileType.JAVA;
+			}
+			if (fileName.endsWith(".kt")) {
+				return FileType.KOTLIN;
+			}
+			throw new IllegalArgumentException("Unknown file type: " + file.getName());
+		}
+	}
+
 	/**
 	 * Process all files matching {@link #filePatterns} and update the Apache license header year range, extending to
 	 * {@code year}. Rewrites single-year and year-range formats.
@@ -86,7 +110,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 	 */
 	@CliCommand(value = "update license-headers")
 	public void updateLicenseHeaders(@CliOption(key = "", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "year", mandatory = true) int year,
+			@CliOption(key = "year", mandatory = true) String year,
 			@CliOption(key = "project", mandatory = false) String projectName) {
 
 		git.prepare(iteration);
@@ -95,7 +119,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 		if (projectName != null) {
 			Project project = Projects.requiredByName(projectName);
-			modules = modules.filter(it -> it.getSupportedProject().equals(project));
+			modules = modules.filter(it -> it.getSupportedProject().getProject().equals(project));
 		}
 
 		ExecutionUtils.run(executor, modules, module -> {
@@ -108,27 +132,44 @@ public class LicenseHeaderCommands extends TimedCommand {
 		});
 	}
 
-	private int updateLicense(int year, ModuleIteration module) {
+	private int updateLicense(String year, ModuleIteration module) {
+		return replaceInFiles(module.getSupportedProject(), (file, content) ->
+				this.updateLicenseHeaderInFile(FileType.of(file), content, year, module.getSupportStatus()));
+	}
 
-		return replaceInFiles(module.getSupportedProject(), (file, content) -> {
+	static String updateLicenseHeaderInFile(FileType fileType, String content, String year, SupportStatus supportStatus) {
+		String contentToUse = content;
 
-			String contentToUse = content;
+		if (fileType == FileType.ADOC) {
+			return content.replaceAll("([\\d]{4})-([\\d]{4})",
+					"$1-" + year);
+		}
 
-			String filename = file.getName().toLowerCase(Locale.ROOT);
-			if (filename.endsWith(".adoc")) {
-				return content.replaceAll("([\\d]{4})-([\\d]{4})", "$1-" + year);
+		contentToUse = contentToUse.replaceAll("(C) ([\\d]{4})-([\\d]{4})",
+				"(C) $1-" + year);
+
+ 		contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4}) the original author or authors",
+				"Copyright $1-" + year + " the original author or authors");
+
+		contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4})-([\\d]{4}) the original author or authors",
+				"Copyright $1-" + year + " the original author or authors");
+
+		if (supportStatus.isCommercial() && fileType != FileType.POM_XML) {
+			var broadcomCopyright = "Broadcom Inc. and/or its subsidiaries. All Rights Reserved.";
+			if (contentToUse.contains(broadcomCopyright)) {
+				return contentToUse;
 			}
 
-			contentToUse = contentToUse.replaceAll("(C) ([\\d]{4})-([\\d]{4})", "(C) $1-" + year);
+			// insert Broadcom header above original header
+			contentToUse = contentToUse.replaceAll("(.*)Copyright ([\\d]{4})(.*)",
+					"$1Copyright $2 Broadcom Inc. and/or its subsidiaries. All Rights Reserved.\n$1Copyright $2$3");
 
-			contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4}) the original author or authors",
-					"Copyright $1-" + year + " the original author or authors");
+			// chop Apache header out while preserving line numbers
+			contentToUse = contentToUse.replaceAll("(.*)(?s)\\sLicensed under the Apache License.*limitations under the License\\.(.*)",
+					"$1%s$2".formatted("\n\s*".repeat(9)));
+		}
 
-			contentToUse = contentToUse.replaceAll("Copyright ([\\d]{4})-([\\d]{4}) the original author or authors",
-					"Copyright $1-" + year + " the original author or authors");
-
-			return contentToUse;
-		});
+		return contentToUse;
 	}
 
 	private void commitAndPushWithTicket(ModuleIteration module, String ticketSummary) throws InterruptedException {
