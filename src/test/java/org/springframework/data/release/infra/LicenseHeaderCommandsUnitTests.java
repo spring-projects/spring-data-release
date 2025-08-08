@@ -43,47 +43,57 @@ class LicenseHeaderCommandsUnitTests {
 
 		@Test
 		void javaHeaderWithStartDateOnlyUpdatedToPresent() {
+
 			var originalContent = openSourceJavaFile("2022");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.OSS);
 			var expectedContent = openSourceJavaFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void javaHeaderWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = openSourceJavaFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.OSS);
 			var expectedContent = openSourceJavaFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void javaHeaaderUpdateIsIdempotent() {
+
 			var originalContent = openSourceJavaFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.OSS);
 			updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, updatedContent, "present", SupportStatus.OSS);
 			var expectedContent = openSourceJavaFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void adocWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = adocFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.ADOC, originalContent, "present",
 					SupportStatus.OSS);
 			var expectedContent = adocFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void pomXmlWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = pomFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.POM_XML, originalContent, "present",
 					SupportStatus.OSS);
 			var expectedContent = pomFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 	}
@@ -93,48 +103,58 @@ class LicenseHeaderCommandsUnitTests {
 
 		@Test
 		void javaHeaderWithStartDateOnlyUpdatedToPresent() {
+
 			var originalContent = openSourceJavaFile("2022");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.COMMERCIAL);
 			var expectedContent = commercialJavaFile("2022");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void javaHeaderWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = openSourceJavaFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.COMMERCIAL);
 			var expectedContent = commercialJavaFile("2022");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void javaHeaderUpdateIsIdempotent() {
+
 			var originalContent = openSourceJavaFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, originalContent, "present",
 					SupportStatus.COMMERCIAL);
 			updatedContent = commands.updateLicenseHeaderInFile(FileType.JAVA, updatedContent, "present",
 					SupportStatus.COMMERCIAL);
 			var expectedContent = commercialJavaFile("2022");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void adocWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = adocFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.ADOC, originalContent, "present",
 					SupportStatus.COMMERCIAL);
 			var expectedContent = adocFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 
 		@Test
 		void pomXmlWithStartAndEndDateUpdatedToPresent() {
+
 			var originalContent = pomFile("2022-2024");
 			var updatedContent = commands.updateLicenseHeaderInFile(FileType.POM_XML, originalContent, "present",
 					SupportStatus.COMMERCIAL);
 			var expectedContent = pomFile("2022-present");
+
 			assertThat(updatedContent).isEqualTo(expectedContent);
 		}
 

@@ -34,6 +34,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.NameFileFilter;
@@ -79,28 +80,6 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 	List<String> filePatterns = Arrays.asList("pom.xml", "**/*.java", "**/*.kt", "**/*.adoc");
 
-	enum FileType {
-
-		POM_XML, JAVA, KOTLIN, ADOC;
-
-		static FileType of(File file) {
-			var fileName = file.getName().toLowerCase(Locale.ROOT);
-			if (fileName.equals("pom.xml")) {
-				return FileType.POM_XML;
-			}
-			if (fileName.endsWith(".adoc")) {
-				return FileType.ADOC;
-			}
-			if (fileName.endsWith(".java")) {
-				return FileType.JAVA;
-			}
-			if (fileName.endsWith(".kt")) {
-				return FileType.KOTLIN;
-			}
-			throw new IllegalArgumentException("Unknown file type: " + file.getName());
-		}
-	}
-
 	/**
 	 * Process all files matching {@link #filePatterns} and update the Apache license header year range, extending to
 	 * {@code year}. Rewrites single-year and year-range formats.
@@ -134,10 +113,11 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 	private int updateLicense(String year, ModuleIteration module) {
 		return replaceInFiles(module.getSupportedProject(), (file, content) ->
-				this.updateLicenseHeaderInFile(FileType.of(file), content, year, module.getSupportStatus()));
+		updateLicenseHeaderInFile(FileType.of(file), content, year, module.getSupportStatus()));
 	}
 
 	static String updateLicenseHeaderInFile(FileType fileType, String content, String year, SupportStatus supportStatus) {
+
 		String contentToUse = content;
 
 		if (fileType == FileType.ADOC) {
@@ -155,7 +135,9 @@ public class LicenseHeaderCommands extends TimedCommand {
 				"Copyright $1-" + year + " the original author or authors");
 
 		if (supportStatus.isCommercial() && fileType != FileType.POM_XML) {
-			var broadcomCopyright = "Broadcom Inc. and/or its subsidiaries. All Rights Reserved.";
+
+			String broadcomCopyright = "Broadcom Inc. and/or its subsidiaries. All Rights Reserved.";
+
 			if (contentToUse.contains(broadcomCopyright)) {
 				return contentToUse;
 			}
@@ -274,6 +256,29 @@ public class LicenseHeaderCommands extends TimedCommand {
 			}
 
 			return false;
+		}
+	}
+
+	enum FileType {
+
+		POM_XML, JAVA, KOTLIN, ADOC;
+
+		static FileType of(File file) {
+
+			String fileName = file.getName().toLowerCase(Locale.ROOT);
+
+			if (fileName.equals("pom.xml")) {
+				return FileType.POM_XML;
+			}
+
+			String extension = FilenameUtils.getExtension(fileName);
+
+			return switch (extension) {
+				case "adoc" -> FileType.ADOC;
+				case "java" -> FileType.JAVA;
+				case "kt" -> FileType.KOTLIN;
+				default -> throw new IllegalArgumentException("Unknown file type: " + file.getName());
+			};
 		}
 	}
 }
