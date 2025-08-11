@@ -106,7 +106,11 @@ public class LicenseHeaderCommands extends TimedCommand {
 			int updated = updateLicense(year, module);
 
 			if (updated > 0) {
-				commitAndPushWithTicket(module, String.format("Extend license header copyright years to %d", year));
+				String commitMsg = String.format("Extend license header copyright years to %s", year);
+				if (module.getSupportStatus() == SupportStatus.COMMERCIAL) {
+					commitMsg = commitMsg + " and replace Apache 2 with Broadcom license";
+				}
+				commitAndPushWithTicket(module, commitMsg);
 			}
 		});
 	}
