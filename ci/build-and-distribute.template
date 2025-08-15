@@ -1,6 +1,4 @@
 workspace cleanup
 git update ${VERSION}
-release build ${VERSION}
-artifactory release create ${VERSION}
-release distribute ${VERSION}
+release build ${VERSION} --project BOM
 quit
