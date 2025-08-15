@@ -613,7 +613,7 @@ public class GitOperations {
 				if (supportStatus == SupportStatus.COMMERCIAL && (it.isServiceIteration() || it.isGAIteration())) {
 
 					Branch from = Branch.from(iteration.getModule(project));
-					String message = "Seed " + from + " branch";
+					String message = "Seed";
 
 					RevCommit first = findCommit(git, from, message);
 					if (first != null) {
