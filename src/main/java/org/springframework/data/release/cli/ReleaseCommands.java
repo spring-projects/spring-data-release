@@ -23,6 +23,7 @@ import lombok.experimental.FieldDefaults;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
@@ -41,6 +42,7 @@ import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -55,6 +57,7 @@ import org.springframework.util.Assert;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 class ReleaseCommands extends TimedCommand {
 
+	@NonNull ExecutorService executor;
 	@NonNull GitOperations git;
 	@NonNull ReleaseOperations misc;
 	@NonNull DeploymentOperations deployment;
@@ -248,13 +251,9 @@ class ReleaseCommands extends TimedCommand {
 		Set<Project> skip = new HashSet<>(Arrays.asList(Projects.BOM, Projects.BUILD, Projects.R2DBC, Projects.JDBC,
 				Projects.SOLR, Projects.GEODE, Projects.SMOKE_TESTS));
 
-		iteration.forEach(it -> {
+		ExecutionUtils.run(executor, iteration.filter(it -> !skip.contains(it.getProject())), it -> {
 
 			Project project = it.getProject();
-
-			if (skip.contains(project)) {
-				return;
-			}
 
 			if (module == null || module.equalsIgnoreCase(project.getName())) {
 				gitHub.triggerAntoraWorkflow(it.getSupportedProject());
