@@ -17,6 +17,10 @@ package org.springframework.data.release.issues;
 
 import lombok.Value;
 
+import java.util.Comparator;
+
+import org.springframework.data.release.issues.github.GitHubRepository;
+
 /**
  * @author Mark Paluch
  */
@@ -27,16 +31,18 @@ public class TicketReference implements Comparable<TicketReference> {
 	String message;
 	Style style;
 	Reference reference;
+	GitHubRepository repository;
 
-	public TicketReference(String id, String message, Style style, Reference reference) {
+	public TicketReference(String id, String message, Style style, Reference reference, GitHubRepository repository) {
 		this.id = normalize(id);
 		this.message = message;
 		this.style = style;
 		this.reference = reference;
+		this.repository = repository;
 	}
 
-	public static TicketReference ofTicket(String number, Style style) {
-		return new TicketReference(number, "", style, Reference.Ticket);
+	public static TicketReference ofTicket(String number, Style style, GitHubRepository repository) {
+		return new TicketReference(number, "", style, Reference.Ticket, repository);
 	}
 
 	private static String normalize(String id) {
@@ -51,11 +57,16 @@ public class TicketReference implements Comparable<TicketReference> {
 	@Override
 	public int compareTo(TicketReference o) {
 
+		Comparator<TicketReference> reference = Comparator.comparing(TicketReference::getRepository);
+
 		if (id.startsWith("#") && o.id.startsWith("#")) {
-			return Integer.compare(Integer.parseInt(id.substring(1)), Integer.parseInt(o.id.substring(1)));
+
+			reference = reference.thenComparing(it -> Integer.parseInt(it.getId().substring(1)), Integer::compareTo);
+		} else {
+			reference = reference.thenComparing((o1, o2) -> o1.id.compareToIgnoreCase(o2.id));
 		}
 
-		return id.compareToIgnoreCase(o.id);
+		return reference.compare(this, o);
 	}
 
 	public boolean isIssue() {

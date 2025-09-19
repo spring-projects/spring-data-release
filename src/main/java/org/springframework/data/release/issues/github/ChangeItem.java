@@ -17,14 +17,23 @@ package org.springframework.data.release.issues.github;
 
 import lombok.Value;
 
-import org.springframework.data.release.issues.Ticket;
+import java.util.Comparator;
+
 import org.springframework.data.release.issues.TicketReference;
 
 /**
  * @author Mark Paluch
  */
 @Value
-public class ChangeItem {
+public class ChangeItem implements Comparable<ChangeItem> {
+
 	TicketReference reference;
 	GitHubReadIssue issue;
+
+	@Override
+	public int compareTo(ChangeItem o) {
+
+		Comparator<ChangeItem> reference = Comparator.comparing(it -> it.getReference().getRepository());
+		return reference.thenComparing(ChangeItem::getIssue).compare(this, o);
+	}
 }

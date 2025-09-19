@@ -498,7 +498,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		logger.log(moduleIteration, "Looking up GitHub issues …");
 		Collection<ChangeItem> foundIssues = ticketIds.stream().filter(it -> it.getId().startsWith("#")).flatMap(it -> {
 
-			GitHubReadIssue ticket = getTicket(issues, repositoryName, it.getId());
+			GitHubReadIssue ticket = getTicket(issues,
+					it.getRepository().isImplicit() ? repositoryName : it.getRepository().getProject(), it.getId());
 
 			if (ticket != null) {
 				return Stream.of(new ChangeItem(it, ticket));

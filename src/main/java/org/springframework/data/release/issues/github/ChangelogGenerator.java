@@ -79,7 +79,7 @@ public class ChangelogGenerator {
 		StringBuilder content = new StringBuilder();
 		addSectionContent(content, this.sections.collate(issues.stream()
 				.filter(it -> it.getReference().isIssue() || it.getReference().isPullRequest() || it.getReference().isRelated())
-				.map(ChangeItem::getIssue).collect(Collectors.toList())), sectionContentPostProcessor, includeIssueNumbers);
+				.collect(Collectors.toList())), sectionContentPostProcessor, includeIssueNumbers);
 		Set<GitHubUser> contributors = getContributors(issues);
 		if (!contributors.isEmpty()) {
 			addContributorsContent(content, contributors);
@@ -87,7 +87,7 @@ public class ChangelogGenerator {
 		return content.toString();
 	}
 
-	private void addSectionContent(StringBuilder result, Map<ChangelogSection, List<GitHubReadIssue>> sectionIssues,
+	private void addSectionContent(StringBuilder result, Map<ChangelogSection, List<ChangeItem>> sectionIssues,
 			BiFunction<ChangelogSection, String, String> sectionContentPostProcessor, boolean includeIssueNumbers) {
 
 		sectionIssues.forEach((section, issues) -> {
@@ -104,7 +104,9 @@ public class ChangelogGenerator {
 		});
 	}
 
-	private String getFormattedIssue(GitHubReadIssue issue, boolean includeIssueNumbers) {
+	private String getFormattedIssue(ChangeItem item, boolean includeIssueNumbers) {
+
+		GitHubReadIssue issue = item.getIssue();
 		String title = issue.getTitle();
 
 		if (title.endsWith(".")) {

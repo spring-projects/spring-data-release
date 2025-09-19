@@ -81,7 +81,8 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetIssueWith("issue.json", 233);
 
 		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
-				Collections.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub)));
+				Collections
+						.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub, GitHubRepository.implicit())));
 
 		assertThat(tickets).hasSize(1);
 	}
@@ -90,7 +91,8 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 	void ignoresUnknownTicketsByTicketId() {
 
 		Collection<Ticket> tickets = github.findTickets(LATEST.getSupportedProject(Projects.BUILD),
-				Collections.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub)));
+				Collections
+						.singletonList(TicketReference.ofTicket("233", TicketReference.Style.GitHub, GitHubRepository.implicit())));
 		assertThat(tickets).isEmpty();
 	}
 

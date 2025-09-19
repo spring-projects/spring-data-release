@@ -71,6 +71,7 @@ import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketStatus;
+import org.springframework.data.release.issues.github.GitHubRepository;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
@@ -483,7 +484,8 @@ public class GitOperations {
 					.collect(Collectors.toMap(Branch::toString, branch -> branch));
 
 			Collection<Ticket> tickets = tracker.findTickets(project, ticketIds.keySet().stream()
-					.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub)).collect(Collectors.toList()));
+					.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub, GitHubRepository.implicit()))
+					.collect(Collectors.toList()));
 
 			return TicketBranches
 					.from(tickets.stream().collect(Collectors.toMap(ticket -> ticketIds.get(ticket.getId()), ticket -> ticket)));
@@ -527,7 +529,6 @@ public class GitOperations {
 			TrainIteration to) {
 
 		VersionTags tags = getTags(project);
-
 		List<TicketReference> ticketReferences = doWithGit(project, git -> {
 
 			Repository repo = git.getRepository();
@@ -563,7 +564,7 @@ public class GitOperations {
 		List<TicketReference> uniqueTicketReferences = new ArrayList<>();
 
 		for (TicketReference reference : ticketReferences) {
-			collated.add(reference.getId(), reference);
+			collated.add(reference.getRepository() + reference.getId(), reference);
 		}
 
 		for (Map.Entry<String, List<TicketReference>> entry : collated.entrySet()) {

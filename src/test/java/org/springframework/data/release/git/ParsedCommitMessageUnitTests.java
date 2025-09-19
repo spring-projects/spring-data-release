@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import org.springframework.data.release.issues.github.GitHubRepository;
+
 /**
  * Unit tests for {@link ParsedCommitMessage}.
  *
@@ -89,7 +91,7 @@ class ParsedCommitMessageUnitTests {
 		assertThat(commit.getRelatedTickets()).hasSize(3);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest // GH-119
 	@ValueSource(strings = { "DATAFOO-456 - Hello World.\n Original pull request: #415.",
 			"DATAFOO-456 - Hello World.\n Original pr: #415." })
 	void shouldParseCommitWithPullRequest(String commitMessage) {
@@ -97,8 +99,22 @@ class ParsedCommitMessageUnitTests {
 		ParsedCommitMessage commit = ParsedCommitMessage.parse(commitMessage);
 
 		assertThat(commit.getTicketReference().getId()).isEqualTo("DATAFOO-456");
+		assertThat(commit.getTicketReference().getRepository()).isEqualTo(GitHubRepository.implicit());
 		assertThat(commit.getPullRequestReference()).isNotNull();
 		assertThat(commit.getPullRequestReference().getId()).isEqualTo("#415");
+	}
+
+	@ParameterizedTest // GH-119
+	@ValueSource(strings = { "Hello World.\n Original pull request: foo-baz1/b_ar#415.",
+			"Hello World.\n Original pr: https://github.com/foo-baz1/b_ar/issues/415.",
+			"Hello World.\n Closes: foo-baz1/b_ar#415 Original pull request: foo-baz1/b_ar#1111",
+			"Hello World.\n See https://github.com/foo-baz1/b_ar/issues/415 Original pr: https://github.com/foo-baz1/b_ar/issues/1111." })
+	void shouldParseCommitWithQualifiedReference(String commitMessage) {
+
+		ParsedCommitMessage commit = ParsedCommitMessage.parse(commitMessage);
+
+		assertThat(commit.getTicketReference().getId()).isEqualTo("#415");
+		assertThat(commit.getTicketReference().getRepository()).isEqualTo(GitHubRepository.of("foo-baz1", "b_ar"));
 	}
 
 }

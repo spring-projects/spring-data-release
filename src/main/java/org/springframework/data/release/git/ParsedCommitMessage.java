@@ -24,11 +24,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.data.release.issues.TicketReference;
+import org.springframework.data.release.issues.github.GitHubRepository;
 import org.springframework.lang.Nullable;
 
 /**
@@ -43,20 +45,28 @@ import org.springframework.lang.Nullable;
 @ToString
 class ParsedCommitMessage {
 
-	private static final Pattern JIRA_TICKET = Pattern.compile("(?>\\[)?([A-Z]+[ ]?-[ ]?\\d+)(?>\\])?");
+	private static final Pattern JIRA_TICKET = Pattern.compile("(?>\\[)?([A-Z]+[ ]?-[ ]?\\d+)(?>])?");
+	private static final Pattern GITHUB_QUALIFIED_TICKET = Pattern.compile("([\\w\\d-_]+)/([\\w\\d-_]+)((#|gh-)\\d+)",
+			Pattern.CASE_INSENSITIVE);
+	private static final Pattern GITHUB_URL_QUALIFIED_TICKET = Pattern
+			.compile("http[s:/]+[\\w.]+/([\\w-_]+)/([\\w-_]+)/issues/(\\d+)", Pattern.CASE_INSENSITIVE);
 	private static final Pattern GITHUB_TICKET = Pattern.compile("((?>#|gh-)\\d+)", Pattern.CASE_INSENSITIVE);
 
 	private static final Pattern GITHUB_CLOSE_SYNTAX = Pattern.compile(
-			"(?>closes|closed|close|fixes|fixed|fix|resolves|resolved|resolve)[\\s:]*((?>#|gh-)\\d+)",
+			"(?>closes|closed|close|fixes|fixed|fix|resolves|resolved|resolve)[\\s:]*(%s|%s|%s)"
+					.formatted(GITHUB_QUALIFIED_TICKET.pattern(), GITHUB_URL_QUALIFIED_TICKET.pattern(), GITHUB_TICKET.pattern()),
 			Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
-	private static final Pattern GITHUB_SEE_SYNTAX = Pattern.compile("(?>see|related to)[\\s:]*((?>#|gh-)\\d+)",
+	private static final Pattern GITHUB_SEE_SYNTAX = Pattern.compile(
+			"(?>see|related to)[\\s:]*(%s|%s|%s)".formatted(GITHUB_QUALIFIED_TICKET.pattern(),
+					GITHUB_URL_QUALIFIED_TICKET.pattern(), GITHUB_TICKET.pattern()),
 			Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
 
 	private static final Pattern GITHUB_PREFIX_SYNTAX = Pattern.compile("^((?>#|gh-)\\d+)");
 
 	private static final Pattern A_TICKET = Pattern
-			.compile(String.format("(%s|%s)", JIRA_TICKET.pattern(), GITHUB_TICKET.pattern()), Pattern.CASE_INSENSITIVE);
+			.compile(java.lang.String.format("(%s|%s|%s|%s)", JIRA_TICKET.pattern(), GITHUB_QUALIFIED_TICKET.pattern(),
+					GITHUB_URL_QUALIFIED_TICKET.pattern(), GITHUB_TICKET.pattern()), Pattern.CASE_INSENSITIVE);
 
 	private static final Pattern ORIGINAL_PULL_REQUEST = Pattern
 			.compile("Original (?>pull request|PR|pullrequest)[:]*(?>\\s+)?" + A_TICKET.pattern(), Pattern.CASE_INSENSITIVE);
@@ -98,17 +108,17 @@ class ParsedCommitMessage {
 			ticketReference = gitHubTicket.get();
 		} else {
 			if (gitHubCloseMatcher.find()) {
-				ticketReference = new TicketReference(gitHubCloseMatcher.group(1), summary, TicketReference.Style.GitHub,
-						TicketReference.Reference.Ticket);
+				ticketReference = extractTicket(gitHubCloseMatcher.group(1), TicketReference.Reference.Ticket)
+						.orElseThrow(() -> new IllegalStateException("Cannot parse ticket"));
 			} else if (gitHubSeeMatcher.find()) {
-				ticketReference = new TicketReference(gitHubSeeMatcher.group(1), summary, TicketReference.Style.GitHub,
-						TicketReference.Reference.Ticket);
+				ticketReference = extractTicket(gitHubSeeMatcher.group(1), TicketReference.Reference.Ticket)
+						.orElseThrow(() -> new IllegalStateException("Cannot parse ticket"));
 			}
 		}
 
-		List<TicketReference> relatedTickets = parseRelatedTickets(summary, body,
+		List<TicketReference> relatedTickets = parseRelatedTickets(body,
 				Arrays.asList(gitHubCloseMatcher, gitHubSeeMatcher));
-		Optional<TicketReference> optionalOriginalPr = parsePullRequestReference(summary, body);
+		Optional<TicketReference> optionalOriginalPr = parsePullRequestReference(body);
 
 		if (optionalOriginalPr.isPresent()) {
 
@@ -166,7 +176,7 @@ class ParsedCommitMessage {
 
 				return Optional.of(new TicketReference(gitHubPrefixMatcher.group(1).toUpperCase(Locale.ROOT),
 						summaryStart > -1 ? summary.substring(summaryStart) : summary, TicketReference.Style.GitHub,
-						TicketReference.Reference.Ticket));
+						TicketReference.Reference.Ticket, GitHubRepository.implicit()));
 			}
 		}
 
@@ -187,14 +197,14 @@ class ParsedCommitMessage {
 
 				return Optional.of(new TicketReference(jiraMatcher.group(1).toUpperCase(Locale.ROOT),
 						summaryStart > -1 ? summary.substring(summaryStart) : summary, TicketReference.Style.Jira,
-						TicketReference.Reference.Ticket));
+						TicketReference.Reference.Ticket, GitHubRepository.implicit()));
 			}
 		}
 
 		return Optional.empty();
 	}
 
-	protected static Optional<TicketReference> parsePullRequestReference(String summary, String body) {
+	protected Optional<TicketReference> parsePullRequestReference(String body) {
 
 		if (body != null) {
 
@@ -208,7 +218,7 @@ class ParsedCommitMessage {
 		return Optional.empty();
 	}
 
-	protected static List<TicketReference> parseRelatedTickets(String summary, String body,
+	protected List<TicketReference> parseRelatedTickets(String body,
 			Collection<Matcher> gitHubMatcher) {
 
 		List<TicketReference> relatedTickets = new ArrayList<>();
@@ -220,14 +230,14 @@ class ParsedCommitMessage {
 				String[] ticketIds = relatedTicketsMatcher.group(1).split(",");
 
 				for (String ticketId : ticketIds) {
-					extractTicket(ticketId.trim(), summary, TicketReference.Reference.Related).ifPresent(relatedTickets::add);
+					extractTicket(ticketId.trim(), TicketReference.Reference.Related).ifPresent(relatedTickets::add);
 				}
 			}
 
 			for (Matcher matcher : gitHubMatcher) {
 
 				while (matcher.find()) {
-					extractTicket(matcher.group(1), summary, TicketReference.Reference.Related).ifPresent(relatedTickets::add);
+					extractTicket(matcher.group(1), TicketReference.Reference.Related).ifPresent(relatedTickets::add);
 				}
 			}
 
@@ -236,15 +246,48 @@ class ParsedCommitMessage {
 		return relatedTickets;
 	}
 
+	protected Optional<TicketReference> extractTicket(String ticketId, TicketReference.Reference reference) {
+		return extractTicket(ticketId, this.summary, reference);
+	}
+
 	protected static Optional<TicketReference> extractTicket(String ticketId, String summary,
 			TicketReference.Reference reference) {
 
+		Optional<TicketReference> urlQualified = doWithMatcher(ticketId, GITHUB_URL_QUALIFIED_TICKET,
+				matcher -> new TicketReference("#" + matcher.group(3), summary, TicketReference.Style.GitHub, reference,
+						GitHubRepository.of(matcher.group(1), matcher.group(2))));
+
+		if (urlQualified.isPresent()) {
+			return urlQualified;
+		}
+
+		Optional<TicketReference> qualified = doWithMatcher(ticketId, GITHUB_QUALIFIED_TICKET,
+				matcher -> new TicketReference(matcher.group(3), summary, TicketReference.Style.GitHub, reference,
+						GitHubRepository.of(matcher.group(1), matcher.group(2))));
+
+		if (qualified.isPresent()) {
+			return qualified;
+		}
+
 		if (GITHUB_TICKET.matcher(ticketId.trim()).matches()) {
-			return Optional.of(new TicketReference(ticketId, summary, TicketReference.Style.GitHub, reference));
+			return Optional.of(
+					new TicketReference(ticketId, summary, TicketReference.Style.GitHub, reference, GitHubRepository.implicit()));
 		}
 
 		if (JIRA_TICKET.matcher(ticketId.trim()).matches()) {
-			return Optional.of(new TicketReference(ticketId, summary, TicketReference.Style.Jira, reference));
+			return Optional.of(
+					new TicketReference(ticketId, summary, TicketReference.Style.Jira, reference, GitHubRepository.implicit()));
+		}
+
+		return Optional.empty();
+	}
+
+	protected static <T> Optional<T> doWithMatcher(String chars, Pattern pattern, Function<Matcher, T> mapper) {
+
+		Matcher matcher = pattern.matcher(chars);
+
+		if (matcher.matches()) {
+			return Optional.ofNullable(mapper.apply(matcher));
 		}
 
 		return Optional.empty();

@@ -20,7 +20,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.release.issues.github.GitHubRepository;
 import org.springframework.data.release.model.ModuleIteration;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 
@@ -50,11 +52,14 @@ public class GitProject {
 	 * @return
 	 */
 	public String getRepositoryName() {
+		return getRepository().getProject();
+	}
 
-		String logicalName = String.format("%s-%s", PROJECT_PREFIX,
-				project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase());
+	public GitHubRepository getRepository() {
 
-		return project.isCommercial() ? logicalName + "-commercial" : logicalName;
+		String logicalName = project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase();
+		logicalName = project.isCommercial() ? logicalName + "-commercial" : logicalName;
+		return GitHubRepository.of("spring-projects", PROJECT_PREFIX + "-" + logicalName);
 	}
 
 	/**
