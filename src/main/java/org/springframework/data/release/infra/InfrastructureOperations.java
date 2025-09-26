@@ -25,7 +25,6 @@ import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -79,7 +78,8 @@ public class InfrastructureOperations extends TimedCommand {
 	}
 
 	void distributeGhWorkflow(TrainIteration iteration) {
-		distributeFiles(iteration, Collections.singletonList(".github/workflows/project.yml"), "GitHub Actions",
+		distributeFiles(iteration, List.of(".github/workflows/project.yml", ".github/workflows/codeql.yml"),
+				"GitHub Actions",
 				project -> project != Projects.BOM);
 	}
 
