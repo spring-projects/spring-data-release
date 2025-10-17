@@ -294,3 +294,24 @@ mvn clean verify -Dmaven.maven-home=/opt/homebrew/bin/mvn
 ```
 
 Obviously, the path given should be the location of your Maven installation.
+
+== Troubleshooting
+
+=== Certificate Error (Local)
+
+Happens typically when when tyring to resolve dependencies locally when running the preparation.
+
+*Solution:* Check WSS and disable if running.
+
+=== Docker Image Unavailable (CI)
+
+Happens typically after bumping the java version which does not necessarily trigger container recreation.
+
+[source,bash]
+----
+10:41:58  Error: No such object: springci/spring-data-release-tools:0.27
+----
+
+*Solution:* alter the `Dockerfile` (eg. add a newline) and push things again. This will trigger the rebuild of the release tools container image.
+
+
