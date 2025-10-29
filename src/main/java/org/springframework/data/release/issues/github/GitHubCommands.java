@@ -31,11 +31,13 @@ import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
+import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -57,10 +59,18 @@ public class GitHubCommands extends TimedCommand {
 	@NonNull Executor executor;
 
 	@CliCommand(value = "github update labels")
-	public void createOrUpdateLabels(@CliOption(key = "", mandatory = true) Project project,
+	public void createOrUpdateLabels(@CliOption(key = "project", mandatory = false) Project project,
 			@CliOption(key = "commercial", mandatory = false) Boolean commercial) {
-		gitHubLabels.createOrUpdateLabels(
-				SupportedProject.of(project, commercial == null || !commercial ? SupportStatus.OSS : SupportStatus.COMMERCIAL));
+
+		SupportStatus status = commercial == null || !commercial ? SupportStatus.OSS : SupportStatus.COMMERCIAL;
+
+		if (project == null) {
+			ExecutionUtils.run(executor, Streamable.of(Projects.all(status)),
+					it -> gitHubLabels.createOrUpdateLabels(SupportedProject.of(it, status)));
+			return;
+		}
+
+		gitHubLabels.createOrUpdateLabels(SupportedProject.of(project, status));
 	}
 
 	@CliCommand(value = "github push")

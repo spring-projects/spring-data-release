@@ -161,4 +161,29 @@ public class Projects {
 		return PROJECTS.stream().collect(Collectors.toList());
 	}
 
+	public static List<Project> all(SupportStatus status) {
+		return PROJECTS.stream().filter(it -> {
+			return matches(it, status);
+		}).collect(Collectors.toList());
+	}
+
+	static boolean matches(Project project, SupportStatus status) {
+
+		if (status.isEndOfLife()) {
+			return project == Projects.SOLR;
+		} else {
+
+			if (matches(project, SupportStatus.EOL)) {
+				return false;
+			}
+
+			if (status.isOpenSource()) {
+				return project != Projects.ENVERS && project != Projects.R2DBC && project != Projects.JDBC
+						&& project != Projects.GEODE;
+			}
+
+			return true;
+		}
+	}
+
 }
