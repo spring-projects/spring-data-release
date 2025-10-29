@@ -42,7 +42,7 @@ public class Dependencies {
 
 	public static final Dependency JACKSON3 = Dependency.of("Jackson 3", "tools.jackson:jackson-bom");
 
-	public static final Dependency JACKSON2 = Dependency.of("Jackson 2", "com.fasterxml.jackson:jackson-databind");
+	public static final Dependency JACKSON2 = Dependency.of("Jackson 2", "com.fasterxml.jackson.core:jackson-databind");
 
 	public static final Dependency JACOCO = Dependency.of("Jacoco", "org.jacoco:jacoco");
 
