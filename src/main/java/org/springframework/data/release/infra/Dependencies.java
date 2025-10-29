@@ -46,6 +46,8 @@ public class Dependencies {
 
 	public static final Dependency JACOCO = Dependency.of("Jacoco", "org.jacoco:jacoco");
 
+	public static final Dependency JMH = Dependency.of("JMH", "org.openjdk.jmh:jmh-core");
+
 	public static final Dependency JODA_TIME = Dependency.of("Joda Time", "joda-time:joda-time");
 
 	public static final Dependency JUNIT5 = Dependency.of("JUnit", "org.junit:junit-bom");
@@ -58,6 +60,8 @@ public class Dependencies {
 
 	public static final Dependency KOTLIN_COROUTINES = Dependency.of("Kotlin Coroutines",
 			"org.jetbrains.kotlinx:kotlinx-coroutines-bom");
+
+	public static final Dependency LOGBACK = Dependency.of("Logback", "ch.qos.logback:logback-classic");
 
 	public static final Dependency MICROMETER = Dependency.of("Micrometer", "io.micrometer:micrometer-bom");
 
@@ -79,13 +83,16 @@ public class Dependencies {
 	public static final Dependency RXJAVA_RS = Dependency.of("RxJava Reactive Streams",
 			"io.reactivex:rxjava-reactive-streams");
 
+	public static final Dependency SLF4J = Dependency.of("SLF4J", "org.slf4j:slf4j-api");
+
 	public static final Dependency SPRING_HATEOAS = Dependency.of("Spring Hateoas",
 			"org.springframework.hateoas:spring-hateoas");
 
 	public static final Dependency SPRING_PLUGIN = Dependency.of("Spring Plugin",
 			"org.springframework.plugin:spring-plugin");
 
-	public static final Dependency TESTCONTAINERS = Dependency.of("Testcontainers", "org.testcontainers:testcontainers");
+	public static final Dependency TESTCONTAINERS = Dependency.of("Testcontainers",
+			"org.testcontainers:testcontainers-bom");
 
 	public static final Dependency THREE_TEN_BP = Dependency.of("ThreeTenBp", "org.threeten:threetenbp");
 

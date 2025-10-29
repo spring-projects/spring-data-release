@@ -48,12 +48,14 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("jodatime", Dependencies.JODA_TIME));
 		config.add(Projects.BUILD, ProjectDependency.using("junit5", Dependencies.JUNIT5));
 		config.add(Projects.BUILD, ProjectDependency.using("junit-pioneer", Dependencies.JUNIT_PIONEER));
+		config.add(Projects.BUILD, ProjectDependency.using("jmh", Dependencies.JMH));
 		config.add(Projects.BUILD, ProjectDependency.using("jmolecules", Dependencies.JMOLECULES));
 		config.add(Projects.BUILD,
 				ProjectDependency.using("jmolecules-integration", Dependencies.JMOLECULES_INTEGRATION));
 		config.add(Projects.BUILD, ProjectDependency.using("junit", Dependencies.JUNIT4));
 		config.add(Projects.BUILD, ProjectDependency.using("kotlin", Dependencies.KOTLIN));
 		config.add(Projects.BUILD, ProjectDependency.using("kotlin-coroutines", Dependencies.KOTLIN_COROUTINES));
+		config.add(Projects.BUILD, ProjectDependency.using("logback", Dependencies.LOGBACK));
 		config.add(Projects.BUILD, ProjectDependency.using("micrometer", Dependencies.MICROMETER));
 		config.add(Projects.BUILD, ProjectDependency.using("micrometer-tracing", Dependencies.MICROMETER_TRACING));
 		config.add(Projects.BUILD, ProjectDependency.using("mockito", Dependencies.MOCKITO));
@@ -63,6 +65,7 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("rxjava2", Dependencies.RXJAVA2));
 		config.add(Projects.BUILD, ProjectDependency.using("rxjava3", Dependencies.RXJAVA3));
 		config.add(Projects.BUILD, ProjectDependency.using("rxjava-reactive-streams", Dependencies.RXJAVA_RS));
+		config.add(Projects.BUILD, ProjectDependency.using("slf4j", Dependencies.SLF4J));
 		config.add(Projects.BUILD, ProjectDependency.using("smallrye-mutiny", Dependencies.SMALLRYE_MUTINY));
 		config.add(Projects.BUILD, ProjectDependency.using("spring-hateoas", Dependencies.SPRING_HATEOAS));
 		config.add(Projects.BUILD, ProjectDependency.using("spring-plugin", Dependencies.SPRING_PLUGIN));
