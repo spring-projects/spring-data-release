@@ -111,6 +111,8 @@ class LabelConfiguration implements Streamable<Label> {
 					"A question that's better suited to stackoverflow.com");
 			configurer.register(LabelFactories.FOR_LABEL, "team-attention",
 					"An issue we need to discuss as a team to make progress");
+			configurer.register(LabelFactories.FOR_LABEL, "planning",
+					"An issue we'd like to consider when planning our next release");
 			configurer.register(LabelFactories.FOR_LABEL, "external-project", "An issue to discuss face-to-face");
 
 			configurer.register(LabelFactories.STATUS_LABEL, "blocked",
@@ -143,10 +145,8 @@ class LabelConfiguration implements Streamable<Label> {
 
 			configurer.register(LabelFactories.HAS_LABEL, "design-decision",
 					"An issue that contains a design decision about its topic");
-
 			configurer.register(LabelFactories.HAS_LABEL, "ai-slop",
 					"An bloated issue that contains low-value AI-generated content.");
-
 			configurer.register(LabelFactories.HAS_LABEL, "breaking-change",
 					"An issue that is associated with a breaking change.");
 			configurer.register(TYPE_TASK);
