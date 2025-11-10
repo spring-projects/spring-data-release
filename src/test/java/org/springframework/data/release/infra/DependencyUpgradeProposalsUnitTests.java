@@ -17,6 +17,7 @@ package org.springframework.data.release.infra;
 
 import static org.assertj.core.api.Assertions.*;
 
+import java.util.ArrayList;
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
@@ -47,5 +48,21 @@ class DependencyUpgradeProposalsUnitTests {
 		assertThat(dependencies.getVersions()).hasSize(2)
 				.containsEntry(Dependencies.ASSERTJ, DependencyVersion.of("3.18.1"))
 				.containsEntry(Dependencies.RXJAVA3, DependencyVersion.of("1.2.3"));
+	}
+
+	@Test // GH-123
+	void shouldReportUpgradeAvailable() {
+
+		DependencyUpgradeProposal newerAvailable = DependencyUpgradeProposal.of(DependencyUpgradePolicy.LATEST_STABLE,
+				DependencyVersion.of("1.0.9"), DependencyVersion.of("1.0.10"), DependencyVersion.of("1.0.10"),
+				new ArrayList<>());
+
+		assertThat(newerAvailable.isUpgradeAvailable()).isTrue();
+
+		DependencyUpgradeProposal alreadyUpgraded = DependencyUpgradeProposal.of(DependencyUpgradePolicy.LATEST_STABLE,
+				DependencyVersion.of("1.0.11"), DependencyVersion.of("1.0.10"), DependencyVersion.of("1.0.10"),
+				new ArrayList<>());
+
+		assertThat(alreadyUpgraded.isUpgradeAvailable()).isFalse();
 	}
 }

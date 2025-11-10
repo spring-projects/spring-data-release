@@ -63,7 +63,16 @@ class DependencyUpgradeProposal {
 	}
 
 	public boolean isUpgradeAvailable() {
-		return !getCurrent().getIdentifier().equals(getProposal().getIdentifier());
+
+		if (getCurrent().getIdentifier().equals(getProposal().getIdentifier())) {
+			return false;
+		}
+
+		if (getCurrent().isNewer(getProposal())) {
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override

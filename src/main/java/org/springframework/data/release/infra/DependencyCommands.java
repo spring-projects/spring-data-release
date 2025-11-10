@@ -156,10 +156,11 @@ public class DependencyCommands extends TimedCommand {
 
 		String propertiesFile = "dependency-upgrade-modules.properties";
 
-		List<SupportedProject> projects = Projects.all().stream() //
-				.filter(it -> it != Projects.BOM && it != Projects.BUILD) //
-				.filter(projectFilter) //
-				.map(iteration::getSupportedProject) //
+		List<SupportedProject> projects = iteration.stream() //
+				.map(ModuleIteration::getSupportedProject) //
+				.filter(it -> {
+					return it.getProject() != Projects.BOM && it.getProject() != Projects.BUILD;
+				}).filter(it -> projectFilter.test(it.getProject())) //
 				.collect(Collectors.toList());
 
 		DependencyUpgradeProposals proposals = DependencyUpgradeProposals.empty();
