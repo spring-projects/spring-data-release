@@ -81,7 +81,20 @@ Goto https://jenkins.spring.io/view/SpringData/job/spring-data-release/job/relea
 |Create new release versions and tickets for upcoming version
 |`$ tracker setup-next $trainIteration.next`
 
-|Update versions in the Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann`
+|===
+
+* 🚥 Go to <<pre-release,*Pre-Release tasks*>> to ship the next release 🔂.
+* 🚥 If this has been the last release 🏁, continue with <<post-all-release,*Post-All-Releases tasks*>> for the final steps.
+
+[[post-all-release]]
+=== 🍃 Post-All-Releases tasks
+
+[%header,cols="1,1"]
+|===
+|Action
+|Command
+
+|Update versions in the Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `W,X,Y,Z`
 |`$ projects update $releaseTrains`
 
 |Create list of docs for release announcements
