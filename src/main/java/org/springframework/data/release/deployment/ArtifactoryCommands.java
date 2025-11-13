@@ -64,7 +64,7 @@ class ArtifactoryCommands extends TimedCommand {
 			// aggregator creation requires a bit of time
 			// otherwise we will see 16:19:04 "message" : "Release Bundle path not found:
 			// spring-release-bundles-v2/TNZ-spring-data-rest-commercial/4.0.15/release-bundle.json.evd"
-			Thread.sleep(2000);
+			Thread.sleep(5000);
 
 			operations.createArtifactoryReleaseAggregator(trainIteration);
 		} else {
