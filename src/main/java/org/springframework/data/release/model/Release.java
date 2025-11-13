@@ -17,7 +17,7 @@ package org.springframework.data.release.model;
 
 import lombok.Value;
 
-import org.joda.time.LocalDate;
+import java.time.LocalDate;
 
 /**
  * @author Oliver Gierke
@@ -25,9 +25,9 @@ import org.joda.time.LocalDate;
 @Value
 public class Release {
 
-	private final String id;
-	private final ProjectKey projectKey;
-	private final String name;
-	private final String description;
-	private final LocalDate date;
+	String id;
+	ProjectKey projectKey;
+	String name;
+	String description;
+	LocalDate date;
 }

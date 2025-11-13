@@ -44,8 +44,6 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
 import org.springframework.util.Assert;
 
-import com.google.common.util.concurrent.MoreExecutors;
-
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
@@ -63,7 +61,7 @@ class ProjectServiceOperations {
 
 	public ProjectServiceOperations(GitOperations git, ProjectService client, Logger logger) {
 		this.git = git;
-		this.executor = MoreExecutors.directExecutor();
+		this.executor = ExecutionUtils.immediateExecutorService();
 		this.client = client;
 		this.logger = logger;
 	}
