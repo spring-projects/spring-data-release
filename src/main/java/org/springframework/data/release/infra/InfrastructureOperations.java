@@ -77,6 +77,10 @@ public class InfrastructureOperations extends TimedCommand {
 				"CI Properties", Predicates.isTrue());
 	}
 
+	void distribute(TrainIteration iteration, String file, String commitMessage) {
+		distributeFiles(iteration, Arrays.asList(file), commitMessage, Predicates.isTrue());
+	}
+
 	void distributeGhWorkflow(TrainIteration iteration) {
 		distributeFiles(iteration, List.of(".github/workflows/project.yml", ".github/workflows/codeql.yml"),
 				"GitHub Actions",
