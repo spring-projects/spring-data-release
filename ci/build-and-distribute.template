@@ -1,6 +1,7 @@
 workspace cleanup
 git update ${VERSION}
-release build ${VERSION}
-artifactory release create ${VERSION}
-release distribute ${VERSION}
+build  ${VERSION} --project Build
+build  ${VERSION} --project Commons
+build  ${VERSION} --project JPA
+release distribute ${VERSION} --project JPA
 quit
