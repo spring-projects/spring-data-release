@@ -68,6 +68,17 @@ public class CommandLine {
 	}
 
 	/**
+	 * Creates a new {@link CommandLine} for the given {@link Goal}s and {@link Argument}s.
+	 *
+	 * @param goal must not be {@literal null}.
+	 * @param argument must not be {@literal null}.
+	 * @return
+	 */
+	public static CommandLine of(Goal first, Goal second, Goal third, Argument... argument) {
+		return new CommandLine(Arrays.asList(first, second, third), Arrays.asList(argument));
+	}
+
+	/**
 	 * Returns a new {@link CommandLine} with the given {@link Argument} added in case the given {@link BooleanSupplier}
 	 * evaluates to {@literal true}.
 	 *
@@ -195,7 +206,7 @@ public class CommandLine {
 		}
 
 		public static Argument settingsXml(String path) {
-			return Argument.of("-s " + path);
+			return Argument.of("--settings " + path);
 		}
 
 		public Argument withValue(Object value) {

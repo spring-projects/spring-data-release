@@ -384,14 +384,15 @@ class MavenBuildSystem implements BuildSystem {
 		doWithProjection(workspace.getFile(POM_XML, smokeTests), pom -> {
 
 			Version version = module.getVersion();
-			String targetBootVersion = version.getMajor() == 2 ? "2.7.8" : "3.0.2";
+			String targetBootVersion = getTargetBootVersion(version);
 
-			pom.setParentVersion(ArtifactVersion.of(Version.parse(targetBootVersion), true));
+			pom.setParentVersion(ArtifactVersion.of(targetBootVersion));
 		});
 
-		CommandLine arguments = CommandLine.of(Goal.CLEAN, VERIFY, //
+		CommandLine arguments = CommandLine.of(Goal.goal("dependency:list"), Goal.CLEAN, VERIFY, //
 				profile(profile), //
-				arg("s").withValue("settings.xml"), //
+				settingsXml("settings.xml"), //
+				arg("sort").withValue("true"), //
 				arg("spring-data-bom.version").withValue(iteration.getReleaseTrainNameAndVersion())) //
 				.andIf(mavenCentral, arg("deploymentId").withValue(stagingRepository.getId())) //
 				.andIf(mavenCentral, arg("CENTRAL_BEARER").withValue(properties.getMavenCentral().getBearer()));
@@ -399,6 +400,15 @@ class MavenBuildSystem implements BuildSystem {
 		mvn.execute(smokeTests, arguments);
 
 		logger.log(iteration, "✅ Smoke tests passed. Do not smoke 🚭. It's unhealthy.");
+	}
+
+	private static String getTargetBootVersion(Version version) {
+
+		return switch (version.getMajor()) {
+			case 2 -> "2.7.8";
+			case 3 -> "3.5.7";
+			default -> "4.0.0-RC2";
+		};
 	}
 
 	@Override
