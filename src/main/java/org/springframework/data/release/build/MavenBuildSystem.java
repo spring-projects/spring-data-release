@@ -90,9 +90,6 @@ class MavenBuildSystem implements BuildSystem {
 
 	Environment env;
 
-	static final String REPO_OPENING_TAG = "<repository>";
-	static final String REPO_CLOSING_TAG = "</repository>";
-
 	@Override
 	public BuildSystem withJavaVersion(JavaVersion javaVersion) {
 		return new MavenBuildSystem(workspace, projectionFactory, logger, mvn.withJavaVersion(javaVersion), properties, gpg,
@@ -231,6 +228,8 @@ class MavenBuildSystem implements BuildSystem {
 	 */
 	@Override
 	public <M extends ProjectAware> M triggerBuild(M module) {
+
+		Gpg gpg = getGpg();
 
 		Argument profile = module.isCommercial() ? profile("ci,release,spring-enterprise") : profile("ci,release");
 		CommandLine arguments = CommandLine.of(Goal.CLEAN, Goal.INSTALL, //
