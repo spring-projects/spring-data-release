@@ -73,7 +73,7 @@ class BuildCommands extends TimedCommand {
 	 */
 	@CliCommand("build")
 	public void build(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
-			@CliOption(key = "module") String projectKey) {
+			@CliOption(key = "project") String projectKey) {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
 		Optional<Project> project = Projects.byName(projectKey);
