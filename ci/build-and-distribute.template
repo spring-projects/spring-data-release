@@ -1,5 +1,6 @@
 workspace cleanup
 git update ${VERSION}
+git co ${VERSION}
 build ${VERSION} --project Build
 build ${VERSION} --project Commons
 build ${VERSION} --project JPA
