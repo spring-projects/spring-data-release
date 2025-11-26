@@ -33,9 +33,9 @@ class MaintainedVersionsUnitTests {
 	void considersMostRecentReleaseVersionTheMainOne() {
 
 		MaintainedVersion ingalls = MaintainedVersion.of(Projects.COMMONS, ArtifactVersion.of("1.13.0.RELEASE"),
-				ReleaseTrains.INGALLS, null, null);
+				ReleaseTrains.OCKHAM, null, null);
 		MaintainedVersion hopper = MaintainedVersion.of(Projects.COMMONS, ArtifactVersion.of("1.12.0.RELEASE"),
-				ReleaseTrains.HOPPER, null, null);
+				ReleaseTrains.VAUGHAN, null, null);
 
 		MaintainedVersions versions = MaintainedVersions.of(ingalls, hopper);
 

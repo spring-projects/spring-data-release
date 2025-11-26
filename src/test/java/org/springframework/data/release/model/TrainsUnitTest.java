@@ -30,14 +30,14 @@ class TrainsUnitTest {
 	@Test
 	void prefersNewVersionOfAdditionalModule() {
 
-		Module module = ReleaseTrains.HOPPER.getModule(Projects.NEO4J);
+		Module module = ReleaseTrains.OCKHAM.getModule(Projects.NEO4J);
 
-		assertThat(module.getVersion()).isEqualTo(Version.parse("4.1"));
+		assertThat(module.getVersion()).isEqualTo(Version.parse("6.0"));
 	}
 
 	@Test
 	void addsNewlyAddedModule() {
-		assertThat(ReleaseTrains.HOPPER.getModule(Projects.ENVERS)).isNotNull();
+		assertThat(ReleaseTrains.OCKHAM.getModule(Projects.ENVERS)).isNotNull();
 	}
 
 	@Test
@@ -45,25 +45,19 @@ class TrainsUnitTest {
 
 		assertThat(ReleaseTrains.OCKHAM.getModule(Projects.BOM).getVersion().toMajorMinorBugfix()).isEqualTo("2020.0.0");
 
-		assertThat(ReleaseTrains.PASCAL.getModule(Projects.BOM).getVersion().toMajorMinorBugfix()).isEqualTo("2021.0.0");
+		assertThat(ReleaseTrains.VAUGHAN.getModule(Projects.BOM).getVersion().toMajorMinorBugfix()).isEqualTo("2023.1.0");
 	}
 
 	@Test
 	void beforeShouldConsiderNonCalver() {
-		assertThat(ReleaseTrains.HOPPER.isBefore(ReleaseTrains.GOSLING)).isFalse();
-		assertThat(ReleaseTrains.HOPPER.isBefore(ReleaseTrains.INGALLS)).isTrue();
+		assertThat(ReleaseTrains.VAUGHAN.isBefore(ReleaseTrains.OCKHAM)).isFalse();
+		assertThat(ReleaseTrains.OCKHAM.isBefore(ReleaseTrains.VAUGHAN)).isTrue();
 	}
 
 	@Test
 	void beforeShouldConsiderCalver() {
-		assertThat(ReleaseTrains.PASCAL.isBefore(ReleaseTrains.OCKHAM)).isFalse();
-		assertThat(ReleaseTrains.OCKHAM.isBefore(ReleaseTrains.PASCAL)).isTrue();
-	}
-
-	@Test
-	void beforeShouldConsiderMixedCalver() {
-		assertThat(ReleaseTrains.PASCAL.isBefore(ReleaseTrains.INGALLS)).isFalse();
-		assertThat(ReleaseTrains.INGALLS.isBefore(ReleaseTrains.PASCAL)).isTrue();
+		assertThat(ReleaseTrains.VAUGHAN.isBefore(ReleaseTrains.OCKHAM)).isFalse();
+		assertThat(ReleaseTrains.OCKHAM.isBefore(ReleaseTrains.VAUGHAN)).isTrue();
 	}
 
 }

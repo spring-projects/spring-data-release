@@ -39,7 +39,7 @@ class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void createsDeploymentInformation() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.HOPPER, Iteration.M1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
 		ModuleIteration buildModule = iteration.getModule(Projects.BUILD);
 
 		DeploymentInformation information = new DefaultDeploymentInformation(buildModule, properties);
@@ -53,8 +53,8 @@ class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
 	void considersBranchName() {
 
 		DeploymentInformation commercialSr1 = new DefaultDeploymentInformation(
-				ReleaseTrains.TURING.getIteration(Iteration.SR1).getModule(Projects.BUILD), properties);
-		assertThat(commercialSr1.getBuildNumber()).startsWith("spring-data-build-commercial-3.0.x-release");
+				ReleaseTrains.OCKHAM.getIteration(Iteration.SR1).getModule(Projects.BUILD), properties);
+		assertThat(commercialSr1.getBuildNumber()).startsWith("spring-data-build-2.4.x-release");
 
 		DeploymentInformation ossGA = new DefaultDeploymentInformation(
 				ReleaseTrains.VAUGHAN.getIteration(Iteration.GA).getModule(Projects.BUILD), properties);

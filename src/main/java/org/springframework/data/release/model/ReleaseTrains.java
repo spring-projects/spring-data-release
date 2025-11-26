@@ -29,63 +29,27 @@ import org.springframework.data.release.model.Train.DocumentationFormat;
 public class ReleaseTrains {
 
 	public static final List<Train> TRAINS;
-	public static final Train CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-			OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, VAUGHAN, W, X, Y, Z, A;
+	public static final Train A, OCKHAM, VAUGHAN, W, X, Y, Z;
 
 	static {
 
-		CODD = codd().withSupportStatus(SupportStatus.EOL);
-		DIJKSTRA = dijkstra().withSupportStatus(SupportStatus.EOL);
-		EVANS = DIJKSTRA.next("Evans", Transition.MINOR).withSupportStatus(SupportStatus.EOL);
-		FOWLER = EVANS.next("Fowler", Transition.MINOR).withSupportStatus(SupportStatus.EOL);
-		GOSLING = FOWLER.next("Gosling", Transition.MINOR, new Module(KEY_VALUE, "1.0"))
-				.withSupportStatus(SupportStatus.EOL);
-		HOPPER = GOSLING.next("Hopper", Transition.MINOR, new Module(SOLR, "2.0"), new Module(ENVERS, "1.0"),
-				new Module(NEO4J, "4.1"), new Module(COUCHBASE, "2.1"), new Module(ELASTICSEARCH, "2.0"))
+		OCKHAM = ockham().withIterations(Train.Iterations.DEFAULT).withCalver("2020.0") //
 				.withSupportStatus(SupportStatus.EOL);
 
-		INGALLS = HOPPER.next("Ingalls", Transition.MINOR, new Module(LDAP, "1.0")).withSupportStatus(SupportStatus.EOL);
-
-		KAY = INGALLS.next("Kay", Transition.MAJOR, new Module(GEODE, "2.0")) //
-				.withSupportStatus(SupportStatus.EOL);
-
-		LOVELACE = KAY.next("Lovelace", Transition.MINOR, //
-				new Module(JDBC, "1.0"), //
-				new Module(SOLR, "4.0")) //
-				.withSupportStatus(SupportStatus.EOL);
-
-		MOORE = LOVELACE.next("Moore", Transition.MINOR).withSupportStatus(SupportStatus.EOL);
-
-		NEUMANN = MOORE.next("Neumann", Transition.MINOR, //
-				new Module(COUCHBASE, "4.0"), //
-				new Module(CASSANDRA, "3.0"), //
-				new Module(ELASTICSEARCH, "4.0"), //
-				new Module(MONGO_DB, "3.0"), //
-				new Module(JDBC, "2.0"), //
-				new Module(R2DBC, "1.1")) //
-				.filterModules(module -> !module.getProject().getName().equalsIgnoreCase("GemFire"))
-				.withSupportStatus(SupportStatus.EOL);
-
-		OCKHAM = NEUMANN.next("Ockham", Transition.MINOR, //
-				new Module(BOM, "2020.0.0"), //
-				new Module(NEO4J, "6.0") //
-		).withIterations(Train.Iterations.DEFAULT).withCalver("2020.0") //
-				.withSupportStatus(SupportStatus.EOL);
-
-		PASCAL = OCKHAM.next("Pascal", Transition.MINOR) //
+		Train PASCAL = OCKHAM.next("Pascal", Transition.MINOR) //
 				.filterModules(module -> !module.getProject().equals(SOLR)) //
 				.withCalver("2021.0") //
 				.withSupportStatus(SupportStatus.EOL);
 
-		Q = PASCAL.next("Q", Transition.MINOR) //
+		Train Q = PASCAL.next("Q", Transition.MINOR) //
 				.withCalver("2021.1") //
 				.withSupportStatus(SupportStatus.EOL);
 
-		RAJ = Q.next("Raj", Transition.MINOR) //
+		Train RAJ = Q.next("Raj", Transition.MINOR) //
 				.withCalver("2021.2") //
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
-		TURING = PASCAL.next("Turing", Transition.MAJOR, //
+		Train TURING = RAJ.next("Turing", Transition.MAJOR, //
 				new Module(RELATIONAL, "3.0")) //
 				.withCalver("2022.0") //
 				.filterModules(module -> !module.getProject().equals(ENVERS))
@@ -94,7 +58,7 @@ public class ReleaseTrains {
 				.filterModules(module -> !module.getProject().equals(JDBC)) // filter "old" JDBC without R2DBC submodule
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
-		ULLMAN = TURING.next("Ullman", Transition.MINOR) //
+		Train ULLMAN = TURING.next("Ullman", Transition.MINOR) //
 				.withCalver("2023.0") //
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
@@ -120,40 +84,33 @@ public class ReleaseTrains {
 				.withCalver("2026.0");
 		// Trains
 
-		TRAINS = Arrays.asList(CODD, DIJKSTRA, EVANS, FOWLER, GOSLING, HOPPER, INGALLS, KAY, LOVELACE, MOORE, NEUMANN,
-				OCKHAM, PASCAL, Q, RAJ, TURING, ULLMAN, VAUGHAN, W, X, Y, Z, A);
+		TRAINS = Arrays.asList(OCKHAM, RAJ, VAUGHAN, W, X, Y, Z, A);
 	}
 
-	private static Train codd() {
+	private static Train ockham() {
 
-		Module build = new Module(BUILD, "1.3");
-		Module commons = new Module(COMMONS, "1.7");
-		Module jpa = new Module(JPA, "1.5");
-		Module mongoDb = new Module(MONGO_DB, "1.4");
-		Module neo4j = new Module(NEO4J, "3.0");
-		Module solr = new Module(SOLR, "1.1");
-		Module rest = new Module(REST, "2.0");
+		Module bom = BOM.toModule("2020.0.0");
+		Module build = BUILD.toModule("2.4");
+		Module commons = COMMONS.toModule("2.4");
+		Module cassandra = CASSANDRA.toModule("3.1");
+		Module envers = ENVERS.toModule("2.4");
+		Module geode = GEODE.toModule("2.4");
+		Module jpa = JPA.toModule("2.4");
+		Module keyvalue = KEY_VALUE.toModule("2.4");
+		Module ldap = LDAP.toModule("2.4");
+		Module jdbc = JDBC.toModule("2.1");
+		Module r2dbc = R2DBC.toModule("1.2");
+		Module mongoDb = MONGO_DB.toModule("3.1");
+		Module solr = SOLR.toModule("4.3");
+		Module redis = REDIS.toModule("2.4");
+		Module rest = REST.toModule("3.4");
 
-		return new Train("Codd", build, commons, jpa, mongoDb, neo4j, solr, rest);
-	}
+		Module couchbase = COUCHBASE.toModule("4.1");
+		Module elasticsearch = ELASTICSEARCH.toModule("4.1");
+		Module neo4j = NEO4J.toModule("6.0");
 
-	private static Train dijkstra() {
-
-		Module build = new Module(BUILD, "1.4");
-		Module commons = new Module(COMMONS, "1.8");
-		Module jpa = new Module(JPA, "1.6");
-		Module mongoDb = new Module(MONGO_DB, "1.5");
-		Module neo4j = new Module(NEO4J, "3.1");
-		Module solr = new Module(SOLR, "1.2");
-		Module couchbase = new Module(COUCHBASE, "1.1");
-		Module cassandra = new Module(CASSANDRA, "1.0");
-		Module elasticsearch = new Module(ELASTICSEARCH, "1.0", "M2");
-		Module redis = new Module(REDIS, "1.3");
-
-		Module rest = new Module(REST, "2.1");
-
-		return new Train("Dijkstra", build, commons, jpa, mongoDb, neo4j, solr, couchbase, cassandra, elasticsearch, redis,
-				rest);
+		return new Train("Ockham", bom, build, cassandra, commons, envers, geode, jpa, jdbc, keyvalue, ldap, r2dbc, mongoDb,
+				redis, rest, neo4j, solr, couchbase, elasticsearch);
 	}
 
 	public static Train getTrainByName(String name) {
@@ -187,5 +144,9 @@ public class ReleaseTrains {
 
 	public static Train latest() {
 		return TRAINS.get(TRAINS.size() - 1);
+	}
+
+	public static List<Train> latest(int count) {
+		return TRAINS.subList(TRAINS.size() - count, TRAINS.size());
 	}
 }

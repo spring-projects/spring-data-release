@@ -94,6 +94,10 @@ public class Project implements Comparable<Project>, Named {
 		additionalArtifacts.getCoordinates().forEach(consumer);
 	}
 
+	public Module toModule(String version) {
+		return new Module(this, version);
+	}
+
 	/**
 	 * Returns whether the current project depends on the given one.
 	 *
@@ -140,4 +144,5 @@ public class Project implements Comparable<Project>, Named {
 	public int compareTo(Project that) {
 		return Projects.PROJECTS.indexOf(this) - Projects.PROJECTS.indexOf(that);
 	}
+
 }

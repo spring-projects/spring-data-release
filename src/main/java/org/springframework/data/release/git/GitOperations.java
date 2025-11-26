@@ -672,7 +672,7 @@ public class GitOperations {
 
 	private static Train getPreviousTrain(TrainIteration trainIteration) {
 
-		Train trainToUse = ReleaseTrains.CODD;
+		Train trainToUse = ReleaseTrains.trains().get(0);
 
 		for (Train train : ReleaseTrains.trains()) {
 			if (train.isBefore(trainIteration.getTrain())) {

@@ -38,7 +38,7 @@ class DeploymentOperationsUnitTests {
 		ArtifactoryClient client = mock(ArtifactoryClient.class);
 		DeploymentOperations operations = new DeploymentOperations(client, logger);
 
-		ModuleIteration module = ReleaseTrains.MOORE.getModuleIteration(Projects.COMMONS, Iteration.GA);
+		ModuleIteration module = ReleaseTrains.OCKHAM.getModuleIteration(Projects.COMMONS, Iteration.GA);
 
 		DefaultDeploymentInformation information = new DefaultDeploymentInformation(module, new DeploymentProperties());
 

@@ -61,7 +61,7 @@ class DependencyOperationsIntegrationTests extends AbstractIntegrationTests {
 
 	@BeforeEach
 	void setUp() {
-		git.checkout(ReleaseTrains.MOORE);
+		git.checkout(ReleaseTrains.Z);
 	}
 
 	@Test

@@ -35,8 +35,8 @@ class ArtifactVersionUnitTests {
 	@Test
 	void parsesReleaseVersionCorrectly() {
 
-		assertThat(ArtifactVersion.of("1.4.5.RELEASE").isReleaseVersion()).isTrue();
-		assertThat(ArtifactVersion.of("1.4.5.RELEASE").getNextDevelopmentVersion()).isEqualTo(ArtifactVersion.of("1.4.6.BUILD-SNAPSHOT"));
+		assertThat(ArtifactVersion.of("1.4.5").isReleaseVersion()).isTrue();
+		assertThat(ArtifactVersion.of("1.4.5").getNextDevelopmentVersion()).isEqualTo(ArtifactVersion.of("1.4.6-SNAPSHOT"));
 
 		assertThat(ArtifactVersion.of("1.4.5").isReleaseVersion()).isTrue();
 		assertThat(ArtifactVersion.of("1.4.5").getNextDevelopmentVersion()).isEqualTo(ArtifactVersion.of("1.4.6-SNAPSHOT"));
@@ -94,11 +94,11 @@ class ArtifactVersionUnitTests {
 	@Test
 	void returnsNextMinorSnapshotVersionForGARelease() {
 
-		ArtifactVersion version = ArtifactVersion.of("1.5.0.RELEASE").getNextDevelopmentVersion();
+		ArtifactVersion version = ArtifactVersion.of("1.5.0").getNextDevelopmentVersion();
 
 		assertThat(version.isMilestoneVersion()).isFalse();
 		assertThat(version.isReleaseVersion()).isFalse();
-		assertThat(version).isEqualTo(ArtifactVersion.of("1.6.0.BUILD-SNAPSHOT"));
+		assertThat(version).isEqualTo(ArtifactVersion.of("1.6.0-SNAPSHOT"));
 	}
 
 	@Test
@@ -111,22 +111,10 @@ class ArtifactVersionUnitTests {
 	}
 
 	@Test
-	void ordersSnapshotsOfSameVersionSmaller() {
-
-		ArtifactVersion oneTenRelease = ArtifactVersion.of("1.10.0.RELEASE");
-		ArtifactVersion oneTenSnapshot = ArtifactVersion.of("1.10.0.BUILD-SNAPSHOT");
-
-		assertThat(oneTenRelease.compareTo(oneTenSnapshot)).isGreaterThan(0);
-	}
-
-	@Test
 	void returnsCorrectBugfixVersions() {
 
-		assertThat(ArtifactVersion.of("1.0.0.RELEASE").getNextBugfixVersion())
-				.isEqualTo(ArtifactVersion.of("1.0.1.BUILD-SNAPSHOT"));
-		assertThat(ArtifactVersion.of("1.0.0.M1").getNextBugfixVersion())
-				.isEqualTo(ArtifactVersion.of("1.0.0.BUILD-SNAPSHOT"));
-		assertThat(ArtifactVersion.of("1.0.1.RELEASE").getNextBugfixVersion())
-				.isEqualTo(ArtifactVersion.of("1.0.2.BUILD-SNAPSHOT"));
+		assertThat(ArtifactVersion.of("1.0.0").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.1-SNAPSHOT"));
+		assertThat(ArtifactVersion.of("1.0.0-M1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.0-SNAPSHOT"));
+		assertThat(ArtifactVersion.of("1.0.1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.2-SNAPSHOT"));
 	}
 }

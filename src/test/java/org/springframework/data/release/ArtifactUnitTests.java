@@ -33,10 +33,10 @@ class ArtifactUnitTests {
 	@Test
 	void testname() {
 
-		MavenArtifact artifact = new MavenArtifact(ReleaseTrains.DIJKSTRA.getModuleIteration(Projects.JPA, Iteration.M1));
+		MavenArtifact artifact = new MavenArtifact(ReleaseTrains.OCKHAM.getModuleIteration(Projects.JPA, Iteration.M1));
 
 		assertThat(artifact.getArtifactId()).isEqualTo("spring-data-jpa");
-		assertThat(artifact.getVersion()).isEqualTo(ArtifactVersion.of("1.6.0.M1"));
-		assertThat(artifact.getNextDevelopmentVersion()).isEqualTo(ArtifactVersion.of("1.6.0.BUILD-SNAPSHOT"));
+		assertThat(artifact.getVersion()).isEqualTo(ArtifactVersion.of("2.4.0-M1"));
+		assertThat(artifact.getNextDevelopmentVersion()).isEqualTo(ArtifactVersion.of("2.4.0-SNAPSHOT"));
 	}
 }

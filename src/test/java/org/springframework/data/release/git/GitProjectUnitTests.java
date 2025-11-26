@@ -33,7 +33,7 @@ class GitProjectUnitTests {
 	@Test
 	void buildsGitHubRepositoryUriCorrectly() {
 
-		Train codd = ReleaseTrains.CODD;
+		Train codd = ReleaseTrains.latest();
 		GitServer server = new GitServer();
 		Module module = codd.getModule(Projects.COMMONS);
 

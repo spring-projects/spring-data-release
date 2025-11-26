@@ -37,21 +37,12 @@ class VersionTagsUnitTests {
 	void shouldDetermineTagForIteration() {
 
 		VersionTags tags = new VersionTags(Projects.NEO4J,
-				Stream.of("5.3.0.RELEASE", "5.4.0-M1", "6.0.0-M2").map(Tag::of).collect(Collectors.toList()));
+				Stream.of("6.0.0", "6.0.0-M1", "6.0.0-M2").map(Tag::of).collect(Collectors.toList()));
 
-		assertThat(tags.filter(ReleaseTrains.NEUMANN).findTag(Iteration.GA))
-				.hasValueSatisfying(actual -> assertThat(actual.getName()).isEqualTo("5.3.0.RELEASE"));
+		assertThat(tags.filter(ReleaseTrains.OCKHAM).findTag(Iteration.GA))
+				.hasValueSatisfying(actual -> assertThat(actual.getName()).isEqualTo("6.0.0"));
 		assertThat(tags.filter(ReleaseTrains.OCKHAM).findTag(Iteration.M2))
 				.hasValueSatisfying(actual -> assertThat(actual.getName()).isEqualTo("6.0.0-M2"));
 	}
 
-	@Test
-	void shouldDetermineTagForMajorVersionBumpDuringDevelopment() {
-
-		VersionTags tags = new VersionTags(Projects.NEO4J,
-				Stream.of("5.3.0.RELEASE", "5.4.0-M1", "6.0.0-M2").map(Tag::of).collect(Collectors.toList()));
-
-		assertThat(tags.filter(ReleaseTrains.OCKHAM).findTag(Iteration.M1))
-				.hasValueSatisfying(actual -> assertThat(actual.getName()).isEqualTo("5.4.0-M1"));
-	}
 }

@@ -55,60 +55,60 @@ class ArtifactoryOperationsUnitTests {
 	@Test
 	void shouldCreateReleaseBundle() {
 
-		TrainIteration iteration = ReleaseTrains.ULLMAN.getIteration(Iteration.SR1);
+		TrainIteration iteration = ReleaseTrains.VAUGHAN.getIteration(Iteration.SR1);
 		ModuleIteration module = iteration.getModule(Projects.COMMONS);
 
 		ArtifactoryReleaseBundle releaseBundle = operations.createReleaseBundle(module);
 
 		assertThat(releaseBundle.getName()).isEqualTo("TNZ-spring-data-commons-commercial");
-		assertThat(releaseBundle.getVersion()).isEqualTo("3.1.1");
+		assertThat(releaseBundle.getVersion()).isEqualTo("3.2.1");
 		assertThat(releaseBundle.getSource_type()).isEqualTo("aql");
 
 		assertThat(releaseBundle.getSource()).isInstanceOf(Map.class);
 
 		String aql = ((Map<String, String>) releaseBundle.getSource()).get("aql");
 		assertThat(aql).contains(
-				"items.find({\"repo\":\"spring-enterprise-maven-prod-local\"}, {\"$or\":[{\"path\":{\"$match\":\"org/springframework/data/spring-data-commons/3.1.1\"}}]})");
+				"items.find({\"repo\":\"spring-enterprise-maven-prod-local\"}, {\"$or\":[{\"path\":{\"$match\":\"org/springframework/data/spring-data-commons/3.2.1\"}}]})");
 	}
 
 	@Test
 	void shouldCreateMultiModuleBundle() {
 
-		TrainIteration iteration = ReleaseTrains.ULLMAN.getIteration(Iteration.SR1);
+		TrainIteration iteration = ReleaseTrains.VAUGHAN.getIteration(Iteration.SR1);
 		ModuleIteration module = iteration.getModule(Projects.RELATIONAL);
 
 		ArtifactoryReleaseBundle releaseBundle = operations.createReleaseBundle(module);
 
 		assertThat(releaseBundle.getName()).isEqualTo("TNZ-spring-data-relational-commercial");
-		assertThat(releaseBundle.getVersion()).isEqualTo("3.1.1");
+		assertThat(releaseBundle.getVersion()).isEqualTo("3.2.1");
 		assertThat(releaseBundle.getSource_type()).isEqualTo("aql");
 
 		assertThat(releaseBundle.getSource()).isInstanceOf(Map.class);
 
 		String aql = ((Map<String, String>) releaseBundle.getSource()).get("aql");
 		assertThat(aql).contains("items.find({\"repo\":\"spring-enterprise-maven-prod-local\"}");
-		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-relational-parent/3.1.1");
-		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-jdbc/3.1.1");
-		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-r2dbc/3.1.1");
-		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-jdbc-distribution/3.1.1");
+		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-relational-parent/3.2.1");
+		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-jdbc/3.2.1");
+		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-r2dbc/3.2.1");
+		assertThat(aql).contains("\"$match\":\"org/springframework/data/spring-data-jdbc-distribution/3.2.1");
 	}
 
 	@Test
 	void shouldCreateBomBundle() {
 
-		TrainIteration iteration = ReleaseTrains.ULLMAN.getIteration(Iteration.SR1);
+		TrainIteration iteration = ReleaseTrains.VAUGHAN.getIteration(Iteration.SR1);
 		ModuleIteration module = iteration.getModule(Projects.BOM);
 
 		ArtifactoryReleaseBundle releaseBundle = operations.createReleaseBundle(module);
 
 		assertThat(releaseBundle.getName()).isEqualTo("TNZ-spring-data-bom-commercial");
-		assertThat(releaseBundle.getVersion()).isEqualTo("2023.0.1");
+		assertThat(releaseBundle.getVersion()).isEqualTo("2023.1.1");
 		assertThat(releaseBundle.getSource_type()).isEqualTo("aql");
 
 		assertThat(releaseBundle.getSource()).isInstanceOf(Map.class);
 
 		String aql = ((Map<String, String>) releaseBundle.getSource()).get("aql");
 		assertThat(aql).contains(
-				"items.find({\"repo\":\"spring-enterprise-maven-prod-local\"}, {\"$or\":[{\"path\":{\"$match\":\"org/springframework/data/spring-data-bom/2023.0.1\"}}]})");
+				"items.find({\"repo\":\"spring-enterprise-maven-prod-local\"}, {\"$or\":[{\"path\":{\"$match\":\"org/springframework/data/spring-data-bom/2023.1.1\"}}]})");
 	}
 }

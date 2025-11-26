@@ -20,13 +20,14 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 
 /**
  * Commands to create markup to be used in announcing blog posts.
- * 
+ *
  * @author Oliver Gierke
  */
 @CliComponent
@@ -38,5 +39,23 @@ class AnnouncementCommands extends TimedCommand {
 	@CliCommand("announcement")
 	public void announce(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
 		System.out.println(operations.getProjectBulletpoints(iteration));
+	}
+
+	@CliCommand("train")
+	public void train(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+
+		StringBuilder builder = new StringBuilder();
+		iteration.forEach(module -> {
+
+			Project project = module.getProject();
+
+			builder.append("* ");
+			builder.append(project.getFullName()).append(" ");
+			builder.append(module.getShortVersionString());
+
+			builder.append("\n");
+		});
+
+		System.out.println(builder);
 	}
 }

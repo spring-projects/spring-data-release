@@ -35,14 +35,14 @@ class GithubMilestoneUnitTests {
 	@Test
 	void rendersGithubGaVersionCorrectly() {
 
-		assertIterationVersion(Iteration.M1, "1.8 M1 (Dijkstra)");
-		assertIterationVersion(Iteration.RC1, "1.8 RC1 (Dijkstra)");
-		assertIterationVersion(Iteration.GA, "1.8 GA (Dijkstra)");
+		assertIterationVersion(Iteration.M1, "2.4 M1 (2020.0.0)");
+		assertIterationVersion(Iteration.RC1, "2.4 RC1 (2020.0.0)");
+		assertIterationVersion(Iteration.GA, "2.4 GA (2020.0.0)");
 
-		assertIterationVersion(Iteration.SR1, "1.8.1 (Dijkstra SR1)");
-		assertIterationVersion(Iteration.SR2, "1.8.2 (Dijkstra SR2)");
-		assertIterationVersion(Iteration.SR3, "1.8.3 (Dijkstra SR3)");
-		assertIterationVersion(Iteration.SR4, "1.8.4 (Dijkstra SR4)");
+		assertIterationVersion(Iteration.SR1, "2.4.1 (2020.0.1)");
+		assertIterationVersion(Iteration.SR2, "2.4.2 (2020.0.2)");
+		assertIterationVersion(Iteration.SR3, "2.4.3 (2020.0.3)");
+		assertIterationVersion(Iteration.SR4, "2.4.4 (2020.0.4)");
 	}
 
 	@Test
@@ -60,44 +60,44 @@ class GithubMilestoneUnitTests {
 	@Test
 	void usesCustomModuleIterationStartVersion() {
 
-		ModuleIteration module = ReleaseTrains.DIJKSTRA.getModuleIteration(Projects.ELASTICSEARCH, Iteration.M1);
+		ModuleIteration module = ReleaseTrains.OCKHAM.getModuleIteration(Projects.ELASTICSEARCH, Iteration.M1);
 
 		GithubMilestone version = new GithubMilestone(module);
-		assertThat(version).hasToString("1.0 M1 (Dijkstra)");
+		assertThat(version).hasToString("4.1 M1 (2020.0.0)");
 	}
 
 	@Test
 	void doesNotUseCustomIterationOnNonFirstiterations() {
 
-		ModuleIteration module = ReleaseTrains.DIJKSTRA.getModuleIteration(Projects.ELASTICSEARCH, Iteration.RC1);
+		ModuleIteration module = ReleaseTrains.OCKHAM.getModuleIteration(Projects.ELASTICSEARCH, Iteration.RC1);
 
 		GithubMilestone version = new GithubMilestone(module);
-		assertThat(version).hasToString("1.0 RC1 (Dijkstra)");
+		assertThat(version).hasToString("4.1 RC1 (2020.0.0)");
 	}
 
 	@Test
 	void rendersDescriptionCorrectly() {
 
-		ModuleIteration module = ReleaseTrains.DIJKSTRA.getModuleIteration(Projects.ELASTICSEARCH, Iteration.M1);
+		ModuleIteration module = ReleaseTrains.OCKHAM.getModuleIteration(Projects.ELASTICSEARCH, Iteration.M1);
 
 		GithubMilestone version = new GithubMilestone(module);
-		assertThat(version.getDescription()).isEqualTo("Dijkstra M2");
+		assertThat(version.getDescription()).isEqualTo("2020.0.0-M1");
 	}
 
 	@Test
 	void rendersShortBomAndReleaseMilestoneVersions() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.ULLMAN, Iteration.SR1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.VAUGHAN, Iteration.SR1);
 		ModuleIteration module = iteration.getModule(Projects.BOM);
 
 		GithubMilestone milestone = new GithubMilestone(module);
-		assertThat(milestone.toMilestone().getTitle()).isEqualTo("2023.0.1");
-		assertThat(milestone.toMilestone().getDescription()).isEqualTo("2023.0.1");
+		assertThat(milestone.toMilestone().getTitle()).isEqualTo("2023.1.1");
+		assertThat(milestone.toMilestone().getDescription()).isEqualTo("2023.1.1");
 	}
 
 	private void assertIterationVersion(Iteration iteration, String expected) {
 
-		ModuleIteration module = ReleaseTrains.DIJKSTRA.getModuleIteration(Projects.COMMONS, iteration);
+		ModuleIteration module = ReleaseTrains.OCKHAM.getModuleIteration(Projects.COMMONS, iteration);
 
 		GithubMilestone version = new GithubMilestone(module);
 		assertThat(version).hasToString(expected);

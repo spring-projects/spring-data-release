@@ -60,7 +60,7 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 
 	@Test
 	void updatesGitRepositories() throws Exception {
-		gitOperations.update(ReleaseTrains.GOSLING);
+		gitOperations.update(ReleaseTrains.OCKHAM);
 	}
 
 	@Test
@@ -84,34 +84,34 @@ class GitOperationsIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void shouldDeterminePreviousIterationFromGA() throws Exception {
 
-		TrainIteration hopperRc1 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.GA));
+		TrainIteration OCKHAMRc1 = gitOperations.getPreviousIteration(ReleaseTrains.OCKHAM.getIteration(Iteration.GA));
 
-		assertThat(hopperRc1.getTrain()).isEqualTo(ReleaseTrains.GOSLING);
-		assertThat(hopperRc1.getIteration()).isEqualTo(Iteration.GA);
+		assertThat(OCKHAMRc1.getTrain()).isEqualTo(ReleaseTrains.OCKHAM);
+		assertThat(OCKHAMRc1.getIteration()).isEqualTo(Iteration.GA);
 
-		TrainIteration hopperM1 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.RC1));
+		TrainIteration OCKHAMM1 = gitOperations.getPreviousIteration(ReleaseTrains.OCKHAM.getIteration(Iteration.RC1));
 
-		assertThat(hopperM1.getTrain()).isEqualTo(ReleaseTrains.HOPPER);
-		assertThat(hopperM1.getIteration()).isEqualTo(Iteration.M1);
+		assertThat(OCKHAMM1.getTrain()).isEqualTo(ReleaseTrains.OCKHAM);
+		assertThat(OCKHAMM1.getIteration()).isEqualTo(Iteration.M1);
 
-		TrainIteration hopperSR9 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.SR10));
+		TrainIteration OCKHAMSR9 = gitOperations.getPreviousIteration(ReleaseTrains.OCKHAM.getIteration(Iteration.SR10));
 
-		assertThat(hopperSR9.getTrain()).isEqualTo(ReleaseTrains.HOPPER);
-		assertThat(hopperSR9.getIteration()).isEqualTo(Iteration.SR9);
+		assertThat(OCKHAMSR9.getTrain()).isEqualTo(ReleaseTrains.OCKHAM);
+		assertThat(OCKHAMSR9.getIteration()).isEqualTo(Iteration.SR9);
 	}
 
 	@Test
 	void shouldDeterminePreviousIterationFromSR() {
 
-		TrainIteration hopperGA = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.SR1));
+		TrainIteration OCKHAMGA = gitOperations.getPreviousIteration(ReleaseTrains.OCKHAM.getIteration(Iteration.SR1));
 
-		assertThat(hopperGA.getTrain()).isEqualTo(ReleaseTrains.HOPPER);
-		assertThat(hopperGA.getIteration()).isEqualTo(Iteration.GA);
+		assertThat(OCKHAMGA.getTrain()).isEqualTo(ReleaseTrains.OCKHAM);
+		assertThat(OCKHAMGA.getIteration()).isEqualTo(Iteration.GA);
 
-		TrainIteration hopperSR9 = gitOperations.getPreviousIteration(ReleaseTrains.HOPPER.getIteration(Iteration.SR10));
+		TrainIteration OCKHAMSR9 = gitOperations.getPreviousIteration(ReleaseTrains.OCKHAM.getIteration(Iteration.SR10));
 
-		assertThat(hopperSR9.getTrain()).isEqualTo(ReleaseTrains.HOPPER);
-		assertThat(hopperSR9.getIteration()).isEqualTo(Iteration.SR9);
+		assertThat(OCKHAMSR9.getTrain()).isEqualTo(ReleaseTrains.OCKHAM);
+		assertThat(OCKHAMSR9.getIteration()).isEqualTo(Iteration.SR9);
 	}
 
 }

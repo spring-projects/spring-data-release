@@ -33,7 +33,7 @@ import org.springframework.data.release.model.TrainIteration;
  */
 class UpdateInformationUnitTests {
 
-	TrainIteration hopperM1 = new TrainIteration(ReleaseTrains.HOPPER, Iteration.M1);
+	TrainIteration hopperM1 = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
 
 	@Test
 	void rejectsNullTrainIteration() {
@@ -49,10 +49,10 @@ class UpdateInformationUnitTests {
 	void calculatesProjectVersionToSetCorrectly() {
 
 		UpdateInformation updateInformation = UpdateInformation.of(hopperM1, Phase.PREPARE);
-		assertThat(updateInformation.getProjectVersionToSet(Projects.JPA).toString()).isEqualTo("1.10.0.M1");
+		assertThat(updateInformation.getProjectVersionToSet(Projects.JPA).toString()).isEqualTo("2.4.0-M1");
 
 		updateInformation = UpdateInformation.of(hopperM1, Phase.CLEANUP);
-		assertThat(updateInformation.getProjectVersionToSet(Projects.JPA).toString()).isEqualTo("1.10.0.BUILD-SNAPSHOT");
+		assertThat(updateInformation.getProjectVersionToSet(Projects.JPA).toString()).isEqualTo("2.4.0-SNAPSHOT");
 	}
 
 	@Test
@@ -66,12 +66,12 @@ class UpdateInformationUnitTests {
 	@Test
 	void noReposContainedForGaRelease() {
 
-		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.HOPPER, Iteration.GA),
+		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA),
 				Phase.PREPARE);
 
 		assertThat(updateInformation.getRepositories()).isEmpty();
 
-		updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.TURING, Iteration.GA), Phase.PREPARE);
+		updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA), Phase.PREPARE);
 
 		assertThat(updateInformation.getRepositories()).isEmpty();
 	}
@@ -79,7 +79,7 @@ class UpdateInformationUnitTests {
 	@Test
 	void cleanupSetsMilestoneAndSnapshotRepos() {
 
-		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.HOPPER, Iteration.GA),
+		UpdateInformation updateInformation = UpdateInformation.of(new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA),
 				Phase.CLEANUP);
 
 		assertThat(updateInformation.getRepositories()).contains(Repository.MILESTONE, Repository.SNAPSHOT);
@@ -99,12 +99,12 @@ class UpdateInformationUnitTests {
 	@Test // #22
 	void returnsCorrectReleaseTrainVersions() {
 
-		TrainIteration hopperGa = new TrainIteration(ReleaseTrains.HOPPER, Iteration.GA);
-		TrainIteration hopperSr1 = new TrainIteration(ReleaseTrains.HOPPER, Iteration.SR1);
+		TrainIteration ga = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA);
+		TrainIteration sr1 = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1);
 
-		assertThat(UpdateInformation.of(hopperGa, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("Hopper-RELEASE");
-		assertThat(UpdateInformation.of(hopperM1, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("Hopper-M1");
-		assertThat(UpdateInformation.of(hopperSr1, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("Hopper-SR1");
+		assertThat(UpdateInformation.of(ga, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("2020.0.0");
+		assertThat(UpdateInformation.of(hopperM1, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("2020.0.0-M1");
+		assertThat(UpdateInformation.of(sr1, Phase.PREPARE).getReleaseTrainVersion()).isEqualTo("2020.0.1");
 	}
 
 	@Test // #155

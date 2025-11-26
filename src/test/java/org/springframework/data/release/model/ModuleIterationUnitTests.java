@@ -27,23 +27,23 @@ class ModuleIterationUnitTests {
 	@Test
 	void abbreviatesTrailingZerosForNonServiceReleases() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.DIJKSTRA, Iteration.M1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
 		ModuleIteration module = iteration.getModule(Projects.JPA);
 
-		assertThat(module.getShortVersionString()).isEqualTo("1.6 M1");
-		assertThat(module.getMediumVersionString()).isEqualTo("1.6 M1 (Dijkstra)");
-		assertThat(module.getFullVersionString()).isEqualTo("1.6.0.M1 (Dijkstra M1)");
+		assertThat(module.getShortVersionString()).isEqualTo("2.4 M1");
+		assertThat(module.getMediumVersionString()).isEqualTo("2.4 M1 (2020.0.0)");
+		assertThat(module.getFullVersionString()).isEqualTo("2.4.0-M1 (2020.0.0)");
 	}
 
 	@Test
 	void doesNotListIterationSuffixForServiceReleases() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.DIJKSTRA, Iteration.SR1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1);
 		ModuleIteration module = iteration.getModule(Projects.JPA);
 
-		assertThat(module.getShortVersionString()).isEqualTo("1.6.1");
-		assertThat(module.getMediumVersionString()).isEqualTo("1.6.1 (Dijkstra SR1)");
-		assertThat(module.getFullVersionString()).isEqualTo("1.6.1.RELEASE (Dijkstra SR1)");
+		assertThat(module.getShortVersionString()).isEqualTo("2.4.1");
+		assertThat(module.getMediumVersionString()).isEqualTo("2.4.1 (2020.0.1)");
+		assertThat(module.getFullVersionString()).isEqualTo("2.4.1 (2020.0.1)");
 	}
 
 }

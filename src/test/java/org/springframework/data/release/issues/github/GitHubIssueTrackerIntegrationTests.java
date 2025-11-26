@@ -56,7 +56,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 	static final String ISSUES_URI = "/repos/spring-projects/spring-data-build/issues";
 	static final String RELEASE_TICKET_URI = "/repos/spring-projects/spring-data-build/issues/233";
 	static final String MILESTONES_URI = "/repos/spring-projects/spring-data-build/milestones";
-	static final ModuleIteration BUILD_HOPPER_RC1 = ReleaseTrains.HOPPER.getModuleIteration(Projects.BUILD,
+	static final ModuleIteration BUILD_HOPPER_RC1 = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD,
 			Iteration.RC1);
 	static final Train LATEST = ReleaseTrains.latest();
 
@@ -172,7 +172,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 	@Test // #5
 	void createReleaseTicketShouldFailWithNoReleaseVersion() {
 
-		ModuleIteration moduleIteration = ReleaseTrains.HOPPER.getModuleIteration(Projects.BUILD, Iteration.RC1);
+		ModuleIteration moduleIteration = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD, Iteration.RC1);
 
 		mockGetIssuesWith("emptyIssues.json");
 		mockGetMilestonesWith("emptyMilestones.json");

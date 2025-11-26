@@ -36,14 +36,14 @@ class DependencyUpgradeProposalsUnitTests {
 	void shouldParseDependencies() {
 
 		Properties properties = new Properties();
-		properties.put("dependency.train", "Pascal");
+		properties.put("dependency.train", "Ockham");
 		properties.put("dependency.iteration", "M1");
 		properties.put("dependency.upgrade.count", "2");
 		properties.put("dependency[org.assertj:assertj-core]", "3.18.1");
 		properties.put("dependency[io.reactivex.rxjava3:rxjava]", "1.2.3");
 
 		DependencyVersions dependencies = DependencyUpgradeProposals
-				.fromProperties(ReleaseTrains.PASCAL.getIteration(Iteration.M1), properties);
+				.fromProperties(ReleaseTrains.OCKHAM.getIteration(Iteration.M1), properties);
 
 		assertThat(dependencies.getVersions()).hasSize(2)
 				.containsEntry(Dependencies.ASSERTJ, DependencyVersion.of("3.18.1"))

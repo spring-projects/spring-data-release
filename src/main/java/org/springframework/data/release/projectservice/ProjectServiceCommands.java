@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -37,6 +38,7 @@ import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * Operations for Projects Service interaction.
@@ -56,13 +58,27 @@ class ProjectServiceCommands extends TimedCommand {
 	Workspace workspace;
 
 	@CliCommand("projects update")
-	public void updateProjectInformation(@CliOption(key = "", mandatory = true) String trainNames,
+	public void updateProjectInformation(@CliOption(key = "", mandatory = false) String trainNames,
 			@CliOption(key = "update", mandatory = false) Boolean update) {
 
 		File oss = new File(workspace.getWorkingDirectory(), "oss");
 		File commercial = new File(workspace.getWorkingDirectory(), "commercial");
-		List<Train> trains = Stream.of(trainNames.split(","))//
-				.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
+		List<Train> trains = Collections.emptyList();
+
+		int lastTrains = 3;
+		if (StringUtils.hasText(trainNames)) {
+
+			try {
+				lastTrains = Integer.parseInt(trainNames);
+			} catch (NumberFormatException e) {
+				trains = Stream.of(trainNames.split(","))//
+						.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
+			}
+		}
+
+		if (trains.isEmpty()) {
+			trains = ReleaseTrains.latest(lastTrains);
+		}
 
 		if ((update != null && update) || (!commercial.exists() || !oss.exists())) {
 
