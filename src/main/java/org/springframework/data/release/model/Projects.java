@@ -105,7 +105,8 @@ public class Projects {
 
 		GEODE = new Project("DATAGEODE", "Geode", Tracker.GITHUB) //
 				.withDependencies(COMMONS) //
-				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA.artifacts("spring-data-gemfire"))
+				.withAdditionalArtifacts(ArtifactCoordinates.SPRING_DATA //
+						.artifacts("spring-data-geode-parent", "spring-data-geode-distribution"))
 				.withFullName("Spring Data for Apache Geode") //
 				.withSkipTests(true);
 
