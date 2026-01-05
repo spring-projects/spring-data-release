@@ -72,7 +72,7 @@ public class ReleaseTrains {
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
 		X = W.next("X", Transition.MINOR) //
-				.withCalver("2024.1");
+				.withCalver("2024.1").withSupportStatus(SupportStatus.COMMERCIAL);
 
 		Y = X.next("Y", Transition.MINOR) //
 				.withCalver("2025.0");
