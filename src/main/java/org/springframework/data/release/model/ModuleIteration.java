@@ -164,4 +164,9 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 	public String toString() {
 		return String.format("%s %s", module.getProject().getFullName(), getMediumVersionString());
 	}
+
+	public String getMilestoneName() {
+		return getSupportedProject().getProject().isUseShortVersionMilestones() ? getReleaseVersionString()
+				: getMediumVersionString();
+	}
 }

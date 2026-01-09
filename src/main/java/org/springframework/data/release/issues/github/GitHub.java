@@ -16,7 +16,6 @@
 package org.springframework.data.release.issues.github;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,7 +64,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 @Component
 public class GitHub extends GitHubSupport implements IssueTracker {
 
-	private static final String MILESTONE_URI = "/repos/spring-projects/{repoName}/milestones?state={state}&per_page=60";
+	private static final String MILESTONE_URI = "/repos/{owner}/{repoName}/milestones?state={state}&per_page=60";
 	private static final String ISSUES_BY_MILESTONE_AND_ASSIGNEE_URI_TEMPLATE = "/repos/spring-projects/{repoName}/issues?milestone={id}&state=all&assignee={assignee}";
 	private static final String ISSUES_BY_MILESTONE_URI_TEMPLATE = "/repos/spring-projects/{repoName}/issues?milestone={id}&state=all";
 	private static final String MILESTONES_URI_TEMPLATE = "/repos/spring-projects/{repoName}/milestones";
@@ -387,8 +386,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Optional<Milestone> milestone = milestoneCache.get(moduleIteration);
 		if (milestone == null) {
 
-			String repositoryName = GitProject.of(moduleIteration).getRepositoryName();
-			milestone = doFindMilestone(moduleIteration, repositoryName, m -> m.matches(moduleIteration));
+			milestone = doFindMilestone(moduleIteration, GitProject.of(moduleIteration).getRepository(),
+					m -> m.matches(moduleIteration));
 
 			if (milestone.isPresent()) {
 				milestoneCache.put(moduleIteration, milestone);
@@ -396,47 +395,61 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		}
 
 		return milestone;
-
 	}
 
-	private Optional<Milestone> doFindMilestone(ModuleIteration moduleIteration, String repositoryName,
+	private Optional<Milestone> doFindMilestone(ModuleIteration moduleIteration, GitHubRepository repository,
 			Predicate<Milestone> milestonePredicate) {
 
-		AtomicReference<Milestone> milestoneRef = new AtomicReference<>();
+		logger.log(moduleIteration, "Looking up milestone…");
 
-		for (String state : Arrays.asList("open", "closed")) {
+		Optional<Milestone> result = doFindMilestone(repository, milestonePredicate);
+		result.ifPresent(it -> {
+			logger.log(moduleIteration, "Found milestone %s.", it);
+		});
+
+		return result;
+	}
+
+	private Optional<Milestone> doFindMilestone(GitHubRepository repository, Predicate<Milestone> milestonePredicate) {
+		return doFindMilestones(repository, Arrays.asList("open", "closed"), milestonePredicate, m -> false).stream()
+				.findFirst();
+	}
+
+	private List<Milestone> doFindMilestones(GitHubRepository repository, Collection<String> states,
+			Predicate<Milestone> milestonePredicate, Predicate<Milestone> continueOnHitPredicate) {
+
+		List<Milestone> result = new ArrayList<>();
+
+		for (String state : states) {
 
 			Map<String, Object> parameters = new HashMap<>();
-			parameters.put("repoName", repositoryName);
+			parameters.put("owner", repository.getNamespace());
+			parameters.put("repoName", repository.getProject());
 			parameters.put("state", state);
-
-			logger.log(moduleIteration, "Looking up milestone…");
 
 			doWithPaging(MILESTONE_URI, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()), MILESTONES_TYPE,
 					milestones -> {
+						for (Milestone milestone : milestones) {
 
-						Optional<Milestone> milestone = milestones.stream(). //
-								filter(milestonePredicate). //
-								findFirst(). //
-								map(m -> {
-									logger.log(moduleIteration, "Found milestone %s.", m);
-									return m;
-								});
+							if (milestonePredicate.test(milestone)) {
+								result.add(milestone);
 
-						if (milestone.isPresent()) {
-							milestoneRef.set(milestone.get());
-							return false;
+								if (!continueOnHitPredicate.test(milestone)) {
+									return false;
+								}
+							}
 						}
-
 						return true;
 					});
-
-			if (milestoneRef.get() != null) {
-				break;
-			}
 		}
 
-		return Optional.ofNullable(milestoneRef.get());
+		return result;
+	}
+
+	public List<Milestone> getOpenMilestones(GitHubRepository repository, Predicate<Milestone> milestonePredicate) {
+
+		logger.log(repository.toString(), "Looking up milestones…");
+		return doFindMilestones(repository, Collections.singletonList("open"), milestonePredicate, m -> true);
 	}
 
 	/*
@@ -825,5 +838,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return new Ticket(issue.getId(), issue.getTitle(), issue.getUrl(),
 				issue.getAssignees().isEmpty() ? null : issue.getAssignees().get(0), new GithubTicketStatus(issue.getState()));
 	}
+
 
 }

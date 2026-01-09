@@ -26,10 +26,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,10 +40,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,19 +53,27 @@ import java.util.stream.Stream;
 
 import org.springframework.data.release.build.Pom;
 import org.springframework.data.release.git.GitOperations;
+import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketOperations;
 import org.springframework.data.release.issues.Tickets;
+import org.springframework.data.release.issues.github.GitHub;
+import org.springframework.data.release.issues.github.GitHubRepository;
+import org.springframework.data.release.issues.github.Milestone;
+import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.data.util.Predicates;
 import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -97,6 +110,7 @@ public class DependencyOperations {
 	private final ExecutorService executor;
 	private final RestOperations restOperations;
 	private final Logger logger;
+	private final GitHub gitHub;
 
 	/**
 	 * Obtain dependency upgrade proposals for {@link Project} and {@link Iteration}. Considers dependency upgrade rules
@@ -363,6 +377,159 @@ public class DependencyOperations {
 		});
 
 		return new DependencyVersions(upgrades);
+	}
+
+	public List<Milestone> listOpenMilestones(SupportStatus supportStatus) {
+		GitHubRepository repository = GitProject.of(SupportedProject.of(Projects.RELEASE, supportStatus)).getRepository();
+		return getOpenMilestones(repository, Predicates.isTrue());
+	}
+
+	/**
+	 * @param trains
+	 */
+	public void createDependencyUpgradeTicketsForScheduledReleases(SupportStatus supportStatus, List<Train> trains) {
+
+		Project build = Projects.BUILD;
+		Project bom = Projects.BOM;
+		Project release = Projects.RELEASE;
+		MilestoneRepository milestones = getOpenMilestones(supportStatus, release);
+
+		Map<UpgradeProposal, TrainIteration> upgradeTickets = new LinkedHashMap<>();
+
+		for (Train train : trains) {
+
+			SupportedProject project = train.getSupportedProject(build);
+			TrainIteration nextIteration = getNextIteration(train, project, milestones);
+
+			if (nextIteration == null) {
+				logger.log(train, "Cannot determine next iteration for train %s", train.getName());
+				continue;
+			}
+
+			ModuleIteration bomIteration = nextIteration.getModule(bom);
+			if (!milestones.isScheduled(bomIteration)) {
+				logger.log(train, "Milestone %s is not scheduled, skipping", bomIteration.getMilestoneName());
+				continue;
+			}
+
+			gitOperations.prepare(nextIteration.getModule(build));
+
+			DependencyUpgradePolicy upgradePolicy = DependencyUpgradePolicy.from(nextIteration.getIteration());
+			DependencyVersions currentDependencies = getCurrentDependencies(project);
+
+			milestones.forEach((dependency, plannedMilestones) -> {
+
+				DependencyVersion dependencyVersion = currentDependencies.get(dependency);
+				DependencyUpgradeProposal proposal = getDependencyUpgradeProposal(upgradePolicy, dependencyVersion,
+						toDependencyVersions(plannedMilestones));
+				if (proposal.isUpgradeAvailable()) {
+					UpgradeProposal upgradeProposal = new UpgradeProposal(dependency, proposal.getProposal());
+					upgradeTickets.computeIfAbsent(upgradeProposal, it -> nextIteration);
+				}
+			});
+		}
+
+		upgradeTickets.forEach((k, v) -> {
+			String summary = getUpgradeTicketSummary(k.dependency(), k.version());
+			tickets.getOrCreateTicketsWithSummary(v.getModule(build), IssueTracker.TicketType.DependencyUpgrade, summary);
+		});
+	}
+
+	private MilestoneRepository getOpenMilestones(SupportStatus supportStatus, Project release) {
+
+		record MilestonesRetrieval(GitHubRepository repository, Consumer<List<Milestone>> callback) {
+		}
+
+		Map<Dependency, List<Milestone>> dependencyMilestones = new ConcurrentHashMap<>();
+		List<Milestone> springDataMilestones = new ArrayList<>();
+		GitHubRepository springDataRelease = GitProject.of(SupportedProject.of(release, supportStatus)).getRepository();
+		List<MilestonesRetrieval> retrievals = new ArrayList<>();
+		PlatformDependencies.REPOSITORIES.forEach((dependency, repo) -> {
+			retrievals.add(new MilestonesRetrieval(GitProject.getRepository(repo, supportStatus), result -> {
+				dependencyMilestones.put(dependency, result);
+			}));
+		});
+
+		retrievals.add(new MilestonesRetrieval(springDataRelease, springDataMilestones::addAll));
+		ExecutionUtils.run(executor, Streamable.of(retrievals), it -> {
+			it.callback().accept(getOpenMilestones(it.repository(), Milestone::isNearFuture));
+		});
+
+		return new MilestoneRepository(dependencyMilestones, springDataMilestones);
+	}
+
+	private TrainIteration getNextIteration(Train train, SupportedProject project, MilestoneRepository milestones) {
+
+		TrainIteration nextIteration = gitOperations.getNextIteration(train, project);
+
+		if (nextIteration == null) {
+			Optional<Milestone> first = milestones.scheduledReleases().stream()
+					.filter(it -> it.getTitle().contains(train.getCalver().toString())).findFirst();
+
+			if (first.isPresent()) {
+				Iteration iteration = getIteration(first.get().getTitle());
+				nextIteration = train.getIteration(iteration);
+			} else {
+				return null;
+			}
+		}
+		return nextIteration;
+	}
+
+	private List<DependencyVersion> toDependencyVersions(List<Milestone> milestones) {
+		return milestones.stream().map(it -> DependencyVersion.of(it.getTitle())).collect(Collectors.toList());
+	}
+
+	record UpgradeProposal(Dependency dependency, DependencyVersion version) {
+
+	}
+
+	record MilestoneRepository(Map<Dependency, List<Milestone>> dependencies, List<Milestone> scheduledReleases) {
+
+		private boolean isScheduled(ModuleIteration module) {
+
+			for (Milestone scheduledRelease : scheduledReleases) {
+				if (scheduledRelease.getTitle().equals(module.getMilestoneName())) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public void forEach(BiConsumer<? super Dependency, ? super List<Milestone>> consumer) {
+			dependencies.forEach(consumer);
+		}
+	}
+
+	private static Iteration getIteration(String milestone) {
+
+		ArtifactVersion version = ArtifactVersion.of(milestone);
+		if (version.isMilestoneVersion()) {
+			return Iteration.getMilestone(version.getLevel());
+		}
+		if (version.isReleaseCandidateVersion()) {
+			return Iteration.getMilestone(version.getLevel());
+		}
+		if (version.isReleaseVersion()) {
+			return Iteration.GA;
+		}
+
+		throw new IllegalStateException("Cannot derive Iteration from milestone " + milestone);
+	}
+
+	private List<Milestone> getOpenMilestones(GitHubRepository repo, Predicate<Milestone> filter) {
+		List<Milestone> result = gitHub.getOpenMilestones(repo, it -> {
+
+			boolean actualVersion = it.getTitle() != null && !it.getTitle().endsWith(".x")
+					&& ArtifactVersion.isVersion(it.getTitle());
+			return filter.test(it) && actualVersion;
+		});
+
+		Comparator<Instant> date = Comparator.nullsLast(Comparator.comparing(it -> it.truncatedTo(ChronoUnit.DAYS)));
+
+		result.sort(Comparator.comparing(Milestone::getDueOn, date).thenComparing(it -> ArtifactVersion.of(it.getTitle())));
+		return result;
 	}
 
 	private Optional<Ticket> getDependencyUpgradeTicket(Tickets tickets, String upgradeTicketSummary) {

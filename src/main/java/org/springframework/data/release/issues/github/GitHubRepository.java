@@ -18,6 +18,8 @@ package org.springframework.data.release.issues.github;
 import lombok.Value;
 
 import java.util.Comparator;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.springframework.util.StringUtils;
 
@@ -46,6 +48,10 @@ public class GitHubRepository implements Comparable<GitHubRepository> {
 		return repository.compare(this, o);
 	}
 
+	public GitHubRepository mapProjectName(Function<String, String> projectNameMapper) {
+		return new GitHubRepository(namespace, projectNameMapper.apply(project));
+	}
+
 	/**
 	 * @return {@literal true} if the repository is explicitly defined.
 	 */
@@ -64,4 +70,14 @@ public class GitHubRepository implements Comparable<GitHubRepository> {
 	public String toString() {
 		return namespace + "/" + project;
 	}
+
+	/**
+	 * Return a {@link UnaryOperator} that appends {@code -commercial} to project names.
+	 *
+	 * @return
+	 */
+	public static UnaryOperator<String> commercial() {
+		return s -> s + "-commercial";
+	}
+
 }

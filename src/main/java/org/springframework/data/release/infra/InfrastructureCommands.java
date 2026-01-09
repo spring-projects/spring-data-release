@@ -139,4 +139,19 @@ public class InfrastructureCommands extends TimedCommand {
 		infra.distributeGhWorkflow(iteration);
 	}
 
+	/**
+	 * Generate GitHub Readme files.
+	 *
+	 * @param iteration
+	 */
+	@CliCommand(value = "infra readme generate")
+	public void generateReadmes(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+
+		logger.log(iteration, "Generating GitHub Readme Files…");
+
+		git.prepare(iteration);
+
+		infra.generateReadmes(iteration);
+	}
+
 }

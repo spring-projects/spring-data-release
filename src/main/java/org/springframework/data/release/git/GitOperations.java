@@ -228,28 +228,33 @@ public class GitOperations {
 	}
 
 	public void prepare(TrainIteration iteration) {
+		ExecutionUtils.run(executor, iteration, this::doPrepare);
+		reset(iteration);
+	}
 
-		ExecutionUtils.run(executor, iteration, module -> {
+	public void prepare(ModuleIteration module) {
+		doPrepare(module);
+		reset(module.getSupportedProject(), Branch.from(module));
+	}
 
-			SupportedProject project = module.getSupportedProject();
-			Branch branch = Branch.from(module);
+	private void doPrepare(ModuleIteration module) {
 
-			update(project, branch);
-			checkout(project, branch);
+		Branch branch = Branch.from(module);
+		SupportedProject project = module.getSupportedProject();
+
+		UpdateStrategy update = update(project, branch);
+		checkout(project, branch, BranchCheckoutMode.CREATE_ONLY);
+
+		if (update == UpdateStrategy.FETCH) {
 
 			logger.log(project, "Pulling latest updates for branch %s…", branch);
-
 			doWithGit(project, git -> {
 
 				logger.log(project, "git pull origin %s", branch);
-
 				call(git.pull().setRebase(true));
 			});
-
 			logger.log(project, "Pulling updates done!", branch);
-		});
-
-		reset(iteration);
+		}
 	}
 
 	public void update(Train train) {
@@ -358,7 +363,7 @@ public class GitOperations {
 	 * @param branch
 	 */
 	@SneakyThrows
-	public void update(SupportedProject project, @Nullable Branch branch) {
+	public UpdateStrategy update(SupportedProject project, @Nullable Branch branch) {
 
 		Assert.notNull(project, "Project must not be null!");
 
@@ -367,22 +372,31 @@ public class GitOperations {
 		GitProject gitProject = getGitProject(project);
 		String repositoryName = gitProject.getRepositoryName();
 
-		if (workspace.hasProjectDirectory(project)) {
+		try {
+			if (workspace.hasProjectDirectory(project)) {
 
-			doWithGit(gitProject.getProject(), git -> {
+				doWithGit(gitProject.getProject(), git -> {
 
-				logger.log(project, "Found existing repository %s. Obtaining latest changes…", repositoryName);
-				checkout(project, branch == null ? Branch.from(git.getRepository().getBranch()) : branch);
+					logger.log(project, "Found existing repository %s. Obtaining latest changes…", repositoryName);
+					checkout(project, branch == null ? Branch.from(git.getRepository().getBranch()) : branch);
 
-				logger.log(project, "git fetch --tags");
-				call(git.fetch().setTagOpt(TagOpt.FETCH_TAGS));
+					logger.log(project, "git fetch --tags");
+					call(git.fetch().setTagOpt(TagOpt.FETCH_TAGS));
+				});
 
-			});
-		} else {
-			clone(gitProject);
+				return UpdateStrategy.FETCH;
+			} else {
+				clone(gitProject);
+				return UpdateStrategy.CLONE;
+			}
+		} finally {
+			logger.log(project, "Project update done!");
 		}
 
-		logger.log(project, "Project update done!");
+	}
+
+	public enum UpdateStrategy {
+		CLONE, FETCH
 	}
 
 	/**
@@ -490,6 +504,26 @@ public class GitOperations {
 			return TicketBranches
 					.from(tickets.stream().collect(Collectors.toMap(ticket -> ticketIds.get(ticket.getId()), ticket -> ticket)));
 		});
+	}
+
+	public TrainIteration getNextIteration(Train train, SupportedProject project) {
+
+		Optional<TrainIteration> lastTag = getTags(project) //
+				.filter((tag, ti) -> ti.getTrain().equals(train)) //
+				.find((tag, ti) -> ti.getIteration().compareTo(Iteration.SR24) < 0, Pair::getSecond);
+
+		// No tag yet, so we assume this is the first iteration
+		if (lastTag.isEmpty()) {
+			return train.getIteration(Iteration.M1);
+		}
+
+		TrainIteration latest = lastTag.get();
+		Iteration iteration = latest.getIteration();
+		if (iteration.isServiceIteration() || iteration.isGAIteration()) {
+			return train.getIteration(iteration.getNext());
+		}
+
+		return null;
 	}
 
 	/**
@@ -761,8 +795,8 @@ public class GitOperations {
 	}
 
 	/**
-	 * Commits the given files for the given {@link ModuleIteration} using the given summary for the commit message. If no
-	 * files are given, all pending changes are committed.
+	 * Commits the given files for the given {@link ModuleIteration} using the given summary for the commit message
+	 * against the release ticket. If no files are given, all pending changes are committed.
 	 *
 	 * @param module must not be {@literal null}.
 	 * @param summary must not be {@literal null} or empty.
@@ -773,7 +807,7 @@ public class GitOperations {
 
 	/**
 	 * Commits the given files for the given {@link ModuleIteration} using the given summary and details for the commit
-	 * message. If no files are given, all pending changes are committed.
+	 * message against the release ticket. If no files are given, all pending changes are committed.
 	 *
 	 * @param module must not be {@literal null}.
 	 * @param summary must not be {@literal null} or empty.
@@ -794,7 +828,7 @@ public class GitOperations {
 
 	/**
 	 * Commits the given files for the given {@link ModuleIteration} using the given summary and details for the commit
-	 * message. If no files are given, all pending changes are committed.
+	 * message against the release ticket. If no files are given, all pending changes are committed.
 	 *
 	 * @param module must not be {@literal null}.
 	 * @param summary must not be {@literal null} or empty.

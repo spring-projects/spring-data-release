@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 /**
@@ -64,6 +65,7 @@ class IssueTrackerConfiguration {
 		mapper.setSerializationInclusion(Include.NON_NULL);
 		mapper.registerModule(new ParameterNamesModule(Mode.PROPERTIES));
 		mapper.registerModule(new SyntheticLambdaFactoryMethodIgnoringModule());
+		mapper.registerModule(new JavaTimeModule());
 
 		return mapper;
 	}

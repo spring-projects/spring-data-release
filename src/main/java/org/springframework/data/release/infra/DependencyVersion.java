@@ -117,6 +117,21 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+
+		if (!(o instanceof DependencyVersion that)) {
+			return false;
+		}
+
+		return compareTo(that) == 0;
+	}
+
+	@Override
+	public int hashCode() {
+		return ObjectUtils.nullSafeHash(identifier, trainName, version, modifier, counter);
+	}
+
+	@Override
 	public int compareTo(DependencyVersion o) {
 
 		if (trainName != null && o.trainName != null) {

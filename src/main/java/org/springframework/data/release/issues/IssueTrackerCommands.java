@@ -227,9 +227,11 @@ public class IssueTrackerCommands extends TimedCommand {
 		return iteration.and(new ModuleIteration(new Module(Projects.RELEASE, bom.getVersion()), iteration));
 	}
 
-	private IssueTracker getTrackerFor(ModuleIteration moduleIteration) {
+	public IssueTracker getTrackerFor(ModuleIteration moduleIteration) {
+		return getTrackerFor(moduleIteration.getSupportedProject());
+	}
 
-		return tracker.getRequiredPluginFor(moduleIteration.getSupportedProject(),
-				() -> String.format("No issue tracker found for module %s!", moduleIteration));
+	public IssueTracker getTrackerFor(SupportedProject project) {
+		return tracker.getRequiredPluginFor(project, () -> String.format("No issue tracker found for module %s!", project));
 	}
 }

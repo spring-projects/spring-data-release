@@ -53,7 +53,7 @@ public class Logger {
 	}
 
 	public void log(Train train, Object template, Object... args) {
-		log(train.getName(), template, args);
+		log(train.getCalver().toString(), template, args);
 	}
 
 	public void log(String context, Object template, Object... args) {

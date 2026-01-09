@@ -17,22 +17,29 @@ package org.springframework.data.release.issues.github;
 
 import lombok.Value;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import org.springframework.data.release.model.ModuleIteration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
  */
 @Value
-class Milestone {
+@JsonInclude(content = JsonInclude.Include.NON_NULL)
+public class Milestone {
 
 	Long number;
 	String title, description, state;
+	@JsonProperty("due_on") Instant dueOn;
 
 	public static Milestone of(String title, String description) {
-		return new Milestone(null, title, description, null);
+		return new Milestone(null, title, description, null, null);
 	}
 
 	public boolean matches(ModuleIteration moduleIteration) {
@@ -48,6 +55,12 @@ class Milestone {
 	}
 
 	public Milestone markReleased() {
-		return new Milestone(number, null, null, "closed");
+		return new Milestone(number, null, null, "closed", null);
+	}
+
+	public boolean isNearFuture() {
+		return getDueOn() != null && getDueOn().isAfter(Instant.now())
+				&& getDueOn().isBefore(Instant.now().plus(Duration.ofDays(30)));
+
 	}
 }

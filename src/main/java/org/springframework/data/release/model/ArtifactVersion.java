@@ -140,6 +140,21 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return new ArtifactVersion(version, modifierVersionFormat, iteration.getName());
 	}
 
+	/**
+	 * Returns whether the given source represents a valid version.
+	 *
+	 * @param source
+	 * @return
+	 */
+	public static boolean isVersion(String source) {
+		try {
+			of(source);
+			return true;
+		} catch (IllegalArgumentException o_O) {
+			return false;
+		}
+	}
+
 	public boolean isVersionWithin(Version version) {
 		return this.version.toMajorMinorBugfix().startsWith(version.toString());
 	}

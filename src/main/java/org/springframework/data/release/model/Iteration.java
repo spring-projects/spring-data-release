@@ -120,6 +120,14 @@ public class Iteration implements Comparable<Iteration> {
 		return valueOf("SR" + iterationValue);
 	}
 
+	public static Iteration getMilestone(int iterationValue) {
+		return valueOf("M" + iterationValue);
+	}
+
+	public static Iteration getReleaseCandidate(int iterationValue) {
+		return valueOf("RC" + iterationValue);
+	}
+
 	public boolean isGAIteration() {
 		return this.equals(GA);
 	}

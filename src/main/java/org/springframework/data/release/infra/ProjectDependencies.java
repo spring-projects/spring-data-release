@@ -60,6 +60,7 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("micrometer-tracing", Dependencies.MICROMETER_TRACING));
 		config.add(Projects.BUILD, ProjectDependency.using("mockito", Dependencies.MOCKITO));
 		config.add(Projects.BUILD, ProjectDependency.using("mockk", Dependencies.MOCKK));
+		config.add(Projects.BUILD, ProjectDependency.using("reactor", Dependencies.PROJECT_REACTOR));
 		config.add(Projects.BUILD, ProjectDependency.using("querydsl", Dependencies.QUERYDSL));
 		config.add(Projects.BUILD, ProjectDependency.using("rxjava", Dependencies.RXJAVA1));
 		config.add(Projects.BUILD, ProjectDependency.using("rxjava2", Dependencies.RXJAVA2));
@@ -68,6 +69,7 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.BUILD, ProjectDependency.using("slf4j", Dependencies.SLF4J));
 		config.add(Projects.BUILD, ProjectDependency.using("smallrye-mutiny", Dependencies.SMALLRYE_MUTINY));
 		config.add(Projects.BUILD, ProjectDependency.using("spring-hateoas", Dependencies.SPRING_HATEOAS));
+		config.add(Projects.BUILD, ProjectDependency.using("spring", Dependencies.SPRING_FRAMEWORK));
 		config.add(Projects.BUILD, ProjectDependency.using("spring-plugin", Dependencies.SPRING_PLUGIN));
 		config.add(Projects.BUILD, ProjectDependency.using("testcontainers", Dependencies.TESTCONTAINERS));
 		config.add(Projects.BUILD, ProjectDependency.using("threetenbp", Dependencies.THREE_TEN_BP));

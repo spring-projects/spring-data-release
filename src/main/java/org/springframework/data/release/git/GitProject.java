@@ -24,6 +24,7 @@ import org.springframework.data.release.issues.github.GitHubRepository;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
 
 /**
@@ -55,11 +56,15 @@ public class GitProject {
 		return getRepository().getProject();
 	}
 
+	public static GitHubRepository getRepository(GitHubRepository repository, SupportStatus supportStatus) {
+		return supportStatus.isCommercial() ? repository.mapProjectName(GitHubRepository.commercial()) : repository;
+	}
+
 	public GitHubRepository getRepository() {
 
 		String logicalName = project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase();
-		logicalName = project.isCommercial() ? logicalName + "-commercial" : logicalName;
-		return GitHubRepository.of("spring-projects", PROJECT_PREFIX + "-" + logicalName);
+		return getRepository(GitHubRepository.of("spring-projects", PROJECT_PREFIX + "-" + logicalName),
+				project.getSupportStatus());
 	}
 
 	/**

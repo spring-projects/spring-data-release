@@ -72,6 +72,8 @@ public class Dependencies {
 
 	public static final Dependency MOCKK = Dependency.of("Mockk", "io.mockk:mockk");
 
+	public static final Dependency PROJECT_REACTOR = Dependency.of("Project Reactor", "io.projectreactor:reactor-bom");
+
 	public static final Dependency QUERYDSL = Dependency.of("Querydsl", "com.querydsl:querydsl-bom");
 
 	public static final Dependency RXJAVA1 = Dependency.of("RxJava", "io.reactivex:rxjava");
@@ -84,6 +86,9 @@ public class Dependencies {
 			"io.reactivex:rxjava-reactive-streams");
 
 	public static final Dependency SLF4J = Dependency.of("SLF4J", "org.slf4j:slf4j-api");
+
+	public static final Dependency SPRING_FRAMEWORK = Dependency.of("Spring Framework",
+			"org.springframework:spring-framework-bom");
 
 	public static final Dependency SPRING_HATEOAS = Dependency.of("Spring Hateoas",
 			"org.springframework.hateoas:spring-hateoas");

@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,10 +36,15 @@ import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.Tickets;
+import org.springframework.data.release.issues.github.Milestone;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.ReleaseTrains;
+import org.springframework.data.release.model.SupportStatus;
+import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.model.SupportedProject;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
@@ -55,6 +62,8 @@ import org.springframework.shell.support.table.Table;
 public class DependencyCommands extends TimedCommand {
 
 	public static final String BUILD_PROPERTIES = "dependency-upgrade-build.properties";
+
+	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	DependencyOperations operations;
 	GitOperations git;
@@ -135,6 +144,35 @@ public class DependencyCommands extends TimedCommand {
 		Thread.sleep(1500);
 
 		operations.closeUpgradeTickets(module, tickets);
+	}
+
+	@CliCommand(value = "dependency tickets create")
+	public void createDependencyUpgradeTickets() {
+		List<Train> latest = ReleaseTrains.latest(3).stream().filter(SupportStatusAware::isOpenSource).toList();
+		operations.createDependencyUpgradeTicketsForScheduledReleases(SupportStatus.OSS, latest);
+	}
+
+	@CliCommand(value = "milestone list")
+	public String listOpenMilestones() {
+
+		List<Milestone> milestones = operations.listOpenMilestones(SupportStatus.OSS);
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("Next %s Milestones:".formatted(SupportStatus.OSS.name())).append(System.lineSeparator());
+		for (Milestone milestone : milestones) {
+			buffer.append("\t * %-14s %s".formatted(milestone.getTitle(), format(milestone))).append(System.lineSeparator());
+		}
+
+		return buffer.toString();
+	}
+
+	private static String format(Milestone milestone) {
+
+		if (milestone.getDueOn() == null) {
+			return "⚠️ (unscheduled)";
+		}
+
+		String formatted = DUE_ON_FORMATTER.format(milestone.getDueOn().atZone(ZoneId.systemDefault()));
+		return milestone.isNearFuture() ? "⏰️ " + formatted : formatted;
 	}
 
 	private DependencyVersions loadDependencyUpgrades(ModuleIteration iteration) throws IOException {

@@ -22,6 +22,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -62,6 +63,7 @@ public class InfrastructureOperations extends TimedCommand {
 	public static final String MAVEN_PROPERTIES = "dependency-upgrade-maven.properties";
 
 	DependencyOperations dependencies;
+	ReadmeProcessor readmeProcessor;
 	Workspace workspace;
 	GitOperations git;
 	ExecutorService executor;
@@ -174,5 +176,25 @@ public class InfrastructureOperations extends TimedCommand {
 		}
 
 		return DependencyUpgradeProposals.fromProperties(iteration, properties);
+	}
+
+	public void generateReadmes(TrainIteration iteration) {
+
+		ExecutionUtils.run(executor, iteration, it -> {
+
+			File template = workspace.getFile(".github/README.template.adoc", it.getSupportedProject());
+
+			if (template.exists()) {
+
+				String result = readmeProcessor.preprocess(template, it);
+				File target = workspace.getFile("README.adoc", it.getSupportedProject());
+
+				FileUtils.write(target, result, StandardCharsets.UTF_8);
+
+				git.add(it.getSupportedProject(), "README.adoc");
+				git.commit(it, "Update Readme.", Optional.empty(), false);
+				git.push(it);
+			}
+		});
 	}
 }
