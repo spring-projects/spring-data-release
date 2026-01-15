@@ -168,7 +168,10 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 			return false;
 		}
 
-		return true;
+		if (getModifier().equalsIgnoreCase("release")) {
+			return false;
+		}
 
+		return true;
 	}
 }

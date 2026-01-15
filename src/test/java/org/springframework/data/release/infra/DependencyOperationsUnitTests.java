@@ -69,6 +69,24 @@ class DependencyOperationsUnitTests {
 	}
 
 	@Test
+	void shouldSelectNextMinorVersionForVersionsWithModifier() {
+
+		List<DependencyVersion> availableVersions = Stream
+				.of("v7.0.0.BETA1", "7.0.0.BETA2", "6.9.0.RELEASE", "6.8.2.RELEASE", "6.8.1.RELEASE") //
+				.map(DependencyVersion::of) //
+				.sorted() //
+				.collect(Collectors.toList());
+
+		DependencyUpgradeProposal proposal = DependencyOperations.getDependencyUpgradeProposal(
+				DependencyUpgradePolicy.from(Iteration.SR1), DependencyVersion.of("6.8.1.RELEASE"), availableVersions);
+
+		assertThat(proposal.getCurrent()).isEqualTo(DependencyVersion.of("6.8.1.RELEASE"));
+		assertThat(proposal.getLatestMinor()).isEqualTo(DependencyVersion.of("6.8.2.RELEASE"));
+		assertThat(proposal.getProposal()).isEqualTo(DependencyVersion.of("6.8.2.RELEASE"));
+		assertThat(proposal.getLatest()).isEqualTo(DependencyVersion.of("6.9.0.RELEASE"));
+	}
+
+	@Test
 	void shouldSelectLatestVersion() {
 
 		List<DependencyVersion> availableVersions = Stream.of("5.7.0", "5.7.1", "5.8.0") //

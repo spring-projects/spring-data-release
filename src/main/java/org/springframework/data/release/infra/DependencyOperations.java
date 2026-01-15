@@ -78,7 +78,6 @@ import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestOperations;
 
@@ -579,7 +578,7 @@ public class DependencyOperations {
 			return false;
 		}
 
-		if (StringUtils.hasText(proposal.getModifier())) {
+		if (proposal.hasPreReleaseModifier()) {
 			return policy.milestoneAllowed();
 		}
 
@@ -591,7 +590,7 @@ public class DependencyOperations {
 
 		return availableVersions.stream().filter(it -> {
 
-			if (StringUtils.hasText(it.getModifier())) {
+			if (it.hasPreReleaseModifier()) {
 				return policy.milestoneAllowed();
 			}
 
@@ -600,7 +599,7 @@ public class DependencyOperations {
 		}).max(DependencyVersion::compareTo);
 	}
 
-	private static Optional<DependencyVersion> findLatestMinor(DependencyUpgradePolicy policy,
+	static Optional<DependencyVersion> findLatestMinor(DependencyUpgradePolicy policy,
 			DependencyVersion currentVersion, List<DependencyVersion> availableVersions) {
 
 		return availableVersions.stream().filter(it -> {
