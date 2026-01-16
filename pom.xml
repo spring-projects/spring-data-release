@@ -15,6 +15,7 @@
 	<properties>
 		<spring-plugin.version>2.0.0.RELEASE</spring-plugin.version>
 		<jgit.version>7.4.0.202509020913-r</jgit.version>
+		<jetty.version>12.1.5</jetty.version>
 	</properties>
 
 	<dependencyManagement>
@@ -191,7 +192,7 @@
 		<dependency>
 			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock</artifactId>
-			<version>3.13.1</version>
+			<version>4.0.0-beta.25</version>
 			<scope>test</scope>
 		</dependency>
 
