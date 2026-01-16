@@ -8,7 +8,7 @@
     "html_url": "https://github.com/spring-projects/spring-data-build/issues/233",
     "id": 141655399,
     "number": 233,
-    "title": "Release 1.8 RC1 (Hopper)",
+    "title": "Release 2.4 RC1 (2020.0.0)",
     "user": {
       "login": "olivergierke",
       "id": 128577,
@@ -40,7 +40,7 @@
       "labels_url": "https://api.github.com/repos/spring-projects/spring-data-build/milestones/45/labels",
       "id": 1579988,
       "number": 45,
-      "title": "1.8 RC1 (Hopper)",
+      "title": "Release 2.4 RC1 (2020.0.0)",
       "description": "",
       "creator": {
         "login": "olivergierke",

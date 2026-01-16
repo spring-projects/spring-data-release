@@ -109,7 +109,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	@Override
 	@CacheEvict(value = { "tickets", "release-tickets", "milestone" }, allEntries = true)
 	public void reset() {
-
+		milestoneCache.clear();
 	}
 
 	/*

@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
 import org.springframework.data.release.WireMockExtension;
@@ -50,13 +50,13 @@ import com.github.tomakehurst.wiremock.common.ClasspathFileSource;
  *
  * @author Mark Paluch
  */
-@Disabled("Some strange test failures. Tests fail when running all, tests pass when running individually.")
 class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 
 	static final String ISSUES_URI = "/repos/spring-projects/spring-data-build/issues";
 	static final String RELEASE_TICKET_URI = "/repos/spring-projects/spring-data-build/issues/233";
 	static final String MILESTONES_URI = "/repos/spring-projects/spring-data-build/milestones";
-	static final ModuleIteration BUILD_HOPPER_RC1 = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD,
+	static final String MILESTONE_URI = "/repos/spring-projects/spring-data-build/milestones/45";
+	static final ModuleIteration OCKHAM_RC1 = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD,
 			Iteration.RC1);
 	static final Train LATEST = ReleaseTrains.latest();
 
@@ -110,7 +110,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetMilestonesWith("milestones.json");
 		mockGetIssuesWith("issues.json");
 
-		Ticket releaseTicket = github.getReleaseTicketFor(BUILD_HOPPER_RC1);
+		Ticket releaseTicket = github.getReleaseTicketFor(OCKHAM_RC1);
 		assertThat(releaseTicket.getId()).isEqualTo("#233");
 	}
 
@@ -119,8 +119,8 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 
 		mockGetMilestonesWith("emptyMilestones.json");
 
-		assertThatIllegalStateException().isThrownBy(() -> github.getReleaseTicketFor(BUILD_HOPPER_RC1))
-				.withMessageContaining("No milestone for Spring Data Build found containing 1.8 RC1 (Hopper)!");
+		assertThatIllegalStateException().isThrownBy(() -> github.getReleaseTicketFor(OCKHAM_RC1))
+				.withMessageContaining("No milestone for Spring Data Build found containing 2.4 RC1 (2020.0.0)!");
 	}
 
 	@Test // #5
@@ -129,9 +129,9 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetMilestonesWith("milestones.json");
 		mockGetIssuesWith("emptyIssues.json");
 
-		assertThatIllegalArgumentException().isThrownBy(() -> github.getReleaseTicketFor(BUILD_HOPPER_RC1))
+		assertThatIllegalArgumentException().isThrownBy(() -> github.getReleaseTicketFor(OCKHAM_RC1))
 				.withMessageContaining(
-						"Did not find a release ticket for Spring Data Build 1.8 RC1 (Hopper) containing Release 1.8 RC1 (Hopper)!");
+						"Did not find a release ticket for Spring Data Build 2.4 RC1 (2020.0.0) containing Release 2.4 RC1 (2020.0.0)!");
 	}
 
 	@Test // #5
@@ -140,10 +140,10 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetMilestonesWith("emptyMilestones.json");
 		mockCreateMilestoneWith("milestone.json");
 
-		github.createReleaseVersion(BUILD_HOPPER_RC1);
+		github.createReleaseVersion(OCKHAM_RC1);
 
 		verify(postRequestedFor(urlPathMatching(MILESTONES_URI))
-				.withRequestBody(equalToJson("{\"title\":\"1.8 RC1 (Hopper)\", \"description\":\"Hopper RC1\"}")));
+				.withRequestBody(equalToJson("{\"title\":\"2.4 RC1 (2020.0.0)\", \"description\":\"2020.0.0-RC1\"}")));
 	}
 
 	@Test // #5
@@ -151,7 +151,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 
 		mockGetMilestonesWith("milestones.json");
 
-		github.createReleaseVersion(BUILD_HOPPER_RC1);
+		github.createReleaseVersion(OCKHAM_RC1);
 
 		verify(0, postRequestedFor(urlPathMatching(MILESTONES_URI)));
 	}
@@ -163,22 +163,22 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetIssuesWith("emptyIssues.json");
 		mockCreateIssueWith("issue.json");
 
-		github.createReleaseTicket(BUILD_HOPPER_RC1);
+		github.createReleaseTicket(OCKHAM_RC1);
 
 		verify(postRequestedFor(urlPathMatching(ISSUES_URI)).withRequestBody(equalToJson(
-				"{\"title\":\"Release 1.8 RC1 (Hopper)\",\"milestone\":45,\"labels\":[ \"type: task\" ], \"assignees\" : [ ]}")));
+				"{\"title\":\"Release 2.4 RC1 (2020.0.0)\",\"milestone\":45,\"labels\":[ \"type: task\" ], \"assignees\" : [ ]}")));
 	}
 
 	@Test // #5
 	void createReleaseTicketShouldFailWithNoReleaseVersion() {
 
-		ModuleIteration moduleIteration = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD, Iteration.RC1);
+		ModuleIteration moduleIteration = ReleaseTrains.OCKHAM.getModuleIteration(Projects.BUILD, Iteration.RC2);
 
 		mockGetIssuesWith("emptyIssues.json");
 		mockGetMilestonesWith("emptyMilestones.json");
 
 		assertThatIllegalStateException().isThrownBy(() -> github.createReleaseTicket(moduleIteration))
-				.withMessageContaining("No milestone for Spring Data Build found containing 1.8 RC1 (Hopper)!");
+				.withMessageContaining("No milestone for Spring Data Build found containing 2.4 RC2 (2020.0.0)");
 	}
 
 	@Test // #5
@@ -187,7 +187,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockGetMilestonesWith("milestones.json");
 		mockGetIssuesWith("issues.json");
 
-		github.createReleaseTicket(BUILD_HOPPER_RC1);
+		github.createReleaseTicket(OCKHAM_RC1);
 
 		verify(0, postRequestedFor(urlPathMatching(MILESTONES_URI)));
 	}
@@ -201,7 +201,7 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockService.stubFor(patch(urlPathMatching(RELEASE_TICKET_URI)).//
 				willReturn(json("issue.json")));
 
-		github.assignReleaseTicketToMe(BUILD_HOPPER_RC1);
+		github.assignReleaseTicketToMe(OCKHAM_RC1);
 
 		verify(patchRequestedFor(urlPathMatching(RELEASE_TICKET_URI))
 				.withRequestBody(equalToJson("{\"assignees\":[\"dummy\"]}")));
@@ -219,7 +219,10 @@ class GitHubIssueTrackerIntegrationTests extends AbstractIntegrationTests {
 		mockService.stubFor(patch(urlPathMatching(MILESTONES_URI + "/45")).//
 				willReturn(aResponse().withStatus(200)));
 
-		github.closeIteration(BUILD_HOPPER_RC1);
+		github.closeIteration(OCKHAM_RC1);
+
+		verify(patchRequestedFor(urlPathMatching(MILESTONE_URI))
+				.withRequestBody(equalToJson("{\"number\": 45, \"state\":\"closed\"}")));
 
 		verify(patchRequestedFor(urlPathMatching(RELEASE_TICKET_URI))
 				.withRequestBody(equalToJson("{\"state\":\"closed\",\"assignees\":[\"dummy\"]}")));

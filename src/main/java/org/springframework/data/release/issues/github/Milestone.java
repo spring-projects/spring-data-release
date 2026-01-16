@@ -23,20 +23,19 @@ import java.time.Instant;
 import org.springframework.data.release.model.ModuleIteration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.OptBoolean;
 
 /**
  * @author Oliver Gierke
  * @author Mark Paluch
  */
 @Value
-@JsonInclude(content = JsonInclude.Include.NON_NULL)
 public class Milestone {
 
 	Long number;
 	String title, description, state;
-	@JsonProperty("due_on") Instant dueOn;
+	@JsonProperty(value = "due_on", isRequired = OptBoolean.FALSE) Instant dueOn;
 
 	public static Milestone of(String title, String description) {
 		return new Milestone(null, title, description, null, null);
@@ -58,6 +57,7 @@ public class Milestone {
 		return new Milestone(number, null, null, "closed", null);
 	}
 
+	@JsonIgnore
 	public boolean isNearFuture() {
 		return getDueOn() != null && getDueOn().isAfter(Instant.now())
 				&& getDueOn().isBefore(Instant.now().plus(Duration.ofDays(30)));
