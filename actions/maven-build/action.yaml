@@ -18,7 +18,7 @@ runs:
       run: |
         ${{ inputs.run }} ${{ inputs.additional-options }}
     - name: Test Summary
-      uses: test-summary/action@v2.2
+      uses: spring-projects/spring-data-release/actions/test-summary@main
       with:
         paths: '**/TEST-*.xml'
       if: always()
