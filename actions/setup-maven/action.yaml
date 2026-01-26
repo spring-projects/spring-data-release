@@ -8,7 +8,7 @@ inputs:
     default: 'main'
   develocity-access-key:
     description: 'Develocity access key. Should be set to a secret containing the Develocity Access key.'
-    required: true
+    required: false
 
 runs:
   using: composite
