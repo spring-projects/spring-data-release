@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.release.issues.github.GitHubRepository;
+import org.springframework.data.release.model.GitHubNamingStrategy;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
@@ -34,8 +35,6 @@ import org.springframework.data.release.model.SupportedProject;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class GitProject {
 
-	private static final String PROJECT_PREFIX = "spring-data";
-
 	private final @Getter SupportedProject project;
 	private final GitServer server;
 
@@ -48,12 +47,21 @@ public class GitProject {
 	}
 
 	/**
+	 * Returns the owner namespace of the repository the project is using.
+	 *
+	 * @return
+	 */
+	public String getOwner() {
+		return getRepository().getOwner();
+	}
+
+	/**
 	 * Returns the name of the repository the project is using.
 	 *
 	 * @return
 	 */
 	public String getRepositoryName() {
-		return getRepository().getProject();
+		return getRepository().getRepositoryName();
 	}
 
 	public static GitHubRepository getRepository(GitHubRepository repository, SupportStatus supportStatus) {
@@ -62,8 +70,12 @@ public class GitProject {
 
 	public GitHubRepository getRepository() {
 
+		GitHubNamingStrategy namingStrategy = project.getNamingStrategy();
 		String logicalName = project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase();
-		return getRepository(GitHubRepository.of("spring-projects", PROJECT_PREFIX + "-" + logicalName),
+		SupportStatus supportStatus = getProject().getSupportStatus();
+
+		return getRepository(GitHubRepository.of(namingStrategy.getOwner(logicalName, supportStatus),
+				namingStrategy.getRepository(logicalName, supportStatus)),
 				project.getSupportStatus());
 	}
 
@@ -73,6 +85,9 @@ public class GitProject {
 	 * @return
 	 */
 	public String getProjectUri() {
-		return server.getUri() + getRepositoryName();
+
+		GitHubRepository repository = getRepository();
+		return server.getUri() + repository.getOwner() + "/" + repository.getRepositoryName();
 	}
+
 }

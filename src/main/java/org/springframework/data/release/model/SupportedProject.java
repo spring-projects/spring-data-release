@@ -34,6 +34,10 @@ public class SupportedProject implements Named, ProjectAware {
 		return project.getName();
 	}
 
+	public GitHubNamingStrategy getNamingStrategy() {
+		return project.getNamingStrategy();
+	}
+
 	@Override
 	public String toString() {
 		return project.getFullName() + " (" + status.name() + ")";
@@ -52,4 +56,5 @@ public class SupportedProject implements Named, ProjectAware {
 	public SupportStatus getSupportStatus() {
 		return status;
 	}
+
 }

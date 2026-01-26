@@ -69,7 +69,7 @@ public class MavenArtifact {
 	 */
 	public String getArtifactId() {
 
-		String artifactId = String.format("spring-data-%s", project.getName().toLowerCase());
+		String artifactId = project.getFolderName();
 
 		return REST.equals(project) ? artifactId.concat("-webmvc") : artifactId;
 	}

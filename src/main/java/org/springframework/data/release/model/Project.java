@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.With;
 
+import java.beans.ConstructorProperties;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +38,8 @@ import org.springframework.util.Assert;
 @EqualsAndHashCode
 public class Project implements Comparable<Project>, Named {
 
+	private static final GitHubNamingStrategy NAMING_STRATEGY = SpringDataNamingStrategy.INSTANCE;
+
 	private final @Getter ProjectKey key;
 	private final @Getter String name;
 	private final @With String fullName;
@@ -46,7 +49,7 @@ public class Project implements Comparable<Project>, Named {
 	private final @With boolean skipTests;
 	private final @Getter @With boolean useShortVersionMilestones; // use a short version 2.3.0-RC1 instead of 2.3 RC1 if
 	private final @Getter @With ProjectMaintainer maintainer;
-																																	// true
+	// true
 
 	Project(String key, String name, Tracker tracker) {
 		this(key, name, null, tracker);
@@ -57,7 +60,7 @@ public class Project implements Comparable<Project>, Named {
 				false, ProjectMaintainer.CORE);
 	}
 
-	@java.beans.ConstructorProperties({ "key", "name", "fullName", "dependencies", "tracker", "additionalArtifacts",
+	@ConstructorProperties({ "key", "name", "fullName", "dependencies", "tracker", "additionalArtifacts",
 			"skipTests", "plainVersionMilestones", "owner" })
 	private Project(ProjectKey key, String name, String fullName, Collection<Project> dependencies, Tracker tracker,
 			ArtifactCoordinates additionalArtifacts, boolean skipTests, boolean useShortVersionMilestones,
@@ -83,7 +86,7 @@ public class Project implements Comparable<Project>, Named {
 	}
 
 	public String getFolderName() {
-		return "spring-data-".concat(name.toLowerCase());
+		return NAMING_STRATEGY.getRepository(getName(), SupportStatus.OSS);
 	}
 
 	public String getDependencyProperty() {
@@ -130,6 +133,10 @@ public class Project implements Comparable<Project>, Named {
 		return dependencies.stream() //
 				.flatMap(dependency -> Stream.concat(Stream.of(dependency), dependency.getDependencies().stream())) //
 				.collect(Collectors.toSet());
+	}
+
+	public GitHubNamingStrategy getNamingStrategy() {
+		return NAMING_STRATEGY;
 	}
 
 	public String getProjectDescriptor() {

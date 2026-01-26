@@ -33,8 +33,8 @@ public class GitHubRepository implements Comparable<GitHubRepository> {
 
 	private static final GitHubRepository IMPLICIT = new GitHubRepository("", "");
 
-	String namespace;
-	String project;
+	String owner;
+	String repositoryName;
 
 	public static GitHubRepository implicit() {
 		return IMPLICIT;
@@ -44,19 +44,19 @@ public class GitHubRepository implements Comparable<GitHubRepository> {
 	public int compareTo(GitHubRepository o) {
 
 		Comparator<GitHubRepository> repository = Comparator.comparing(GitHubRepository::isImplicit)
-				.thenComparing(GitHubRepository::getNamespace).thenComparing(GitHubRepository::getProject);
+				.thenComparing(GitHubRepository::getOwner).thenComparing(GitHubRepository::getRepositoryName);
 		return repository.compare(this, o);
 	}
 
 	public GitHubRepository mapProjectName(Function<String, String> projectNameMapper) {
-		return new GitHubRepository(namespace, projectNameMapper.apply(project));
+		return new GitHubRepository(owner, projectNameMapper.apply(repositoryName));
 	}
 
 	/**
 	 * @return {@literal true} if the repository is explicitly defined.
 	 */
 	public boolean isDefined() {
-		return StringUtils.hasText(namespace) && StringUtils.hasText(project);
+		return StringUtils.hasText(owner) && StringUtils.hasText(repositoryName);
 	}
 
 	/**
@@ -68,7 +68,7 @@ public class GitHubRepository implements Comparable<GitHubRepository> {
 
 	@Override
 	public String toString() {
-		return namespace + "/" + project;
+		return owner + "/" + repositoryName;
 	}
 
 	/**
