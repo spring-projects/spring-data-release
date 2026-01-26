@@ -22,9 +22,14 @@ import java.util.Locale;
  *
  * @author Mark Paluch
  */
-enum SpringDataNamingStrategy implements GitHubNamingStrategy {
+enum SpringDataNamingStrategy implements GitHubNamingStrategy, ArtifactNamingStrategy {
 
 	INSTANCE;
+
+	public static ArtifactCoordinates SPRING_DATA = ArtifactCoordinates.forGroupId("org.springframework.data");
+
+	public static ArtifactCoordinates SPRING_DATA_BUILD = ArtifactCoordinates
+			.forGroupId("org.springframework.data.build");
 
 	@Override
 	public String getOwner(String projectName, SupportStatus supportStatus) {
@@ -37,4 +42,16 @@ enum SpringDataNamingStrategy implements GitHubNamingStrategy {
 		String name = projectName.toLowerCase(Locale.ROOT);
 		return (supportStatus.isCommercial() ? "spring-data-%s-commercial" : "spring-data-%s").formatted(name);
 	}
+
+	@Override
+	public String getArtifactName(String projectName) {
+		String name = projectName.toLowerCase(Locale.ROOT);
+		return "spring-data-%s".formatted(name);
+	}
+
+	@Override
+	public String getFullName(String projectName) {
+		return "Spring Data %s".formatted(projectName);
+	}
+
 }

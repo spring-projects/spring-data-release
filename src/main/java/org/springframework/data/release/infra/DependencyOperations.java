@@ -444,7 +444,7 @@ public class DependencyOperations {
 		GitHubRepository springDataRelease = GitProject.of(SupportedProject.of(release, supportStatus)).getRepository();
 		List<MilestonesRetrieval> retrievals = new ArrayList<>();
 		PlatformDependencies.REPOSITORIES.forEach((dependency, repo) -> {
-			retrievals.add(new MilestonesRetrieval(GitProject.getRepository(repo, supportStatus), result -> {
+			retrievals.add(new MilestonesRetrieval(repo, result -> {
 				dependencyMilestones.put(dependency, result);
 			}));
 		});

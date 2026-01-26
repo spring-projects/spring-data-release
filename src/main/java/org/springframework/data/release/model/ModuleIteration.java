@@ -37,10 +37,6 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 		return trainIteration.getTrain();
 	}
 
-	public ProjectKey getProjectKey() {
-		return module.getProject().getKey();
-	}
-
 	@Override
 	public SupportedProject getSupportedProject() {
 		return trainIteration.getSupportedProject(module);

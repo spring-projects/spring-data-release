@@ -20,21 +20,28 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.git.Branch;
 import org.springframework.data.release.git.GitOperations;
+import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
+import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Tracker;
+import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.util.Streamable;
@@ -120,6 +127,76 @@ public class GitHubCommands extends TimedCommand {
 				previousIteration, module.getTrainIteration());
 
 		return gitHub.createReleaseMarkdown(module, ticketReferences);
+	}
+
+	@CliCommand(value = "github wiki status-matrix")
+	public String createBuildStatusMatrix(@CliOption(key = "", mandatory = true) SupportStatus supportStatus,
+			@CliOption(key = "trains", unspecifiedDefaultValue = "3") int trainCount) {
+
+		List<Project> projects = new ArrayList<>(Projects.all());
+		projects.sort(Comparator.comparing(Project::getName));
+
+		List<Train> trains = ReleaseTrains.latest(trainCount);
+		Collections.reverse(trains);
+
+		StringBuilder builder = new StringBuilder();
+
+		for (Project project : projects) {
+
+			GitProject gitProject = GitProject.of(SupportedProject.of(project, supportStatus));
+			boolean isProjectActive = isProjectActive(project, trains);
+
+			if (isProjectActive) {
+				continue;
+			}
+
+			builder.append("| https://github.com/%s/%s[%s]".formatted(gitProject.getOwner(), gitProject.getRepositoryName(),
+					project.getName())).append(System.lineSeparator());
+
+			for (int i = 0; i < trains.size(); i++) {
+
+				Train train = trains.get(i);
+				TrainIteration iteration;
+
+				if (!train.contains(project)) {
+					builder.append("| ").append(System.lineSeparator());
+					continue;
+				}
+
+				if (i == 0) {
+					iteration = train.getIteration(Iteration.M1);
+				} else {
+					iteration = train.getIteration(Iteration.SR1);
+				}
+
+				Branch branch = Branch.from(iteration.getModule(project));
+
+				builder.append(
+						"| image:https://github.com/%1$s/%2$s/actions/workflows/ci.yml/badge.svg?branch=%3$s[\"CI\", link=\"https://github.com/%1$s/%2$s/actions/workflows/ci.yml?query=branch%%3A%3$s\"]"
+								.formatted(gitProject.getOwner(), gitProject.getRepositoryName(), branch))
+						.append(" +").append(System.lineSeparator());
+
+				builder.append(
+						"image:https://github.com/%1$s/%2$s/actions/workflows/snapshots.yml/badge.svg?branch=%3$s[\"Snapshots\", link=\"https://github.com/%1$s/%2$s/actions/workflows/snapshots.yml?query=branch%%3A%3$s\"]"
+								.formatted(gitProject.getOwner(), gitProject.getRepositoryName(), branch))
+						.append(System.lineSeparator());
+			}
+
+			builder.append(System.lineSeparator());
+		}
+
+		return builder.toString();
+	}
+
+	private static boolean isProjectActive(Project project, List<Train> trains) {
+
+		int containsProject = 0;
+		for (Train train : trains) {
+			if (train.contains(project)) {
+				containsProject++;
+			}
+		}
+		return containsProject > 0;
 	}
 
 	public void triggerAntoraWorkflow(SupportedProject project) {

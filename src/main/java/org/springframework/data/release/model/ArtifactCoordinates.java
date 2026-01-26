@@ -30,8 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ArtifactCoordinates {
 
-	public static ArtifactCoordinates SPRING_DATA = forGroupId("org.springframework.data");
-
+	@Getter
 	private final String groupId;
 	private final @Getter(AccessLevel.PACKAGE) List<ArtifactCoordinate> coordinates;
 

@@ -64,19 +64,14 @@ public class GitProject {
 		return getRepository().getRepositoryName();
 	}
 
-	public static GitHubRepository getRepository(GitHubRepository repository, SupportStatus supportStatus) {
-		return supportStatus.isCommercial() ? repository.mapProjectName(GitHubRepository.commercial()) : repository;
-	}
-
 	public GitHubRepository getRepository() {
 
 		GitHubNamingStrategy namingStrategy = project.getNamingStrategy();
 		String logicalName = project.getProject() == Projects.JDBC ? "relational" : project.getName().toLowerCase();
 		SupportStatus supportStatus = getProject().getSupportStatus();
 
-		return getRepository(GitHubRepository.of(namingStrategy.getOwner(logicalName, supportStatus),
-				namingStrategy.getRepository(logicalName, supportStatus)),
-				project.getSupportStatus());
+		return GitHubRepository.of(namingStrategy.getOwner(logicalName, supportStatus),
+				namingStrategy.getRepository(logicalName, supportStatus));
 	}
 
 	/**
