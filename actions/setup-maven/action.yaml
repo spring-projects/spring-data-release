@@ -17,7 +17,7 @@ runs:
       with:
         java-version: '${{ inputs.java-version }}'
     - name: Maven Repository Cache
-      uses: actions/cache@v5.0.1
+      uses: actions/cache@v5.0.2
       with:
         path: |
           ~/.m2/repository
@@ -26,7 +26,7 @@ runs:
         restore-keys: |
           ${{ runner.os }}-maven
     - name: Setup Develocity Maven Capturing
-      uses: gradle/develocity-actions/setup-maven@v2.1
+      uses: gradle/develocity-actions/setup-maven@1d6b56bc8352f11400f1d802d627dee852b3e946 #v2.1
       with:
         develocity-url: 'https://ge.spring.io'
         develocity-access-key: '${{ inputs.develocity-access-key }}'
