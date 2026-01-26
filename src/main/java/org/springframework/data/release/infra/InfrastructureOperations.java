@@ -41,6 +41,7 @@ import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
+import org.springframework.data.release.model.ProjectMaintainer;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
@@ -86,7 +87,7 @@ public class InfrastructureOperations extends TimedCommand {
 	void distributeGhWorkflow(TrainIteration iteration) {
 		distributeFiles(iteration, List.of(".github/workflows/project.yml", ".github/workflows/codeql.yml"),
 				"GitHub Actions",
-				project -> project != Projects.BOM);
+				project -> project != Projects.BOM && project.getMaintainer() == ProjectMaintainer.CORE);
 	}
 
 	private void distributeFiles(TrainIteration iteration, List<String> files, String description,
