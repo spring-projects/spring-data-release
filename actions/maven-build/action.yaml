@@ -16,7 +16,11 @@ runs:
   steps:
     - shell: bash
       run: |
-        ${{ inputs.run }} ${{ inputs.additional-options }}
+        ADDITIONAL_MAVEN_OPTS=""
+        if [[ -f "settings.xml" ]]; then
+          ADDITIONAL_MAVEN_OPTS="-s settings.xml"
+        fi
+        ${{ inputs.run }} ${ADDITIONAL_MAVEN_OPTS} ${{ inputs.additional-options }}
     - name: Test Summary
       uses: spring-projects/spring-data-release/actions/test-summary@main
       with:
