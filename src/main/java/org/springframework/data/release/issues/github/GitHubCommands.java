@@ -24,7 +24,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
@@ -48,6 +51,7 @@ import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
+import org.springframework.util.StringUtils;
 
 /**
  * Component to execute GitHub related operations.
@@ -130,14 +134,22 @@ public class GitHubCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "github wiki status-matrix")
-	public String createBuildStatusMatrix(@CliOption(key = "", mandatory = true) SupportStatus supportStatus,
-			@CliOption(key = "trains", unspecifiedDefaultValue = "3") int trainCount) {
+	public String createBuildStatusMatrix(@CliOption(key = "trains") String trainNames) {
 
-		List<Project> projects = new ArrayList<>(Projects.all());
-		projects.sort(Comparator.comparing(Project::getName));
+		List<Project> projects = new ArrayList<>(15);
+		projects.add(Projects.BOM);
+		projects.addAll(Projects.all());
+		projects.sort(Comparator.comparing(it -> it.getName().toLowerCase(Locale.ROOT)));
+		List<Train> trains = getTrains(trainNames);
 
-		List<Train> trains = ReleaseTrains.latest(trainCount);
-		Collections.reverse(trains);
+		SupportStatus supportStatus = SupportStatus.OSS;
+
+		for (Train train : trains) {
+			if (train.isCommercial()) {
+				supportStatus = SupportStatus.COMMERCIAL;
+				break;
+			}
+		}
 
 		StringBuilder builder = new StringBuilder();
 
@@ -146,7 +158,7 @@ public class GitHubCommands extends TimedCommand {
 			GitProject gitProject = GitProject.of(SupportedProject.of(project, supportStatus));
 			boolean isProjectActive = isProjectActive(project, trains);
 
-			if (isProjectActive) {
+			if (!isProjectActive || project == Projects.JDBC) {
 				continue;
 			}
 
@@ -159,11 +171,20 @@ public class GitHubCommands extends TimedCommand {
 				TrainIteration iteration;
 
 				if (!train.contains(project)) {
+
+					if (project == Projects.JDBC) {
+						project = Projects.RELATIONAL;
+					} else if (project == Projects.RELATIONAL) {
+						project = Projects.JDBC;
+					}
+				}
+
+				if (!train.contains(project)) {
 					builder.append("| ").append(System.lineSeparator());
 					continue;
 				}
 
-				if (i == 0) {
+				if (i == 0 && supportStatus == SupportStatus.OSS) {
 					iteration = train.getIteration(Iteration.M1);
 				} else {
 					iteration = train.getIteration(Iteration.SR1);
@@ -186,6 +207,23 @@ public class GitHubCommands extends TimedCommand {
 		}
 
 		return builder.toString();
+	}
+
+	private static List<Train> getTrains(String trainNames) {
+
+		if (StringUtils.hasText(trainNames)) {
+
+			try {
+				List<Train> trains = ReleaseTrains.latest(Integer.parseInt(trainNames));
+				Collections.reverse(trains);
+				return trains;
+			} catch (NumberFormatException e) {
+				return Stream.of(trainNames.split(",")).map(String::trim) //
+						.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
+			}
+		} else {
+			return ReleaseTrains.latest(3);
+		}
 	}
 
 	private static boolean isProjectActive(Project project, List<Train> trains) {
