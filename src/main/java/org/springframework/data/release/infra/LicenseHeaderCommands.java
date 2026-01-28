@@ -124,11 +124,6 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 		String contentToUse = content;
 
-		if (fileType == FileType.ADOC) {
-			return content.replaceAll("([\\d]{4})-([\\d]{4})",
-					"$1-" + year);
-		}
-
 		contentToUse = contentToUse.replaceAll("(C) ([\\d]{4})-([\\d]{4})",
 				"(C) $1-" + year);
 
