@@ -34,7 +34,7 @@ import org.springframework.shell.support.table.TableHeader;
  *
  * @author Mark Paluch
  */
-public class DependencyUpgradeProposals {
+class DependencyUpgradeProposals {
 
 	private final Map<Dependency, DependencyUpgradeProposal> proposals;
 
@@ -133,25 +133,45 @@ public class DependencyUpgradeProposals {
 	}
 
 	/**
+	 * Verify whether dependency upgrade information is present in the given {@link Properties} by checking the provided
+	 * dependency upgrade count.
+	 *
+	 * @param properties
+	 * @return
+	 */
+	public static boolean isPresent(Properties properties) {
+		return getExpectedUpgradeCount(properties) != null;
+	}
+
+	private static Integer getExpectedUpgradeCount(Properties properties) {
+		try {
+			return Integer.parseInt(properties.getProperty("dependency.upgrade.count", "0"));
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	/**
 	 * Create a dependency upgrade map by parsing {@link Properties}.
 	 *
 	 * @param iteration
 	 * @param properties
 	 * @return
 	 */
-	public static DependencyVersions fromProperties(TrainIteration iteration, Properties properties) {
+	static DependencyVersions fromProperties(TrainIteration iteration, Properties properties) {
 
 		Pattern keyPattern = Pattern.compile("dependency\\[([a-zA-Z0-9\\-\\.]+):([a-zA-Z0-9\\-\\.]+)\\]");
+		int expectedUpgradeCount;
+
+		Integer count = getExpectedUpgradeCount(properties);
+		if (count == null || 0 == count.intValue()) {
+			throw new IllegalArgumentException("Please specify a valid dependency.upgrade.count");
+		} else {
+			expectedUpgradeCount = count;
+		}
 
 		String verificationTrain = properties.getProperty("dependency.train", "");
 		String verificationIteration = properties.getProperty("dependency.iteration", "");
-		int expectedUpgradeCount;
-		try {
-			expectedUpgradeCount = Integer.parseInt(properties.getProperty("dependency.upgrade.count", "0"));
-		} catch (NumberFormatException e) {
-			throw new IllegalArgumentException("Please specify a valid dependency.upgrade.count");
-		}
-
 		if (!verificationTrain.equals(iteration.getTrain().getName())
 				|| !verificationIteration.equals(iteration.getIteration().getName())) {
 			throw new IllegalArgumentException(

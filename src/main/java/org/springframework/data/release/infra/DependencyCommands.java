@@ -19,16 +19,16 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -46,6 +46,7 @@ import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -62,10 +63,12 @@ import org.springframework.shell.support.table.Table;
 public class DependencyCommands extends TimedCommand {
 
 	public static final String BUILD_PROPERTIES = "dependency-upgrade-build.properties";
+	public static final String MODULE_PROPERTIES = "dependency-upgrade-modules.properties";
 
 	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	DependencyOperations operations;
+	ExecutorService executor;
 	GitOperations git;
 	Logger logger;
 
@@ -76,10 +79,11 @@ public class DependencyCommands extends TimedCommand {
 
 		git.prepare(iteration);
 
-		checkBuildDependencies(iteration, reportAll != null ? reportAll : false,
-				it -> project == null || it.equals(project));
-		checkModuleDependencies(iteration, reportAll != null ? reportAll : false,
-				it -> project == null || it.equals(project));
+		createDependencyUpgradeProposals(iteration, reportAll != null ? reportAll : false,
+				it -> (it.equals(Projects.BUILD) && (project == null || it.equals(project))), BUILD_PROPERTIES);
+		createDependencyUpgradeProposals(iteration, reportAll != null ? reportAll : false,
+				it -> (!it.equals(Projects.BUILD) && !it.equals(Projects.BOM) && (project == null || it.equals(project))),
+				MODULE_PROPERTIES);
 	}
 
 	/**
@@ -124,26 +128,49 @@ public class DependencyCommands extends TimedCommand {
 
 		logger.log(iteration, "Applying dependency upgrades to Spring Data Build");
 
-		ModuleIteration module = iteration.getModule(Projects.BUILD);
-		DependencyVersions dependencyVersions = loadDependencyUpgrades(module);
+		Map<Project, DependencyVersions> upgradeVersions = new LinkedHashMap<>();
 
-		DependencyVersions upgradesToApply = operations.getDependencyUpgradesToApply(module.getSupportedProject(),
-				dependencyVersions);
+		if (operations.hasDependencyUpgrades(BUILD_PROPERTIES)) {
+			upgradeVersions.put(Projects.BUILD, operations.loadDependencyUpgrades(iteration, BUILD_PROPERTIES));
+		}
 
-		if (upgradesToApply.isEmpty()) {
-			logger.log(module, "No dependency upgrades to apply");
+		if (operations.hasDependencyUpgrades(MODULE_PROPERTIES)) {
+			DependencyVersions module = operations.loadDependencyUpgrades(iteration, MODULE_PROPERTIES);
+			Projects.all().stream().filter(it -> it != Projects.BOM && it != Projects.BUILD).forEach(project -> {
+				upgradeVersions.put(project, module);
+			});
+		}
+
+		if (upgradeVersions.isEmpty()) {
+			logger.log(iteration, "No dependency upgrades to apply");
 			return;
 		}
 
-		Tickets tickets = operations.getOrCreateUpgradeTickets(module, upgradesToApply);
-		operations.upgradeDependencies(tickets, module, dependencyVersions);
+		ExecutionUtils.run(executor, iteration, module -> {
 
-		git.push(module);
+			if (!upgradeVersions.containsKey(module.getProject())) {
+				return;
+			}
 
-		// Allow GitHub to catch up with ticket notifications.
-		Thread.sleep(1500);
+			DependencyVersions upgrades = upgradeVersions.get(module.getProject());
+			DependencyVersions upgradesToApply = operations.getDependencyUpgradesToApply(module.getSupportedProject(),
+					upgrades);
 
-		operations.closeUpgradeTickets(module, tickets);
+			if (upgradesToApply.isEmpty()) {
+				return;
+			}
+
+			Tickets tickets = operations.getOrCreateUpgradeTickets(module, upgradesToApply);
+			operations.upgradeDependencies(tickets, module, upgradesToApply);
+
+			git.push(module);
+
+			// Allow GitHub to catch up with ticket notifications.
+			Thread.sleep(1500);
+
+			operations.closeUpgradeTickets(module, tickets);
+			logger.log(module, "Upgraded %d dependencies", upgradesToApply.getDependencies().size());
+		});
 	}
 
 	@CliCommand(value = "dependency tickets create")
@@ -175,30 +202,13 @@ public class DependencyCommands extends TimedCommand {
 		return milestone.isNearFuture() ? "⏰️ " + formatted : formatted;
 	}
 
-	private DependencyVersions loadDependencyUpgrades(ModuleIteration iteration) throws IOException {
-
-		if (!Files.exists(Path.of(BUILD_PROPERTIES))) {
-			logger.log(iteration, "Cannot upgrade dependencies: " + BUILD_PROPERTIES + " does not exist.");
-		}
-
-		Properties properties = new Properties();
-		try (FileInputStream fis = new FileInputStream(BUILD_PROPERTIES)) {
-			properties.load(fis);
-		}
-
-		return DependencyUpgradeProposals.fromProperties(iteration.getTrainIteration(), properties);
-	}
-
-	private void checkModuleDependencies(TrainIteration iteration, boolean reportAll, Predicate<Project> projectFilter)
+	private void createDependencyUpgradeProposals(TrainIteration iteration, boolean reportAll,
+			Predicate<Project> projectFilter, String propertiesFile)
 			throws IOException {
-
-		String propertiesFile = "dependency-upgrade-modules.properties";
 
 		List<SupportedProject> projects = iteration.stream() //
 				.map(ModuleIteration::getSupportedProject) //
-				.filter(it -> {
-					return it.getProject() != Projects.BOM && it.getProject() != Projects.BUILD;
-				}).filter(it -> projectFilter.test(it.getProject())) //
+				.filter(it -> projectFilter.test(it.getProject())) //
 				.collect(Collectors.toList());
 
 		DependencyUpgradeProposals proposals = DependencyUpgradeProposals.empty();
@@ -212,26 +222,6 @@ public class DependencyCommands extends TimedCommand {
 		Table summary = proposals.toTable(reportAll);
 
 		logger.log(iteration, "Upgrade summary:" + System.lineSeparator() + System.lineSeparator() + summary);
-		logger.log(iteration, "Upgrade proposals written to " + propertiesFile);
-	}
-
-	private void checkBuildDependencies(TrainIteration iteration, boolean reportAll, Predicate<Project> projectFilter)
-			throws IOException {
-
-		String propertiesFile = BUILD_PROPERTIES;
-
-		if (!projectFilter.test(Projects.BUILD)) {
-			return;
-		}
-
-		SupportedProject project = iteration.getSupportedProject(Projects.BUILD);
-		DependencyUpgradeProposals proposals = operations.getDependencyUpgradeProposals(project, iteration.getIteration());
-
-		Files.write(Path.of(propertiesFile), proposals.asProperties(iteration).getBytes());
-
-		Table summary = proposals.toTable(reportAll);
-
-		logger.log(Projects.BUILD, "Upgrade summary:" + System.lineSeparator() + System.lineSeparator() + summary);
 		logger.log(iteration, "Upgrade proposals written to " + propertiesFile);
 	}
 

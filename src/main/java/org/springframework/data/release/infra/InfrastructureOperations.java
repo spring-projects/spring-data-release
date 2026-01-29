@@ -17,18 +17,13 @@ package org.springframework.data.release.infra;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
@@ -141,7 +136,7 @@ public class InfrastructureOperations extends TimedCommand {
 
 	public void upgradeMavenVersion(TrainIteration iteration) {
 
-		DependencyVersions dependencyVersions = loadDependencyUpgrades(iteration);
+		DependencyVersions dependencyVersions = dependencies.loadDependencyUpgrades(iteration, MAVEN_PROPERTIES);
 
 		if (dependencyVersions.isEmpty()) {
 			throw new IllegalStateException("No version to upgrade found!");
@@ -162,21 +157,6 @@ public class InfrastructureOperations extends TimedCommand {
 
 			dependencies.closeUpgradeTickets(module, tickets);
 		});
-	}
-
-	@SneakyThrows
-	private DependencyVersions loadDependencyUpgrades(TrainIteration iteration) {
-
-		if (!Files.exists(Path.of(MAVEN_PROPERTIES))) {
-			logger.log(iteration, "Cannot upgrade dependencies: " + MAVEN_PROPERTIES + " does not exist.");
-		}
-
-		Properties properties = new Properties();
-		try (FileInputStream fis = new FileInputStream(MAVEN_PROPERTIES)) {
-			properties.load(fis);
-		}
-
-		return DependencyUpgradeProposals.fromProperties(iteration, properties);
 	}
 
 	public void generateReadmes(TrainIteration iteration) {

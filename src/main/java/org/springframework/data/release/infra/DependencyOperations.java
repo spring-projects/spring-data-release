@@ -26,6 +26,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -206,7 +208,6 @@ public class DependencyOperations {
 				properties.load(fileInputStream);
 
 				distributionUrl = properties.getProperty("distributionUrl");
-
 			}
 
 			Pattern versionPattern = Pattern.compile(".*/maven2/org/apache/maven/apache-maven/([\\d\\.]+)/.*");
@@ -340,9 +341,7 @@ public class DependencyOperations {
 			Ticket upgradeTicket = getDependencyUpgradeTicket(tickets, upgradeTicketSummary).get();
 
 			action.accept(dependency, dependencyVersion);
-
 			gitOperations.commit(module, upgradeTicket, upgradeTicketSummary, Optional.empty(), true);
-
 			ticketsToClose.add(upgradeTicket);
 		});
 
@@ -353,7 +352,7 @@ public class DependencyOperations {
 		this.tickets.closeTickets(module, tickets);
 	}
 
-	public DependencyVersions getDependencyUpgradesToApply(SupportedProject project,
+	DependencyVersions getDependencyUpgradesToApply(SupportedProject project,
 			DependencyVersions dependencyVersions) {
 
 		DependencyVersions currentDependencies = getCurrentDependencies(project);
@@ -715,6 +714,36 @@ public class DependencyOperations {
 
 			throw new RuntimeException(String.format("Cannot determine available versions for %s", dependency), o_O);
 		}
+	}
+
+	@SneakyThrows
+	DependencyVersions loadDependencyUpgrades(TrainIteration iteration, String propertiesFile) {
+
+		if (!Files.exists(Path.of(propertiesFile))) {
+			logger.log(iteration, "Cannot upgrade dependencies: '%s' does not exist.", propertiesFile);
+		}
+
+		Properties properties = new Properties();
+		try (FileInputStream fis = new FileInputStream(propertiesFile)) {
+			properties.load(fis);
+		}
+
+		return DependencyUpgradeProposals.fromProperties(iteration, properties);
+	}
+
+	@SneakyThrows
+	public boolean hasDependencyUpgrades(String propertiesFile) {
+
+		if (Files.exists(Path.of(propertiesFile))) {
+
+			Properties properties = new Properties();
+			try (FileInputStream fis = new FileInputStream(propertiesFile)) {
+				properties.load(fis);
+			}
+			return DependencyUpgradeProposals.isPresent(properties);
+		}
+
+		return false;
 	}
 
 	private Map<String, LocalDateTime> parseCreationDates(String body) {
