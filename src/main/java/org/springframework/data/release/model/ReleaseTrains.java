@@ -18,9 +18,13 @@ package org.springframework.data.release.model;
 import static org.springframework.data.release.model.Projects.*;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.data.release.model.Train.DocumentationFormat;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Oliver Gierke
@@ -136,6 +140,23 @@ public class ReleaseTrains {
 				.filter(it -> it.getName().equalsIgnoreCase(name)) //
 				.findFirst() //
 				.orElse(null);
+	}
+
+	public static List<Train> getTrains(String trainNamesOrLastNumber, int defaultLastTrains) {
+
+		if (StringUtils.hasText(trainNamesOrLastNumber)) {
+
+			try {
+				List<Train> trains = ReleaseTrains.latest(Integer.parseInt(trainNamesOrLastNumber));
+				Collections.reverse(trains);
+				return trains;
+			} catch (NumberFormatException e) {
+				return Stream.of(trainNamesOrLastNumber.split(",")).map(String::trim) //
+						.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
+			}
+		} else {
+			return ReleaseTrains.latest(defaultLastTrains);
+		}
 	}
 
 	public static List<Train> trains() {

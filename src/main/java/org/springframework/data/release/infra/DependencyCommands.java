@@ -22,8 +22,6 @@ import lombok.experimental.FieldDefaults;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +34,6 @@ import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.issues.Tickets;
-import org.springframework.data.release.issues.github.Milestone;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
@@ -64,8 +61,6 @@ public class DependencyCommands extends TimedCommand {
 
 	public static final String BUILD_PROPERTIES = "dependency-upgrade-build.properties";
 	public static final String MODULE_PROPERTIES = "dependency-upgrade-modules.properties";
-
-	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	DependencyOperations operations;
 	ExecutorService executor;
@@ -177,29 +172,6 @@ public class DependencyCommands extends TimedCommand {
 	public void createDependencyUpgradeTickets() {
 		List<Train> latest = ReleaseTrains.latest(3).stream().filter(SupportStatusAware::isOpenSource).toList();
 		operations.createDependencyUpgradeTicketsForScheduledReleases(SupportStatus.OSS, latest);
-	}
-
-	@CliCommand(value = "milestone list")
-	public String listOpenMilestones() {
-
-		List<Milestone> milestones = operations.listOpenMilestones(SupportStatus.OSS);
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("Next %s Milestones:".formatted(SupportStatus.OSS.name())).append(System.lineSeparator());
-		for (Milestone milestone : milestones) {
-			buffer.append("\t * %-14s %s".formatted(milestone.getTitle(), format(milestone))).append(System.lineSeparator());
-		}
-
-		return buffer.toString();
-	}
-
-	private static String format(Milestone milestone) {
-
-		if (milestone.getDueOn() == null) {
-			return "⚠️ (unscheduled)";
-		}
-
-		String formatted = DUE_ON_FORMATTER.format(milestone.getDueOn().atZone(ZoneId.systemDefault()));
-		return milestone.isNearFuture() ? "⏰️ " + formatted : formatted;
 	}
 
 	private void createDependencyUpgradeProposals(TrainIteration iteration, boolean reportAll,

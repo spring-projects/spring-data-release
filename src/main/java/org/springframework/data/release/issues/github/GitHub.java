@@ -15,6 +15,8 @@
  */
 package org.springframework.data.release.issues.github;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -38,6 +40,7 @@ import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
+import org.springframework.data.util.Predicates;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -425,10 +428,26 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return result;
 	}
 
-	public List<Milestone> getOpenMilestones(GitHubRepository repository, Predicate<Milestone> milestonePredicate) {
+	public List<Milestone> listOpenMilestones(SupportStatus supportStatus) {
+		GitHubRepository repository = GitProject.of(SupportedProject.of(Projects.RELEASE, supportStatus)).getRepository();
+		return getOpenMilestones(repository, Predicates.isTrue());
+	}
+
+	public List<Milestone> getOpenMilestones(GitHubRepository repository, Predicate<Milestone> filter) {
 
 		logger.log(repository.toString(), "Looking up milestones…");
-		return doFindMilestones(repository, Collections.singletonList("open"), milestonePredicate, m -> true);
+
+		List<Milestone> result = doFindMilestones(repository, Collections.singletonList("open"), it -> {
+
+			boolean actualVersion = it.getTitle() != null && !it.getTitle().endsWith(".x")
+					&& ArtifactVersion.isVersion(it.getTitle());
+			return filter.test(it) && actualVersion;
+		}, m -> true);
+
+		Comparator<Instant> date = Comparator.nullsLast(Comparator.comparing(it -> it.truncatedTo(ChronoUnit.DAYS)));
+
+		result.sort(Comparator.comparing(Milestone::getDueOn, date).thenComparing(it -> ArtifactVersion.of(it.getTitle())));
+		return result;
 	}
 
 	/*
@@ -793,9 +812,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	}
 
 	private Milestone getMilestone(ModuleIteration moduleIteration) {
-
 		Optional<Milestone> milestone = findMilestone(moduleIteration);
-
 		return milestone.orElseThrow(() -> noSuchMilestone(moduleIteration));
 	}
 

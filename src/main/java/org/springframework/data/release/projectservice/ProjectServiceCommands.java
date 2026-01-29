@@ -20,11 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
@@ -38,7 +35,6 @@ import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 /**
  * Operations for Projects Service interaction.
@@ -63,22 +59,7 @@ class ProjectServiceCommands extends TimedCommand {
 
 		File oss = new File(workspace.getWorkingDirectory(), "oss");
 		File commercial = new File(workspace.getWorkingDirectory(), "commercial");
-		List<Train> trains = Collections.emptyList();
-
-		int lastTrains = 3;
-		if (StringUtils.hasText(trainNames)) {
-
-			try {
-				lastTrains = Integer.parseInt(trainNames);
-			} catch (NumberFormatException e) {
-				trains = Stream.of(trainNames.split(","))//
-						.map(ReleaseTrains::getTrainByName).collect(Collectors.toList());
-			}
-		}
-
-		if (trains.isEmpty()) {
-			trains = ReleaseTrains.latest(lastTrains);
-		}
+		List<Train> trains = ReleaseTrains.getTrains(trainNames, 3);
 
 		if ((update != null && update) || (!commercial.exists() || !oss.exists())) {
 

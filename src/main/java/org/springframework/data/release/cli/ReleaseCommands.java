@@ -75,6 +75,8 @@ class ReleaseCommands extends TimedCommand {
 	@CliCommand(value = "prepare-it")
 	public void prepareIt(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
 
+		gitHub.verifyScheduledRelease(iteration);
+
 		tracker.trackerPrepare(iteration);
 
 		prepare(iteration);
@@ -85,6 +87,7 @@ class ReleaseCommands extends TimedCommand {
 
 		gitHub.push(iteration);
 
+		// noinspection InvisibleCharacter
 		logger.log(iteration, "Preparation completed 🤹‍♀️. Ready to ship 🛳️ binaries 💾!");
 	}
 
@@ -96,6 +99,8 @@ class ReleaseCommands extends TimedCommand {
 	 */
 	@CliCommand(value = "ship-it")
 	public void shipIt(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
+
+		gitHub.verifyScheduledRelease(iteration);
 
 		tracker.trackerPrepare(iteration);
 

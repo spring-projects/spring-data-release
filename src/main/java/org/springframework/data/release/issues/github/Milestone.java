@@ -58,9 +58,25 @@ public class Milestone {
 	}
 
 	@JsonIgnore
-	public boolean isNearFuture() {
-		return getDueOn() != null && getDueOn().isAfter(Instant.now())
-				&& getDueOn().isBefore(Instant.now().plus(Duration.ofDays(30)));
+	public boolean isReleaseSoon() {
+		return isNearFutureScheduled() || isNearPastScheduled();
+	}
 
+	@JsonIgnore
+	public boolean isNearFutureScheduled() {
+		return getDueOn() != null && isNearFuture(getDueOn());
+	}
+
+	@JsonIgnore
+	public boolean isNearPastScheduled() {
+		return getDueOn() != null && isNearPast(getDueOn());
+	}
+
+	private boolean isNearFuture(Instant dueOn) {
+		return dueOn.isAfter(Instant.now()) && dueOn.isBefore(Instant.now().plus(Duration.ofDays(30)));
+	}
+
+	private boolean isNearPast(Instant dueOn) {
+		return dueOn.isBefore(Instant.now()) && dueOn.isAfter(Instant.now().minus(Duration.ofDays(2)));
 	}
 }

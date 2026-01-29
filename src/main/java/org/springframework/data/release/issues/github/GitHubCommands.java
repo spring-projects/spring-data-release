@@ -16,24 +16,20 @@
 package org.springframework.data.release.issues.github;
 
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
-import org.springframework.data.release.git.Branch;
 import org.springframework.data.release.git.GitOperations;
-import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
@@ -51,19 +47,22 @@ import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
-import org.springframework.util.StringUtils;
 
 /**
  * Component to execute GitHub related operations.
  *
  * @author Mark Paluch
  */
+@Slf4j
 @CliComponent
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GitHubCommands extends TimedCommand {
 
+	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 	@NonNull PluginRegistry<IssueTracker, SupportedProject> tracker;
+	@Getter
 	@NonNull GitHub gitHub;
 	@NonNull GitOperations git;
 	@NonNull GitHubLabels gitHubLabels;
@@ -131,6 +130,49 @@ public class GitHubCommands extends TimedCommand {
 				previousIteration, module.getTrainIteration());
 
 		return gitHub.createReleaseMarkdown(module, ticketReferences);
+	}
+
+	@CliCommand(value = "github milestone list")
+	public String listOpenMilestones(
+			@CliOption(key = "", mandatory = false, unspecifiedDefaultValue = "OSS") SupportStatus supportStatus) {
+
+		List<Milestone> milestones = gitHub.listOpenMilestones(supportStatus);
+		return render(supportStatus, milestones);
+	}
+
+	@CliCommand(value = "github milestone verify")
+	public void verifyScheduledRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+
+		List<Milestone> milestones = gitHub.listOpenMilestones(iteration.getSupportStatus());
+
+		String calver = iteration.getModuleVersion(Projects.BOM).toString();
+		for (Milestone milestone : milestones) {
+			if (milestone.isReleaseSoon() && milestone.getTitle().equals(calver)) {
+				return;
+			}
+		}
+
+		throw new IllegalStateException("No scheduled milestone found for " + calver + ". Scheduled milestones:\n"
+				+ render(iteration.getSupportStatus(), milestones));
+	}
+
+	private static String render(SupportStatus supportStatus, List<Milestone> milestones) {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("Next %s Milestones:".formatted(supportStatus.name())).append(System.lineSeparator());
+		for (Milestone milestone : milestones) {
+			buffer.append("\t * %-14s %s".formatted(milestone.getTitle(), format(milestone))).append(System.lineSeparator());
+		}
+		return buffer.toString();
+	}
+
+	private static String format(Milestone milestone) {
+
+		if (milestone.getDueOn() == null) {
+			return "⚠️ (unscheduled)";
+		}
+
+		String formatted = DUE_ON_FORMATTER.format(milestone.getDueOn().atZone(ZoneId.systemDefault()));
+		return milestone.isReleaseSoon() ? "⏰️ " + formatted : formatted;
 	}
 
 	@CliCommand(value = "github wiki status-matrix")

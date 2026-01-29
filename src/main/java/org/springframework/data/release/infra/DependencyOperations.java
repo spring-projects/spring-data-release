@@ -28,13 +28,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,7 +44,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -75,7 +71,6 @@ import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.Logger;
-import org.springframework.data.util.Predicates;
 import org.springframework.data.util.Streamable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -377,11 +372,6 @@ public class DependencyOperations {
 		return new DependencyVersions(upgrades);
 	}
 
-	public List<Milestone> listOpenMilestones(SupportStatus supportStatus) {
-		GitHubRepository repository = GitProject.of(SupportedProject.of(Projects.RELEASE, supportStatus)).getRepository();
-		return getOpenMilestones(repository, Predicates.isTrue());
-	}
-
 	/**
 	 * @param trains
 	 */
@@ -450,7 +440,7 @@ public class DependencyOperations {
 
 		retrievals.add(new MilestonesRetrieval(springDataRelease, springDataMilestones::addAll));
 		ExecutionUtils.run(executor, Streamable.of(retrievals), it -> {
-			it.callback().accept(getOpenMilestones(it.repository(), Milestone::isNearFuture));
+			it.callback().accept(gitHub.getOpenMilestones(it.repository(), Milestone::isReleaseSoon));
 		});
 
 		return new MilestoneRepository(dependencyMilestones, springDataMilestones);
@@ -514,20 +504,6 @@ public class DependencyOperations {
 		}
 
 		throw new IllegalStateException("Cannot derive Iteration from milestone " + milestone);
-	}
-
-	private List<Milestone> getOpenMilestones(GitHubRepository repo, Predicate<Milestone> filter) {
-		List<Milestone> result = gitHub.getOpenMilestones(repo, it -> {
-
-			boolean actualVersion = it.getTitle() != null && !it.getTitle().endsWith(".x")
-					&& ArtifactVersion.isVersion(it.getTitle());
-			return filter.test(it) && actualVersion;
-		});
-
-		Comparator<Instant> date = Comparator.nullsLast(Comparator.comparing(it -> it.truncatedTo(ChronoUnit.DAYS)));
-
-		result.sort(Comparator.comparing(Milestone::getDueOn, date).thenComparing(it -> ArtifactVersion.of(it.getTitle())));
-		return result;
 	}
 
 	private Optional<Ticket> getDependencyUpgradeTicket(Tickets tickets, String upgradeTicketSummary) {
