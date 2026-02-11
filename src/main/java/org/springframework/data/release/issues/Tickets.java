@@ -26,8 +26,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.IOUtils;
-
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
@@ -107,9 +105,9 @@ public class Tickets implements Streamable<Ticket> {
 
 		if (header) {
 			builder.append(String.format("Train only tickets: %s of %s", tickets.size(), overallTotal));
-			builder.append(IOUtils.LINE_SEPARATOR);
+			builder.append(System.lineSeparator());
 		}
-		builder.append(tickets.stream().map(it -> "\t" + it).collect(Collectors.joining(IOUtils.LINE_SEPARATOR)));
+		builder.append(tickets.stream().map(it -> "\t" + it).collect(Collectors.joining(System.lineSeparator())));
 
 		return builder.toString();
 	}

@@ -38,6 +38,13 @@ class LabelConfiguration implements Streamable<Label> {
 	public static final Label TYPE_DEPENDENCY_UPGRADE = LabelFactories.TYPE_LABEL.apply("dependency-upgrade",
 			"A dependency upgrade");
 
+	public static final Label TYPE_ENHANCEMENT = LabelFactories.TYPE_LABEL.apply("enhancement", "A general enhancement");
+
+	public static final Label TYPE_BUG = LabelFactories.TYPE_LABEL.apply("bug", "A general bug");
+
+	public static final Label TYPE_REGRESSION = LabelFactories.TYPE_LABEL.apply("regression",
+			"A regression from a previous release");
+
 	public static final Label TYPE_TASK = LabelFactories.TYPE_LABEL.apply("task", "A general task");
 
 	private final Set<Label> labels;
@@ -137,11 +144,11 @@ class LabelConfiguration implements Streamable<Label> {
 			configurer.register(LabelFactories.STATUS_LABEL, "waiting-for-triage", "An issue we've not yet triaged");
 
 			configurer.register(LabelFactories.TYPE_LABEL, "blocker", "An issue that is blocking us from releasing");
-			configurer.register(LabelFactories.TYPE_LABEL, "bug", "A general bug");
+			configurer.register(TYPE_BUG);
 			configurer.register(TYPE_DEPENDENCY_UPGRADE);
 			configurer.register(LabelFactories.TYPE_LABEL, "documentation", "A documentation update");
-			configurer.register(LabelFactories.TYPE_LABEL, "enhancement", "A general enhancement");
-			configurer.register(LabelFactories.TYPE_LABEL, "regression", "A regression from a previous release");
+			configurer.register(TYPE_ENHANCEMENT);
+			configurer.register(TYPE_REGRESSION);
 
 			configurer.register(LabelFactories.HAS_LABEL, "design-decision",
 					"An issue that contains a design decision about its topic");

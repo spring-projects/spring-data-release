@@ -62,13 +62,48 @@ public class IssueTrackerCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "tracker tickets")
-	public String jira(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
+	public String tickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "for-current-user", specifiedDefaultValue = "true",
-					unspecifiedDefaultValue = "false") boolean forCurrentUser) {
+					unspecifiedDefaultValue = "false") boolean forCurrentUser,
+			@CliOption(key = "module") String moduleName,
+			@CliOption(key = "release-tickets", specifiedDefaultValue = "true",
+					unspecifiedDefaultValue = "false") boolean releaseTickets,
+			@CliOption(key = "dependency-upgrades", specifiedDefaultValue = "true",
+					unspecifiedDefaultValue = "false") boolean dependencyUpgrades,
+			@CliOption(key = "tasks", specifiedDefaultValue = "true", unspecifiedDefaultValue = "false") boolean tasks,
+			@CliOption(key = "resolved", specifiedDefaultValue = "true") Boolean resolved) {
 
-		return tracker.getPlugins().stream().//
-				flatMap(it -> it.getTicketsFor(iteration, forCurrentUser).stream()).//
-				collect(Tickets.toTicketsCollector()).toString();
+		Predicate<Ticket> predicate = isReleasTicket(releaseTickets);
+
+		if (resolved != null) {
+			predicate = predicate.and(it -> it.isResolved() == resolved);
+		}
+
+		predicate = predicate.and(it -> {
+			return dependencyUpgrades || !it.getType().contains(TicketType.DependencyUpgrade);
+		});
+
+		predicate = predicate.and(it -> {
+			return tasks || !it.getType().contains(TicketType.Task);
+		});
+
+		return getTickets(iteration, moduleName, forCurrentUser, predicate);
+	}
+
+	@CliCommand("tracker open-tickets")
+	public String openTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
+			@CliOption(key = "module") String moduleName,
+			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
+		return tickets(iteration, false, moduleName, !(filterReleaseTickets == null || filterReleaseTickets), true, true,
+				false);
+	}
+
+	@CliCommand("tracker all-tickets")
+	public String allTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
+			@CliOption(key = "module") String moduleName,
+			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
+		return tickets(iteration, false, moduleName, !(filterReleaseTickets == null || filterReleaseTickets), true, true,
+				null);
 	}
 
 	@CliCommand(value = "tracker releasetickets")
@@ -86,9 +121,9 @@ public class IssueTrackerCommands extends TimedCommand {
 	@CliCommand(value = "tracker prepare")
 	public String trackerPrepare(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
-		jiraSelfAssignReleaseTickets(iteration);
+		selfAssignReleaseTickets(iteration);
 
-		return jiraStartProgress(iteration);
+		return startProgress(iteration);
 	}
 
 	/**
@@ -109,13 +144,13 @@ public class IssueTrackerCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "tracker self-assign releasetickets")
-	public String jiraSelfAssignReleaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public String selfAssignReleaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
 		return runAndReturn(executor, iteration, module -> getTrackerFor(module).assignReleaseTicketToMe(module),
 				Tickets.toTicketsCollector()).toString();
 	}
 
-	public String jiraStartProgress(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+	public String startProgress(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
 		return runAndReturn(executor, iteration, module -> getTrackerFor(module).startReleaseTicketProgress(module),
 				Tickets.toTicketsCollector()).toString();
@@ -144,7 +179,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 		List<Ticket> tickets = iteration.stream() //
 				.filter(isBuildProject.negate()) //
-				.map(module -> getTrackerFor(module).createTicket(module, subject, IssueTracker.TicketType.Task, false))
+				.map(module -> getTrackerFor(module).createTicket(module, subject, TicketType.Task, false))
 				.collect(Collectors.toList());
 
 		StringBuilder body = new StringBuilder();
@@ -155,7 +190,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 		ModuleIteration module = iteration.getModule(Projects.BUILD);
 		Ticket buildTicket = getTrackerFor(module).createTicket(module, subject, body.toString(),
-				IssueTracker.TicketType.Task, false);
+				TicketType.Task, false);
 
 		List<Ticket> allTickets = new ArrayList<>();
 		allTickets.add(buildTicket);
@@ -164,47 +199,30 @@ public class IssueTrackerCommands extends TimedCommand {
 		return new Tickets(allTickets).toString();
 	}
 
-	@CliCommand("tracker open-tickets")
-	public String openTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
-			@CliOption(key = "module") String moduleName,
-			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
-
-		Predicate<Ticket> notResolved = it -> !it.isResolved();
-
-		return getTickets(iteration, moduleName,
-				notResolved.and(getFilterPredicate(filterReleaseTickets == null || filterReleaseTickets)));
+	private static Predicate<Ticket> isReleasTicket(boolean filterReleaseTickets) {
+		return it -> filterReleaseTickets == it.isReleaseTicket();
 	}
 
-	@CliCommand("tracker all-tickets")
-	public String allTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
-			@CliOption(key = "module") String moduleName,
-			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
-
-		return getTickets(iteration, moduleName, getFilterPredicate(filterReleaseTickets == null || filterReleaseTickets));
-	}
-
-	private static Predicate<Ticket> getFilterPredicate(boolean filterReleaseTickets) {
-		return it -> filterReleaseTickets == !it.isReleaseTicket();
-	}
-
-	private String getTickets(TrainIteration iteration, String moduleName, Predicate<Ticket> ticketPredicate) {
+	private String getTickets(TrainIteration iteration, String moduleName, boolean forCurrentUser,
+			Predicate<Ticket> ticketPredicate) {
 
 		if (StringUtils.hasText(moduleName)) {
-			return getTicketsForProject(iteration, Projects.requiredByName(moduleName), ticketPredicate);
+			return getTicketsForProject(iteration, Projects.requiredByName(moduleName), forCurrentUser, ticketPredicate);
 		}
 
 		return ExecutionUtils.runAndReturn(executor, iteration, moduleIteration -> {
-			return getTicketsForProject(iteration, moduleIteration.getModule().getProject(), ticketPredicate);
+			return getTicketsForProject(iteration, moduleIteration.getModule().getProject(), forCurrentUser, ticketPredicate);
 		}).stream() //
 				.filter(StringUtils::hasText) //
 				.collect(Collectors.joining("\n"));
 	}
 
-	private String getTicketsForProject(TrainIteration iteration, Project project, Predicate<Ticket> ticketPredicate) {
+	private String getTicketsForProject(TrainIteration iteration, Project project, boolean forCurrentUser,
+			Predicate<Ticket> ticketPredicate) {
 
 		ModuleIteration module = iteration.getModule(project);
 
-		return getTrackerFor(module).getTicketsFor(module) //
+		return getTrackerFor(module).getTicketsFor(module, forCurrentUser) //
 				.stream() //
 				.filter(ticketPredicate) //
 				.collect(Tickets.toTicketsCollector()) //

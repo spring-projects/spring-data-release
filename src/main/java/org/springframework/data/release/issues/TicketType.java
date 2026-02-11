@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,39 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.data.release.issues;
 
 /**
  * @author Mark Paluch
  */
-public interface TicketStatus {
-
-	static TicketStatus open() {
-		return new TicketStatus() {
-			@Override
-			public String getLabel() {
-				return "open";
-			}
-
-			@Override
-			public boolean isResolved() {
-				return false;
-			}
-		};
-	}
-
-	/**
-	 * Returns
-	 *
-	 * @return
-	 */
-	String getLabel();
-
-	/**
-	 * Returns whether the ticket is marked as resolved.
-	 *
-	 * @return
-	 */
-	boolean isResolved();
+public enum TicketType {
+	Enhancement, Bug, Task, DependencyUpgrade;
 }

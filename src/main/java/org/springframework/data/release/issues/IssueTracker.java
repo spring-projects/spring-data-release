@@ -55,6 +55,15 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	Tickets getTicketsFor(ModuleIteration iteration);
 
 	/**
+	 * Returns all {@link Tickets} for the given {@link ModuleIteration}.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @param forCurrentUser
+	 * @return
+	 */
+	Tickets getTicketsFor(ModuleIteration iteration, boolean forCurrentUser);
+
+	/**
 	 * Returns all {@link Tickets} for the given {@link Train} and {@link Iteration}.
 	 *
 	 * @param iteration must not be {@literal null}.
@@ -62,6 +71,7 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 * @return
 	 */
 	Tickets getTicketsFor(TrainIteration iteration, boolean forCurrentUser);
+
 
 	/**
 	 * Returns the {@link Ticket} that tracks modifications in the context of a release.
@@ -201,7 +211,4 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 */
 	void closeTicket(ModuleIteration module, Ticket ticket);
 
-	enum TicketType {
-		Task, DependencyUpgrade;
-	}
 }

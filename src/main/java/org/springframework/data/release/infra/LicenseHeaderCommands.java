@@ -43,9 +43,9 @@ import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.io.Workspace;
-import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketOperations;
+import org.springframework.data.release.issues.TicketType;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
@@ -155,7 +155,7 @@ public class LicenseHeaderCommands extends TimedCommand {
 
 	private void commitAndPushWithTicket(ModuleIteration module, String ticketSummary) throws InterruptedException {
 
-		Ticket ticket = tickets.getOrCreateTicketsWithSummary(module, IssueTracker.TicketType.Task, ticketSummary);
+		Ticket ticket = tickets.getOrCreateTicketsWithSummary(module, TicketType.Task, ticketSummary);
 		git.commit(module, ticket, ticketSummary, Optional.empty(), true);
 
 		try {

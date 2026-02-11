@@ -17,6 +17,9 @@ package org.springframework.data.release.issues;
 
 import lombok.Value;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
@@ -35,21 +38,37 @@ public class Ticket {
 	String url;
 	String assignee;
 	TicketStatus ticketStatus;
+	Set<TicketType> type;
 
 	public Ticket(String id, String summary, String url, String assignee, TicketStatus ticketStatus) {
+		this(id, summary, url, assignee, ticketStatus, Set.of());
+	}
+
+	public Ticket(String id, String summary, TicketStatus ticketStatus) {
+		this(id, summary, ticketStatus, Set.of());
+	}
+
+	public Ticket(String id, String summary, String url, String assignee, TicketStatus ticketStatus,
+			Set<TicketType> type) {
 		this.id = id;
 		this.summary = summary;
 		this.url = url;
 		this.assignee = assignee;
+		this.type = type;
 		this.ticketStatus = ticketStatus;
 	}
 
-	public Ticket(String id, String summary, TicketStatus ticketStatus) {
+	public Ticket(String id, String summary, TicketStatus ticketStatus, Set<TicketType> type) {
 		this.id = id;
 		this.summary = summary;
+		this.type = type;
 		this.assignee = null;
 		this.url = null;
 		this.ticketStatus = ticketStatus;
+	}
+
+	public static Ticket open(String id, String summary, TicketType ticketType) {
+		return new Ticket(id, summary, TicketStatus.open(), EnumSet.of(ticketType));
 	}
 
 	/*
@@ -58,7 +77,7 @@ public class Ticket {
 	 */
 	@Override
 	public String toString() {
-		return String.format("%14s - %s (%s)", id, summary, url);
+		return String.format("%14s - %s%s (%s)", id, type.isEmpty() ? "" : type + " ", summary, url);
 	}
 
 	public boolean isResolved() {

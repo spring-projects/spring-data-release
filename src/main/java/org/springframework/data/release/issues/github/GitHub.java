@@ -36,6 +36,7 @@ import org.springframework.data.release.issues.Changelog;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
+import org.springframework.data.release.issues.TicketType;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
 import org.springframework.data.release.model.*;
@@ -76,14 +77,16 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private static final ParameterizedTypeReference<List<GitHubReadIssue>> ISSUES_TYPE = new ParameterizedTypeReference<List<GitHubReadIssue>>() {};
 	private static final ParameterizedTypeReference<GitHubReadIssue> ISSUE_TYPE = new ParameterizedTypeReference<GitHubReadIssue>() {};
 	private static final ParameterizedTypeReference<GitHubWorkflows> WORKFLOWS_TYPE = new ParameterizedTypeReference<GitHubWorkflows>() {};
-	private static final Map<TicketType, Label> TICKET_LABELS = new HashMap<>();
+	private static final Map<TicketType, Set<Label>> TICKET_LABELS = new HashMap<>();
 
 	private final Map<ModuleIteration, Optional<Milestone>> milestoneCache = new ConcurrentReferenceHashMap<>();
 
 	static {
 
-		TICKET_LABELS.put(TicketType.Task, LabelConfiguration.TYPE_TASK);
-		TICKET_LABELS.put(TicketType.DependencyUpgrade, LabelConfiguration.TYPE_DEPENDENCY_UPGRADE);
+		TICKET_LABELS.put(TicketType.Task, Set.of(LabelConfiguration.TYPE_TASK));
+		TICKET_LABELS.put(TicketType.DependencyUpgrade, Set.of(LabelConfiguration.TYPE_DEPENDENCY_UPGRADE));
+		TICKET_LABELS.put(TicketType.Enhancement, Set.of(LabelConfiguration.TYPE_ENHANCEMENT));
+		TICKET_LABELS.put(TicketType.Bug, Set.of(LabelConfiguration.TYPE_BUG, LabelConfiguration.TYPE_REGRESSION));
 	}
 
 	private final Logger logger;
@@ -263,10 +266,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 		Milestone milestone = getMilestone(moduleIteration);
 
-		Label label = TICKET_LABELS.get(ticketType);
+		Collection<Label> label = TICKET_LABELS.get(ticketType);
 
 		GitHubWriteIssue gitHubIssue = GitHubWriteIssue.of(subject, milestone).withBody(description)
-				.withLabel(label.getName());
+				.withLabel(label.iterator().next().getName());
 
 		if (assignToCurrentUser) {
 			gitHubIssue = gitHubIssue.withAssignees(Collections.singletonList(properties.getUsername()));
@@ -542,11 +545,12 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return findTicket(repository, ticketId);
 	}
 
-	private Tickets getTicketsFor(ModuleIteration moduleIteration, boolean forCurrentUser) {
+	@Override
+	public Tickets getTicketsFor(ModuleIteration moduleIteration, boolean forCurrentUser) {
 
-		return getIssuesFor(moduleIteration, forCurrentUser, false).//
-				map(GitHub::toTicket).//
-				collect(Tickets.toTicketsCollector());
+		return getIssuesFor(moduleIteration, forCurrentUser, false)//
+				.map(GitHub::toTicket) //
+				.collect(Tickets.toTicketsCollector());
 	}
 
 	/**
@@ -822,9 +826,20 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 				new GithubMilestone(moduleIteration)));
 	}
 
-	private static Ticket toTicket(GitHubIssue issue) {
+	private static Ticket toTicket(GitHubReadIssue issue) {
+
+		EnumSet<TicketType> ticketTypes = EnumSet.noneOf(TicketType.class);
+		for (Label label : issue.getLabels()) {
+			TICKET_LABELS.forEach((k, v) -> {
+				if (v.contains(label)) {
+					ticketTypes.add(k);
+				}
+			});
+		}
+
 		return new Ticket(issue.getId(), issue.getTitle(), issue.getUrl(),
-				issue.getAssignees().isEmpty() ? null : issue.getAssignees().get(0), new GithubTicketStatus(issue.getState()));
+				issue.getAssignees().isEmpty() ? null : issue.getAssignees().get(0), new GithubTicketStatus(issue.getState()),
+				ticketTypes);
 	}
 
 	private static Map<String, Object> createParameters(ProjectAware projectAware) {

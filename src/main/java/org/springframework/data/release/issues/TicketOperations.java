@@ -49,7 +49,7 @@ public class TicketOperations {
 	 * @param summary
 	 * @return
 	 */
-	public Ticket getOrCreateTicketsWithSummary(ModuleIteration module, IssueTracker.TicketType ticketType,
+	public Ticket getOrCreateTicketsWithSummary(ModuleIteration module, TicketType ticketType,
 			String summary) {
 		return getOrCreateTicketsWithSummary(module, ticketType, Collections.singletonList(summary)).getTickets().get(0);
 	}
@@ -62,7 +62,7 @@ public class TicketOperations {
 	 * @param summaries
 	 * @return
 	 */
-	public Tickets getOrCreateTicketsWithSummary(ModuleIteration module, IssueTracker.TicketType ticketType,
+	public Tickets getOrCreateTicketsWithSummary(ModuleIteration module, TicketType ticketType,
 			List<String> summaries) {
 
 		Tickets tickets = getTicketsWithSummary(module, summaries);

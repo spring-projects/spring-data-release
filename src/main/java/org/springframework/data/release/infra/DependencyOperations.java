@@ -54,13 +54,12 @@ import org.springframework.data.release.build.Pom;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.io.Workspace;
-import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketOperations;
+import org.springframework.data.release.issues.TicketType;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHub;
 import org.springframework.data.release.issues.github.GitHubRepository;
-import org.springframework.data.release.issues.github.GithubTicketStatus;
 import org.springframework.data.release.issues.github.Milestone;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Iteration;
@@ -286,7 +285,7 @@ public class DependencyOperations {
 			summaries.add(getUpgradeTicketSummary(dependency, dependencyVersion));
 		});
 
-		return tickets.getOrCreateTicketsWithSummary(module, IssueTracker.TicketType.DependencyUpgrade, summaries);
+		return tickets.getOrCreateTicketsWithSummary(module, TicketType.DependencyUpgrade, summaries);
 	}
 
 	/**
@@ -435,12 +434,13 @@ public class DependencyOperations {
 			if (dryRun) {
 
 				Tickets existingTickets = tickets.getTicketsWithSummary(module, List.of(summary));
-				Ticket ticket = existingTickets.isEmpty() ? new Ticket("DRY RUN", summary, new GithubTicketStatus("open"))
+				Ticket ticket = existingTickets.isEmpty() ? Ticket.open("DRY RUN", summary, TicketType.DependencyUpgrade)
 						: existingTickets.getTickets().get(0);
+
 				result.add(ticket);
 			} else {
 
-				result.add(tickets.getOrCreateTicketsWithSummary(module, IssueTracker.TicketType.DependencyUpgrade, summary));
+				result.add(tickets.getOrCreateTicketsWithSummary(module, TicketType.DependencyUpgrade, summary));
 			}
 		});
 
