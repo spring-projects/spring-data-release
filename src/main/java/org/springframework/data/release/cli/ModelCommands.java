@@ -15,8 +15,6 @@
  */
 package org.springframework.data.release.cli;
 
-import java.util.stream.Collectors;
-
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.model.ReleaseTrains;
@@ -33,7 +31,18 @@ class ModelCommands extends TimedCommand {
 	@CliCommand(value = "trains", help = "Displays all release trains or contents of them if a name is provided")
 	public String train(@CliOption(key = { "", "train" }) Train train) {
 
-		return train != null ? train.toString()
-				: ReleaseTrains.TRAINS.stream().map(Train::getName).collect(Collectors.joining(", "));
+		if (train != null) {
+			return format(train);
+		}
+
+		StringBuilder builder = new StringBuilder();
+		ReleaseTrains.TRAINS.stream().map(ModelCommands::format)
+				.forEach(it -> builder.append("* ").append(it).append(System.lineSeparator()));
+
+		return builder.toString();
+	}
+
+	private static String format(Train train) {
+		return "%s (%s, %s)".formatted(train.getName(), train.getCalver(), train.getSupportStatus());
 	}
 }
