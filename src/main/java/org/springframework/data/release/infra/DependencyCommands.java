@@ -39,7 +39,6 @@ import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.SupportStatus;
-import org.springframework.data.release.model.SupportStatusAware;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
@@ -169,9 +168,13 @@ public class DependencyCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "dependency tickets create")
-	public void createDependencyUpgradeTickets() {
-		List<Train> latest = ReleaseTrains.latest(3).stream().filter(SupportStatusAware::isOpenSource).toList();
-		operations.createDependencyUpgradeTicketsForScheduledReleases(SupportStatus.OSS, latest);
+	public Tickets createDependencyUpgradeTickets(
+			@CliOption(key = "status", unspecifiedDefaultValue = "OSS") SupportStatus supportStatus,
+			@CliOption(key = "trains", unspecifiedDefaultValue = "3") String trainNames,
+			@CliOption(key = "dryRun", unspecifiedDefaultValue = "false", specifiedDefaultValue = "true") boolean dryRun) {
+		List<Train> latest = ReleaseTrains.getTrains(trainNames, 3).stream()
+				.filter(it -> it.getSupportStatus().equals(supportStatus)).toList();
+		return operations.createDependencyUpgradeTicketsForScheduledReleases(supportStatus, latest, dryRun);
 	}
 
 	private void createDependencyUpgradeProposals(TrainIteration iteration, boolean reportAll,

@@ -73,7 +73,7 @@ public class Milestone {
 	}
 
 	private boolean isNearFuture(Instant dueOn) {
-		return dueOn.isAfter(Instant.now()) && dueOn.isBefore(Instant.now().plus(Duration.ofDays(30)));
+		return dueOn.isAfter(Instant.now()) && dueOn.isBefore(Instant.now().plus(Duration.ofDays(20)));
 	}
 
 	private boolean isNearPast(Instant dueOn) {

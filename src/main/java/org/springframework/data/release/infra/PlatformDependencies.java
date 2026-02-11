@@ -17,6 +17,7 @@ package org.springframework.data.release.infra;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.release.issues.github.GitHubRepository;
@@ -26,12 +27,16 @@ import org.springframework.data.release.issues.github.GitHubRepository;
  */
 class PlatformDependencies {
 
-	static final Map<Dependency, GitHubRepository> REPOSITORIES = new HashMap<>();
+	static final Map<Dependency, List<GitHubRepository>> REPOSITORIES = new HashMap<>();
 
 	static {
-		REPOSITORIES.put(Dependencies.SPRING_FRAMEWORK, GitHubRepository.of("spring-projects", "spring-framework"));
-		REPOSITORIES.put(Dependencies.PROJECT_REACTOR, GitHubRepository.of("reactor", "reactor"));
-		REPOSITORIES.put(Dependencies.MICROMETER, GitHubRepository.of("micrometer-metrics", "micrometer"));
+		REPOSITORIES.put(Dependencies.SPRING_FRAMEWORK, List.of(GitHubRepository.of("spring-projects", "spring-framework"),
+				GitHubRepository.of("spring-projects", "spring-framework-commercial")));
+		REPOSITORIES.put(Dependencies.SPRING_LDAP, List.of(GitHubRepository.of("spring-projects", "spring-ldap"),
+				GitHubRepository.of("spring-projects", "spring-ldap-commercial")));
+		REPOSITORIES.put(Dependencies.PROJECT_REACTOR,
+				List.of(GitHubRepository.of("reactor", "reactor"), GitHubRepository.of("reactor", "reactor-commercial")));
+		REPOSITORIES.put(Dependencies.MICROMETER, List.of(GitHubRepository.of("micrometer-metrics", "micrometer")));
 	}
 
 	public static Dependency findDependency(GitHubRepository repository) {
@@ -40,7 +45,7 @@ class PlatformDependencies {
 	}
 
 	public static Collection<GitHubRepository> getRepositories() {
-		return REPOSITORIES.values();
+		return REPOSITORIES.values().stream().flatMap(Collection::stream).toList();
 	}
 
 }

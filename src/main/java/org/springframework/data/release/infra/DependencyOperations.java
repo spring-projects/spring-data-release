@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +60,7 @@ import org.springframework.data.release.issues.TicketOperations;
 import org.springframework.data.release.issues.Tickets;
 import org.springframework.data.release.issues.github.GitHub;
 import org.springframework.data.release.issues.github.GitHubRepository;
+import org.springframework.data.release.issues.github.GithubTicketStatus;
 import org.springframework.data.release.issues.github.Milestone;
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.Iteration;
@@ -347,8 +349,7 @@ public class DependencyOperations {
 		this.tickets.closeTickets(module, tickets);
 	}
 
-	DependencyVersions getDependencyUpgradesToApply(SupportedProject project,
-			DependencyVersions dependencyVersions) {
+	DependencyVersions getDependencyUpgradesToApply(SupportedProject project, DependencyVersions dependencyVersions) {
 
 		DependencyVersions currentDependencies = getCurrentDependencies(project);
 		Map<Dependency, DependencyVersion> upgrades = new LinkedHashMap<>();
@@ -375,9 +376,11 @@ public class DependencyOperations {
 	/**
 	 * @param trains
 	 */
-	public void createDependencyUpgradeTicketsForScheduledReleases(SupportStatus supportStatus, List<Train> trains) {
+	public Tickets createDependencyUpgradeTicketsForScheduledReleases(SupportStatus supportStatus, List<Train> trains,
+			boolean dryRun) {
 
 		Project build = Projects.BUILD;
+		List<Project> targetProjects = List.of(Projects.BUILD, Projects.LDAP);
 		Project bom = Projects.BOM;
 		Project release = Projects.RELEASE;
 		MilestoneRepository milestones = getOpenMilestones(supportStatus, release);
@@ -400,27 +403,48 @@ public class DependencyOperations {
 				continue;
 			}
 
-			gitOperations.prepare(nextIteration.getModule(build));
-
 			DependencyUpgradePolicy upgradePolicy = DependencyUpgradePolicy.from(nextIteration.getIteration());
-			DependencyVersions currentDependencies = getCurrentDependencies(project);
 
-			milestones.forEach((dependency, plannedMilestones) -> {
+			for (Project targetProject : targetProjects) {
 
-				DependencyVersion dependencyVersion = currentDependencies.get(dependency);
-				DependencyUpgradeProposal proposal = getDependencyUpgradeProposal(upgradePolicy, dependencyVersion,
-						toDependencyVersions(plannedMilestones));
-				if (proposal.isUpgradeAvailable()) {
-					UpgradeProposal upgradeProposal = new UpgradeProposal(dependency, proposal.getProposal());
-					upgradeTickets.computeIfAbsent(upgradeProposal, it -> nextIteration);
-				}
-			});
+				gitOperations.prepare(nextIteration.getModule(targetProject));
+				DependencyVersions currentDependencies = getCurrentDependencies(
+						SupportedProject.of(targetProject, supportStatus));
+
+				milestones.forEach((dependency, plannedMilestones) -> {
+
+					if (currentDependencies.hasDependency(dependency)) {
+						DependencyVersion dependencyVersion = currentDependencies.get(dependency);
+						DependencyUpgradeProposal proposal = getDependencyUpgradeProposal(upgradePolicy, dependencyVersion,
+								toDependencyVersions(plannedMilestones));
+						if (proposal.isUpgradeAvailable()) {
+							UpgradeProposal upgradeProposal = new UpgradeProposal(targetProject, dependency, proposal.getProposal());
+							upgradeTickets.computeIfAbsent(upgradeProposal, it -> nextIteration);
+						}
+					}
+				});
+			}
 		}
 
+		Set<Ticket> result = new LinkedHashSet<>();
 		upgradeTickets.forEach((k, v) -> {
+
 			String summary = getUpgradeTicketSummary(k.dependency(), k.version());
-			tickets.getOrCreateTicketsWithSummary(v.getModule(build), IssueTracker.TicketType.DependencyUpgrade, summary);
+			ModuleIteration module = v.getModule(k.project());
+
+			if (dryRun) {
+
+				Tickets existingTickets = tickets.getTicketsWithSummary(module, List.of(summary));
+				Ticket ticket = existingTickets.isEmpty() ? new Ticket("DRY RUN", summary, new GithubTicketStatus("open"))
+						: existingTickets.getTickets().get(0);
+				result.add(ticket);
+			} else {
+
+				result.add(tickets.getOrCreateTicketsWithSummary(module, IssueTracker.TicketType.DependencyUpgrade, summary));
+			}
 		});
+
+		return new Tickets(new ArrayList<>(result));
 	}
 
 	private MilestoneRepository getOpenMilestones(SupportStatus supportStatus, Project release) {
@@ -433,9 +457,14 @@ public class DependencyOperations {
 		GitHubRepository springDataRelease = GitProject.of(SupportedProject.of(release, supportStatus)).getRepository();
 		List<MilestonesRetrieval> retrievals = new ArrayList<>();
 		PlatformDependencies.REPOSITORIES.forEach((dependency, repo) -> {
-			retrievals.add(new MilestonesRetrieval(repo, result -> {
-				dependencyMilestones.put(dependency, result);
-			}));
+
+			for (GitHubRepository repository : repo) {
+				retrievals.add(new MilestonesRetrieval(repository, result -> {
+					synchronized (dependency) {
+						dependencyMilestones.computeIfAbsent(dependency, it -> new ArrayList<>()).addAll(result);
+					}
+				}));
+			}
 		});
 
 		retrievals.add(new MilestonesRetrieval(springDataRelease, springDataMilestones::addAll));
@@ -468,7 +497,7 @@ public class DependencyOperations {
 		return milestones.stream().map(it -> DependencyVersion.of(it.getTitle())).collect(Collectors.toList());
 	}
 
-	record UpgradeProposal(Dependency dependency, DependencyVersion version) {
+	record UpgradeProposal(Project project, Dependency dependency, DependencyVersion version) {
 
 	}
 
@@ -574,8 +603,8 @@ public class DependencyOperations {
 		}).max(DependencyVersion::compareTo);
 	}
 
-	static Optional<DependencyVersion> findLatestMinor(DependencyUpgradePolicy policy,
-			DependencyVersion currentVersion, List<DependencyVersion> availableVersions) {
+	static Optional<DependencyVersion> findLatestMinor(DependencyUpgradePolicy policy, DependencyVersion currentVersion,
+			List<DependencyVersion> availableVersions) {
 
 		return availableVersions.stream().filter(it -> {
 
@@ -612,8 +641,7 @@ public class DependencyOperations {
 		File pom = getPomFile(supportedProject);
 		ProjectDependencies dependencies = ProjectDependencies.get(supportedProject);
 
-		Set<Project> skipDependencyDeclarationCheck = new HashSet<>(
-				Collections.singletonList(Projects.BUILD));
+		Set<Project> skipDependencyDeclarationCheck = new HashSet<>(Collections.singletonList(Projects.BUILD));
 
 		return doWithPom(pom, Pom.class, it -> {
 

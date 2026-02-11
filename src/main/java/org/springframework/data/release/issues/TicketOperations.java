@@ -65,9 +65,9 @@ public class TicketOperations {
 	public Tickets getOrCreateTicketsWithSummary(ModuleIteration module, IssueTracker.TicketType ticketType,
 			List<String> summaries) {
 
+		Tickets tickets = getTicketsWithSummary(module, summaries);
 		SupportedProject project = module.getSupportedProject();
 		IssueTracker tracker = this.tracker.getRequiredPluginFor(project);
-		Tickets tickets = tracker.getTicketsFor(module);
 		List<Ticket> results = new ArrayList<>();
 
 		for (String summary : summaries) {
@@ -84,6 +84,32 @@ public class TicketOperations {
 
 				Ticket ticket = tracker.createTicket(module, summary, ticketType, true);
 				results.add(ticket);
+			}
+		}
+
+		return new Tickets(results);
+	}
+
+	/**
+	 * Look up tickets with a particular summary.
+	 *
+	 * @param module
+	 * @param summaries
+	 * @return
+	 */
+	public Tickets getTicketsWithSummary(ModuleIteration module, List<String> summaries) {
+
+		SupportedProject project = module.getSupportedProject();
+		IssueTracker tracker = this.tracker.getRequiredPluginFor(project);
+		Tickets tickets = tracker.getTicketsFor(module);
+		List<Ticket> results = new ArrayList<>();
+
+		for (String summary : summaries) {
+
+			Optional<Ticket> upgradeTicket = findBySummary(tickets, summary);
+
+			if (upgradeTicket.isPresent()) {
+				upgradeTicket.ifPresent(results::add);
 			}
 		}
 

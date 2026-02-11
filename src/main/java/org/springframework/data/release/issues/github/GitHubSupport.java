@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -42,7 +43,8 @@ class GitHubSupport {
 
 	final RestOperations operations;
 
-	static RestOperations createOperations(RestTemplateBuilder templateBuilder, GitHubProperties properties) {
+	static RestOperations createOperations(@Qualifier("tracker") RestTemplateBuilder templateBuilder,
+			GitHubProperties properties) {
 		return templateBuilder.uriTemplateHandler(new DefaultUriBuilderFactory(properties.getApiUrl())).build();
 	}
 

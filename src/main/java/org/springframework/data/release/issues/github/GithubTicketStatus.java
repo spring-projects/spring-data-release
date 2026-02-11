@@ -33,7 +33,7 @@ import org.springframework.data.release.issues.TicketStatus;
 @ToString
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-class GithubTicketStatus implements TicketStatus {
+public class GithubTicketStatus implements TicketStatus {
 
 	private final String status;
 
