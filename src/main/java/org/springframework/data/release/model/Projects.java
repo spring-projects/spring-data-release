@@ -62,18 +62,18 @@ public class Projects {
 		MONGO_DB = create("MongoDB", it -> it.dependsOn(COMMONS)
 				.withAdditionalArtifacts(SpringDataNamingStrategy.SPRING_DATA, "mongodb-parent", "mongodb-distribution"));
 
-		NEO4J = create("Neo4j", it -> it.dependsOn(BUILD).withMaintainer(ProjectMaintainer.COMMUNITY));
+		NEO4J = create("Neo4j", it -> it.dependsOn(COMMONS).withMaintainer(ProjectMaintainer.COMMUNITY));
 
-		SOLR = create("Solr", it -> it.dependsOn(BUILD).withFullName("Spring Data for Apache Solr"));
+		SOLR = create("Solr", it -> it.dependsOn(COMMONS).withFullName("Spring Data for Apache Solr"));
 
-		COUCHBASE = create("Couchbase", it -> it.dependsOn(BUILD).withMaintainer(ProjectMaintainer.COMMUNITY));
+		COUCHBASE = create("Couchbase", it -> it.dependsOn(COMMONS).withMaintainer(ProjectMaintainer.COMMUNITY));
 
 		CASSANDRA = create("Cassandra",
 				it -> it.dependsOn(COMMONS)
 						.withAdditionalArtifacts(SpringDataNamingStrategy.SPRING_DATA, "cassandra-parent", "cassandra-distribution")
 						.withFullName("Spring Data for Apache Cassandra"));
 
-		ELASTICSEARCH = create("Elasticsearch", it -> it.dependsOn(BUILD).withMaintainer(ProjectMaintainer.COMMUNITY));
+		ELASTICSEARCH = create("Elasticsearch", it -> it.dependsOn(COMMONS).withMaintainer(ProjectMaintainer.COMMUNITY));
 
 		KEY_VALUE = create("KeyValue", it -> it.dependsOn(COMMONS));
 
@@ -93,8 +93,8 @@ public class Projects {
 
 		REST = create("REST",
 				it -> it.dependsOn(JPA, MONGO_DB, NEO4J, CASSANDRA, KEY_VALUE).withAdditionalArtifacts(
-						SpringDataNamingStrategy.SPRING_DATA, "relational", "rest-parent", "rest-distribution", "core", "webmvc",
-						"hal-browser", "hal-explorer"));
+						SpringDataNamingStrategy.SPRING_DATA, "relational", "rest-parent", "rest-distribution", "rest-core",
+						"rest-webmvc", "rest-hal-browser", "rest-hal-explorer"));
 
 		ENVERS = create("Envers", it -> it.dependsOn(JPA));
 
