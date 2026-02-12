@@ -653,15 +653,15 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	 */
 	public void triggerAntoraWorkflow(SupportedProject project) {
 
-		logger.log("GitHub", "Triggering Antora workflow for %s…", project.getName());
+		logger.log("GitHub", "Triggering %s Antora workflow for %s…", project.getSupportStatus(), project.getName());
 
+		Map<String, Object> parameters = createParameters(GitProject.of(project));
 		GitHubWorkflow workflow = getWorkflow(project.getSupportStatus());
 
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("ref", "main");
 		body.put("inputs", Collections.singletonMap("module", project.getName().toLowerCase(Locale.ROOT)));
 
-		Map<String, Object> parameters = new HashMap<>();
 		parameters.put("workflow_id", workflow.getId());
 
 		ResponseEntity<Map> entity = operations.exchange(WORKFLOW_DISPATCH, HttpMethod.POST, new HttpEntity<>(body),
@@ -677,7 +677,10 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	@Cacheable("get-workflow")
 	public GitHubWorkflow getWorkflow(SupportStatus supportStatus) {
 
-		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE);
+		Map<String, Object> parameters = createParameters(
+				GitProject.of(SupportedProject.of(Projects.RELEASE, supportStatus)));
+		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE,
+				parameters);
 
 		if (!entity.getStatusCode().is2xxSuccessful()) {
 			throw new IllegalStateException(String.format("Cannot obtain Workflows. Status: %s", entity.getStatusCode()));
