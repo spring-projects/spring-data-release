@@ -651,12 +651,11 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	/**
 	 * Trigger the Antora workflow for the given module.
 	 */
-	public void triggerAntoraWorkflow(SupportedProject project) {
+	public void triggerAntoraWorkflow(GitHubWorkflow workflow, SupportedProject project) {
 
-		logger.log("GitHub", "Triggering %s Antora workflow for %s…", project.getSupportStatus(), project.getName());
+		logger.log("GitHub", "Triggering [%s] Antora workflow for %s…", project.getSupportStatus(), project.getName());
 
 		Map<String, Object> parameters = createParameters(GitProject.of(project));
-		GitHubWorkflow workflow = getWorkflow(project.getSupportStatus());
 
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("ref", "main");
@@ -668,17 +667,20 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 				Map.class, parameters);
 
 		if (!entity.getStatusCode().is2xxSuccessful()) {
-			throw new IllegalStateException("Cannot trigger Antora workflow. Status: " + entity.getStatusCode());
+			throw new IllegalStateException("Cannot trigger [%s] Antora workflow. Status: %s"
+					.formatted(project.getSupportStatus(), entity.getStatusCode()));
 		}
 
-		logger.log("GitHub", "Antora workflow for %s started…", project.getName());
+		logger.log("GitHub", "[%s] Antora workflow for %s started…", project.getSupportStatus(), project.getName());
 	}
 
 	@Cacheable("get-workflow")
-	public GitHubWorkflow getWorkflow(SupportStatus supportStatus) {
+	public GitHubWorkflow getAntoraWorkflow(SupportedProject project) {
+
+		logger.log(project, "Resolving Antora workflow…");
 
 		Map<String, Object> parameters = createParameters(
-				GitProject.of(SupportedProject.of(Projects.RELEASE, supportStatus)));
+				GitProject.of(SupportedProject.of(Projects.RELEASE, project.getSupportStatus())));
 		ResponseEntity<GitHubWorkflows> entity = operations.exchange(WORKFLOWS, HttpMethod.GET, null, WORKFLOWS_TYPE,
 				parameters);
 
@@ -689,7 +691,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		GitHubWorkflows workflows = entity.getBody();
 		for (GitHubWorkflow workflow : workflows.getWorkflows()) {
 
-			if (supportStatus == SupportStatus.OSS && workflow.getPath().endsWith("antora-oss-site.yml")) {
+			if (project.getStatus().isOpenSource() && workflow.getPath().endsWith("antora-oss-site.yml")) {
 
 				if (!workflow.getState().equals("active")) {
 					throw new IllegalStateException("Antora workflow is not active");
@@ -698,7 +700,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 				return workflow;
 			}
 
-			if (supportStatus == SupportStatus.COMMERCIAL && workflow.getPath().endsWith("antora-commercial-site.yml")) {
+			if (project.getStatus().isCommercial() && workflow.getPath().endsWith("antora-commercial-site.yml")) {
 
 				if (!workflow.getState().equals("active")) {
 					throw new IllegalStateException("Antora workflow is not active");

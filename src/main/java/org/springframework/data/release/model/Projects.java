@@ -89,11 +89,11 @@ public class Projects {
 		R2DBC = create("R2DBC", it -> it.dependsOn(COMMONS, JDBC));
 
 		GEODE = create("Geode", it -> it.dependsOn(COMMONS).withAdditionalArtifacts(SpringDataNamingStrategy.SPRING_DATA,
-				"relational", "geode-parent", "geode-distribution").withFullName("Spring Data for Apache Geode"));
+				"geode-parent", "geode-distribution").withFullName("Spring Data for Apache Geode"));
 
 		REST = create("REST",
 				it -> it.dependsOn(JPA, MONGO_DB, NEO4J, CASSANDRA, KEY_VALUE).withAdditionalArtifacts(
-						SpringDataNamingStrategy.SPRING_DATA, "relational", "rest-parent", "rest-distribution", "rest-core",
+						SpringDataNamingStrategy.SPRING_DATA, "rest-parent", "rest-distribution", "rest-core",
 						"rest-webmvc", "rest-hal-browser", "rest-hal-explorer"));
 
 		ENVERS = create("Envers", it -> it.dependsOn(JPA));

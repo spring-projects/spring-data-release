@@ -183,7 +183,8 @@ public class GitHubCommands extends TimedCommand {
 	}
 
 	public void triggerAntoraWorkflow(SupportedProject project) {
-		gitHub.triggerAntoraWorkflow(project);
+		GitHubWorkflows.GitHubWorkflow antoraWorkflow = gitHub.getAntoraWorkflow(project);
+		gitHub.triggerAntoraWorkflow(antoraWorkflow, project);
 	}
 
 	private void createOrUpdateRelease(ModuleIteration module, TrainIteration previousIteration) {
