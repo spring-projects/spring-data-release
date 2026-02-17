@@ -26,7 +26,6 @@ import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportStatus;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 
@@ -57,7 +56,7 @@ class BuildStatusMatrix {
 
 		for (Project project : projects) {
 
-			GitProject gitProject = GitProject.of(SupportedProject.of(project, supportStatus));
+			GitProject gitProject = GitProject.of(project, supportStatus);
 			boolean isProjectActive = isProjectActive(project, trains);
 
 			if (!isProjectActive || project == Projects.JDBC) {
