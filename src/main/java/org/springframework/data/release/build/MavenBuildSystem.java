@@ -131,10 +131,16 @@ class MavenBuildSystem implements BuildSystem {
 
 	public ModuleIteration updateGhActionsConfig(ModuleIteration module, BranchMapping branches) {
 
+		Branch targetBranch = branches.getTargetBranch(module.getProject());
+		if (targetBranch == null) {
+			logger.warn(module, "No target branch available, skipping GH action config update.");
+			return module;
+		}
+
 		// check if we have the build module in hand
 		if (module.getModule().getProject().equals(Projects.BUILD)) {
 			File ghActionsDirectory = workspace.getFile("actions", module.getSupportedProject());
-			if (ghActionsDirectory.exists() && ghActionsDirectory.isDirectory()) {
+			if (ghActionsDirectory.isDirectory()) {
 				for (File ghActionDirectory : ghActionsDirectory.listFiles()) {
 
 					if (!ghActionDirectory.isDirectory()) {
@@ -142,24 +148,18 @@ class MavenBuildSystem implements BuildSystem {
 					}
 
 					File ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yml", module.getSupportedProject());
-					if(!ghActionFile.exists()) {
+					if (!ghActionFile.exists()) {
 						ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yaml", module.getSupportedProject());
 					}
-					if (ghActionFile.exists() && ghActionFile.isFile()) {
-						for (ModuleIteration participatingModule : module.getTrainIteration()) {
-							Branch target = branches.getTargetBranch(participatingModule.getProject());
-							if (target == null) {
-								continue;
-							}
-							updateGhActionBranch(module, ghActionFile, target);
-						}
+					if (ghActionFile.isFile()) {
+						setBranchForGithubAction(module, ghActionFile, targetBranch);
 					}
 				}
 			}
 		}
 
 		File workflows = workspace.getFile(".github/workflows", module.getSupportedProject());
-		if (!workflows.exists() || !workflows.isDirectory()) {
+		if (!workflows.isDirectory()) {
 			logger.log(module, "No GH Action workflows found, skipping config update.");
 			return module;
 		}
@@ -169,43 +169,34 @@ class MavenBuildSystem implements BuildSystem {
 				continue;
 			}
 
-			for (ModuleIteration participatingModule : module.getTrainIteration()) {
-
-				Branch target = branches.getTargetBranch(participatingModule.getProject());
-
-				if (target == null) {
-					continue;
-				}
-
-				updateGhActionBranch(module, workflowFile, target);
-			}
+			setBranchForGithubAction(module, workflowFile, targetBranch);
 		}
 
 		return module;
 	}
 
-	void updateGhActionBranch(ModuleIteration moduleIteration, File file, Branch branch) {
+	void setBranchForGithubAction(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
 
-		if (!file.exists() || !file.isFile()) {
-			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", file.getPath());
+		if (!ghActionFile.isFile()) {
+			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
 			return;
 		}
 
 		try {
 
-			byte[] bytes = Files.readAllBytes(file.toPath());
+			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
 			String content = new String(bytes, StandardCharsets.UTF_8);
 
 			String newContent = content.replaceAll(GH_ACTION_REGEX, String.format("@%s", branch));
 
 			if (!newContent.equals(content)) {
-				logger.warn(moduleIteration, "GH action [%s] updated.".formatted(file.getPath()));
-				Files.write(file.toPath(), newContent.getBytes(StandardCharsets.UTF_8));
+				logger.warn(moduleIteration, "GH action [%s] updated.".formatted(ghActionFile.getPath()));
+				Files.write(ghActionFile.toPath(), newContent.getBytes(StandardCharsets.UTF_8));
 			} else {
-				logger.log(moduleIteration, "GH action [%s] unchanged. Skipping.".formatted(file.getPath()));
+				logger.log(moduleIteration, "GH action [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
 			}
 		} catch (IOException e) {
-			logger.warn(moduleIteration, "GH action file [%s] update failed.", file.getPath());
+			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
 		}
 	}
 
