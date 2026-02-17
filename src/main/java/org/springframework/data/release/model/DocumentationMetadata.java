@@ -30,9 +30,9 @@ import org.springframework.data.release.model.Train.DocumentationFormat;
 public class DocumentationMetadata {
 
 	private static String DOCS_BASE = "https://docs.spring.io/spring-data/%s/docs/%s";
-	private static String COMMERICIAL_DOCS_BASE = "https://docs.spring.vmware.com/spring-data/%s/docs/%s";
+	private static String COMMERICIAL_DOCS_BASE = "https://docs.enterprise.spring.io/spring-data/%s/docs/%s";
 	private static String ANTORA_BASE = "https://docs.spring.io/spring-data/%s/reference/";
-	private static String COMMERCIAL_ANTORA_BASE = "https://docs.spring.vmware.com/spring-data/%s/reference/";
+	private static String COMMERCIAL_ANTORA_BASE = "https://docs.enterprise.spring.io/spring-data/%s/reference/";
 
 	private static String DOCS = DOCS_BASE.concat("/reference/html/");
 	private static String JAVADOC = DOCS_BASE.concat("/api/");
@@ -60,15 +60,20 @@ public class DocumentationMetadata {
 			return "";
 		}
 
-		String format = project.isCommercial() ? COMMERICIAL_JAVADOC : JAVADOC;
+		if (project.isCommercial() || documentationFormat == DocumentationFormat.ASCIIDOC) {
 
-		if (Projects.BUILD.equals(project.getProject())) { // Report Commons Docs for Spring Data Build
-			return String.format(format, getProjectName(Projects.COMMONS), getDocumentationVersion());
+			String format = project.isCommercial() ? COMMERICIAL_JAVADOC : JAVADOC;
+
+			if (Projects.BUILD.equals(project.getProject())) { // Report Commons Docs for Spring Data Build
+				return String.format(format, getProjectName(Projects.COMMONS), getDocumentationVersion());
+			}
+
+			return String.format(format,
+					project.getProject() == Projects.R2DBC ? "r2dbc" : getProjectName(project.getProject()),
+					getDocumentationVersion());
 		}
 
-		return String.format(format,
-				project.getProject() == Projects.R2DBC ? "r2dbc" : getProjectName(project.getProject()),
-				getDocumentationVersion());
+		return getReferenceDocUrl() + "api/java/";
 	}
 
 	private String getProjectName(Project project) {
