@@ -15,7 +15,11 @@
  */
 package org.springframework.data.release.model;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Sample release {@link Train} definitions.
@@ -25,4 +29,11 @@ import java.util.Arrays;
 public class TestReleaseTrains {
 
 	public static Train SAMPLE = new Train("SAMPLE", Arrays.asList(new Module(Projects.BUILD, "1.0")));
+
+	@Test
+	void getByProjectVersion() {
+
+		Train releaseTrain = ReleaseTrains.getByProjectVersion(Projects.RELATIONAL, Version.parse("4.0"));
+		assertThat(releaseTrain).isEqualTo(ReleaseTrains.Z);
+	}
 }

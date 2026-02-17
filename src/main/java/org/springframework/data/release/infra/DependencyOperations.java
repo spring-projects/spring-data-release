@@ -454,7 +454,7 @@ public class DependencyOperations {
 
 		Map<Dependency, List<Milestone>> dependencyMilestones = new ConcurrentHashMap<>();
 		List<Milestone> springDataMilestones = new ArrayList<>();
-		GitHubRepository springDataRelease = GitProject.of(SupportedProject.of(release, supportStatus)).getRepository();
+		GitHubRepository springDataRelease = GitProject.of(release, supportStatus).getRepository();
 		List<MilestonesRetrieval> retrievals = new ArrayList<>();
 		PlatformDependencies.REPOSITORIES.forEach((dependency, repo) -> {
 

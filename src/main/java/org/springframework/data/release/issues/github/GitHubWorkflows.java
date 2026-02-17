@@ -28,7 +28,7 @@ public class GitHubWorkflows {
 	List<GitHubWorkflow> workflows;
 
 	@Value
-	static class GitHubWorkflow {
+	public static class GitHubWorkflow {
 		String name;
 		long id;
 		String path;

@@ -142,6 +142,24 @@ public class ReleaseTrains {
 				.orElse(null);
 	}
 
+	public static Train getByProjectVersion(Project project, Version version) {
+
+		for (Train train : TRAINS) {
+
+			if (!train.contains(project)) {
+				continue;
+			}
+
+			Module module = train.getModule(project);
+			if (module.getVersion().is(version.withBugfix(0))) {
+				return train;
+			}
+		}
+
+		throw new IllegalArgumentException(
+				"Cannot find train for project %s with version %s".formatted(project.getName(), version));
+	}
+
 	public static List<Train> getTrains(String trainNamesOrLastNumber, int defaultLastTrains) {
 
 		if (StringUtils.hasText(trainNamesOrLastNumber)) {
@@ -170,4 +188,5 @@ public class ReleaseTrains {
 	public static List<Train> latest(int count) {
 		return TRAINS.subList(TRAINS.size() - count, TRAINS.size());
 	}
+
 }

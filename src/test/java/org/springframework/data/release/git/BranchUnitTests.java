@@ -51,4 +51,17 @@ class BranchUnitTests {
 
 		assertThat(branch.isIssueBranch(Tracker.GITHUB)).isFalse();
 	}
+
+	@Test
+	void isServiceBranch() {
+
+		assertThat(Branch.from("head/2.0.x").isServiceReleaseBranch()).isTrue();
+		assertThat(Branch.from("head/actions").isServiceReleaseBranch()).isFalse();
+	}
+
+	@Test
+	void getVersion() {
+
+		assertThat(Branch.from("head/2.0.x").asVersion()).isEqualTo(Version.of(2, 0));
+	}
 }

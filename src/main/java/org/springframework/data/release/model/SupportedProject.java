@@ -16,6 +16,7 @@
 package org.springframework.data.release.model;
 
 import lombok.Value;
+import lombok.With;
 
 /**
  * @author Oliver Drotbohm
@@ -23,7 +24,7 @@ import lombok.Value;
 @Value(staticConstructor = "of")
 public class SupportedProject implements Named, ProjectAware {
 
-	Project project;
+	@With Project project;
 	SupportStatus status;
 
 	public String getFolderName() {

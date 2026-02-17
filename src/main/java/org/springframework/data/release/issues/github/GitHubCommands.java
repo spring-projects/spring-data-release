@@ -24,12 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
+import org.springframework.data.release.git.GitProjects;
 import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
@@ -179,13 +182,30 @@ public class GitHubCommands extends TimedCommand {
 	@CliCommand(value = "github wiki status-matrix")
 	public String createBuildStatusMatrix(@CliOption(key = "trains") String trainNames) {
 
-		List<Train> trains = ReleaseTrains.getTrains(trainNames, 3);
+		List<Train> trains = new ArrayList<>(ReleaseTrains.getTrains(trainNames, 3));
+		Collections.reverse(trains);
 		return BuildStatusMatrix.createBuildStatusMatrix(trains);
 	}
 
+	@CliCommand(value = "github trigger-downstream-workflow")
+	public void triggerDownstreamWorkflow(@CliOption(key = "source-repository") String sourceRepository,
+			@CliOption(key = "workflow") String workflowName, @CliOption(key = "head-branch") String headBranch) {
+
+		SupportedProject sourceProject = GitProjects.getSupportedProject(sourceRepository);
+		TrainIteration iteration = gitHub.resolveTrainIteration(sourceProject, headBranch);
+
+		ExecutionUtils.run(executor, iteration.filter(it -> it.getProject().dependsOn(sourceProject.getProject())), it -> {
+			GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), workflowName);
+			gitHub.triggerDownstreamWorkflow(workflow, it);
+		});
+	}
+
 	public void triggerAntoraWorkflow(SupportedProject project) {
-		GitHubWorkflows.GitHubWorkflow antoraWorkflow = gitHub.getAntoraWorkflow(project);
-		gitHub.triggerAntoraWorkflow(antoraWorkflow, project);
+
+		SupportedProject workflowRepository = SupportedProject.of(Projects.RELEASE, SupportStatus.COMMERCIAL);
+		GitHubWorkflows.GitHubWorkflow antoraWorkflow = gitHub.getAntoraWorkflow(workflowRepository,
+				project.getSupportStatus());
+		gitHub.triggerAntoraWorkflow(antoraWorkflow, workflowRepository, project);
 	}
 
 	private void createOrUpdateRelease(ModuleIteration module, TrainIteration previousIteration) {

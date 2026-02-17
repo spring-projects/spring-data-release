@@ -19,6 +19,9 @@ import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.eclipse.jgit.lib.Repository;
 
 import org.springframework.data.release.model.IterationVersion;
@@ -39,6 +42,8 @@ import org.springframework.util.Assert;
 public class Branch implements Comparable<Branch> {
 
 	public static final Branch MAIN = new Branch("main");
+
+	private static final Pattern SERVICE_RELEASE_BRANCH_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.x");
 
 	private final String name;
 
@@ -114,6 +119,23 @@ public class Branch implements Comparable<Branch> {
 		return new Branch(remote + "/" + name);
 	}
 
+	/**
+	 * Returns whether the branch is a service release branch, i.e. matches a version pattern like {@code 2.7.x}.
+	 *
+	 * @return
+	 */
+	public boolean isServiceReleaseBranch() {
+		return SERVICE_RELEASE_BRANCH_PATTERN.matcher(name).matches();
+	}
+
+	public Version asVersion() {
+
+		Matcher matcher = SERVICE_RELEASE_BRANCH_PATTERN.matcher(name);
+		Assert.state(matcher.matches(), () -> "Branch %s is not a service release branch!".formatted(name));
+
+		return Version.parse(matcher.group(1) + "." + matcher.group(2));
+	}
+
 	public boolean isMainBranch() {
 		return MAIN.equals(this);
 	}
@@ -147,4 +169,5 @@ public class Branch implements Comparable<Branch> {
 	public int compareTo(Branch o) {
 		return name.compareToIgnoreCase(o.name);
 	}
+
 }

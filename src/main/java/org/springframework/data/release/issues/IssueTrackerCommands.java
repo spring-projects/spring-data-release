@@ -165,7 +165,6 @@ public class IssueTrackerCommands extends TimedCommand {
 	public String createReleaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
 		run(executor, iteration, module -> getTrackerFor(module).createReleaseTicket(module));
-		evict();
 
 		return releaseTickets(iteration);
 	}
@@ -231,6 +230,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 	@CliCommand("tracker close")
 	public void closeIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+		evict();
 		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).closeIteration(module));
 	}
 

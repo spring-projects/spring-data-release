@@ -38,6 +38,10 @@ public class GitProject {
 	private final @Getter SupportedProject project;
 	private final GitServer server;
 
+	public static GitProject of(Project project, SupportStatus status) {
+		return new GitProject(SupportedProject.of(project, status), GitServer.INSTANCE);
+	}
+
 	public static GitProject of(SupportedProject project) {
 		return new GitProject(project, GitServer.INSTANCE);
 	}
