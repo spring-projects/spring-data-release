@@ -78,4 +78,26 @@ class MavenBuildSystemUnitTests {
 					"<enabled>true</enabled>", "<releases>", "<enabled>false</enabled>", "spring-milestone");
 		}
 	}
+
+	@Test
+	void ghActionsRegexShouldCaptureVesion() {
+
+		String workflow = """
+			- name: Setup Java and Maven
+			  uses: spring-projects/spring-data-build/actions/setup-maven@5.0.x
+			- name: Deploy to Artifactory
+			  uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@main
+			- uses: actions/setup-java@v5.2.0
+			  id: install-custom-java-version
+			""";
+
+		String newTag = "newTag";
+
+		String result = workflow.replaceAll(MavenBuildSystem.GH_ACTION_REGEX, "@" + newTag);
+
+		assertThat(result)
+			.contains("uses: spring-projects/spring-data-build/actions/setup-maven@newTag")
+			.contains("uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@newTag")
+			.contains("uses: actions/setup-java@v5.2.0");
+	}
 }
