@@ -80,6 +80,7 @@ import org.xmlbeam.io.StreamInput;
 class MavenBuildSystem implements BuildSystem {
 
 	static String POM_XML = "pom.xml";
+	static String GH_ACTION_REGEX = "(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+";
 
 	Workspace workspace;
 	ProjectionFactory projectionFactory;
@@ -128,13 +129,86 @@ class MavenBuildSystem implements BuildSystem {
 		return module;
 	}
 
+	public ModuleIteration updateGhActionsConfig(ModuleIteration module, BranchMapping branches) {
+
+		Branch targetBranch = branches.getTargetBranch(module.getProject());
+		if (targetBranch == null) {
+			logger.warn(module, "No target branch available, skipping GH action config update.");
+			return module;
+		}
+
+		// check if we have the build module in hand
+		if (module.getModule().getProject().equals(Projects.BUILD)) {
+			File ghActionsDirectory = workspace.getFile("actions", module.getSupportedProject());
+			if (ghActionsDirectory.isDirectory()) {
+				for (File ghActionDirectory : ghActionsDirectory.listFiles()) {
+
+					if (!ghActionDirectory.isDirectory()) {
+						continue;
+					}
+
+					File ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yml", module.getSupportedProject());
+					if (!ghActionFile.exists()) {
+						ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yaml", module.getSupportedProject());
+					}
+					if (ghActionFile.isFile()) {
+						setBranchForGithubAction(module, ghActionFile, targetBranch);
+					}
+				}
+			}
+		}
+
+		File workflows = workspace.getFile(".github/workflows", module.getSupportedProject());
+		if (!workflows.isDirectory()) {
+			logger.log(module, "No GH Action workflows found, skipping config update.");
+			return module;
+		}
+
+		for (File workflowFile : workflows.listFiles()) {
+			if (!workflowFile.isFile() || (!workflowFile.getName().endsWith(".yml") && !workflowFile.getName().endsWith(".yaml"))) {
+				continue;
+			}
+
+			setBranchForGithubAction(module, workflowFile, targetBranch);
+		}
+
+		return module;
+	}
+
+	void setBranchForGithubAction(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
+
+		if (!ghActionFile.isFile()) {
+			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
+			return;
+		}
+
+		try {
+
+			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
+			String content = new String(bytes, StandardCharsets.UTF_8);
+
+			String newContent = content.replaceAll(GH_ACTION_REGEX, String.format("@%s", branch));
+
+			if (!newContent.equals(content)) {
+				logger.warn(moduleIteration, "GH action [%s] updated.".formatted(ghActionFile.getPath()));
+				Files.write(ghActionFile.toPath(), newContent.getBytes(StandardCharsets.UTF_8));
+			} else {
+				logger.log(moduleIteration, "GH action [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
+			}
+		} catch (IOException e) {
+			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
+		}
+	}
+
+
 	@Override
 	@SneakyThrows
 	public ModuleIteration updateBuildConfig(ModuleIteration module, BranchMapping branches) {
 
 		File jenkinsfile = workspace.getFile("Jenkinsfile", module.getSupportedProject());
 		if (!jenkinsfile.exists()) {
-			logger.warn(module, "No Jenkinsfile found, skipping Jenkinsfile update.");
+			logger.log(module, "No Jenkinsfile found, attempting to update GH Actions config.");
+			return updateGhActionsConfig(module, branches);
 		}
 
 		byte[] bytes = Files.readAllBytes(jenkinsfile.toPath());
