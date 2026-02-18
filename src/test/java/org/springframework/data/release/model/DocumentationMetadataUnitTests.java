@@ -44,7 +44,7 @@ class DocumentationMetadataUnitTests {
 		DocumentationMetadata metadata = DocumentationMetadata.of(DocumentationFormat.ANTORA,
 				SupportedProject.of(Projects.MONGO_DB, SupportStatus.OSS), ArtifactVersion.of("3.1.0"), false);
 
-		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/docs/3.1.0/api/");
+		assertThat(metadata.getApiDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/3.1/api/java/");
 		assertThat(metadata.getReferenceDocUrl()).isEqualTo("https://docs.spring.io/spring-data/mongodb/reference/3.1/");
 	}
 
@@ -77,9 +77,9 @@ class DocumentationMetadataUnitTests {
 				SupportedProject.of(Projects.MONGO_DB, SupportStatus.COMMERCIAL), ArtifactVersion.of("3.1.0"), true);
 
 		assertThat(metadata.getApiDocUrl())
-				.isEqualTo("https://docs.spring.vmware.com/spring-data/mongodb/docs/current/api/");
+				.isEqualTo("https://docs.enterprise.spring.io/spring-data/mongodb/docs/current/api/");
 		assertThat(metadata.getReferenceDocUrl())
-				.isEqualTo("https://docs.spring.vmware.com/spring-data/mongodb/docs/current/reference/html/");
+				.isEqualTo("https://docs.enterprise.spring.io/spring-data/mongodb/docs/current/reference/html/");
 	}
 
 	@Test // gh-167

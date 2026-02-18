@@ -1,0 +1,35 @@
+name: Build and Deploy Spring Data Release Tools
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions: read-all
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Spring Data Release Tools
+    permissions:
+      packages: write
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Java and Maven
+        uses: spring-projects/spring-data-build/actions/setup-maven@main
+        with:
+          java-version: 'base'
+      - name: Deploy to GitHub Packages
+        shell: bash
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          VERSION=$(git rev-parse --short HEAD)
+          ./mvnw -q -B versions:set versions:commit -DgenerateBackupPoms=false -DprocessAllModules=true -DnewVersion=1.0-${VERSION}
+          ./mvnw -s ci/settings.xml -B -Pgithub clean deploy
+      - name: Test Summary
+        uses: spring-projects/spring-data-build/actions/test-summary@main
+        with:
+          paths: '**/TEST-*.xml'
+        if: always()

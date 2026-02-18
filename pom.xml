@@ -16,6 +16,7 @@
 		<spring-plugin.version>2.0.0.RELEASE</spring-plugin.version>
 		<jgit.version>7.4.0.202509020913-r</jgit.version>
 		<jetty.version>12.1.5</jetty.version>
+		<java.version>17</java.version>
 	</properties>
 
 	<dependencyManagement>
@@ -216,5 +217,19 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>github</id>
+			<distributionManagement>
+				<repository>
+					<id>github</id>
+					<name>GitHub Packages</name>
+					<url>
+						https://maven.pkg.github.com/spring-projects/spring-data-release
+					</url>
+				</repository>
+			</distributionManagement>
+		</profile>
+	</profiles>
 
 </project>
