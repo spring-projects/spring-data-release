@@ -20,17 +20,23 @@ import lombok.RequiredArgsConstructor;
 import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.release.build.CommandLine;
+import org.springframework.data.release.build.MavenEnvironment;
+import org.springframework.data.release.build.MavenInvocationResult;
 import org.springframework.data.release.build.MavenProperties;
 import org.springframework.data.release.build.MavenRuntime;
 import org.springframework.data.release.build.MavenRuntimes;
 import org.springframework.data.release.io.JavaRuntimes;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
+import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.util.StringUtils;
 
@@ -41,7 +47,7 @@ import org.springframework.util.StringUtils;
  */
 @Configuration
 @RequiredArgsConstructor
-class JavaToolingConfiguration {
+public class JavaToolingConfiguration {
 
 	private static final Resource javaTools = new FileSystemResource("ci/java-tools.properties");
 
@@ -62,19 +68,22 @@ class JavaToolingConfiguration {
 	}
 
 	@Bean
-	JavaVersions javaVersions(@Qualifier("javaTools") Properties javaTools) {
+	JavaVersions javaVersions(@Qualifier("javaTools") Properties javaTools,
+			@Value("${tooling.java.verify:true}") boolean verify) {
 
 		JavaVersions javaVersions = new JavaVersions(JavaVersions.parse(javaTools));
 
-		logger.log("JavaTooling", "🕵️ Checking presence of JDKs %s…",
-				StringUtils.collectionToDelimitedString(javaVersions.getExpectedVersions(), ", "));
+		if (verify) {
+			logger.log("JavaTooling", "🕵️ Checking presence of JDKs %s…",
+					StringUtils.collectionToDelimitedString(javaVersions.getExpectedVersions(), ", "));
 
-		for (String jdk : javaVersions.getExpectedVersions()) {
+			for (String jdk : javaVersions.getExpectedVersions()) {
 
-			JavaVersion javaVersion = JavaVersion.of(jdk.trim());
+				JavaVersion javaVersion = JavaVersion.of(jdk.trim());
 
-			JavaRuntimes.JdkInstallation jdkInstallation = javaVersions.getInstallation(javaVersion);
-			logger.log("JavaTooling", "✅ Found %s by %s", javaVersion.getName(), jdkInstallation.getImplementor());
+				JavaRuntimes.JdkInstallation jdkInstallation = javaVersions.getInstallation(javaVersion);
+				logger.log("JavaTooling", "✅ Found %s by %s", javaVersion.getName(), jdkInstallation.getImplementor());
+			}
 		}
 
 		return javaVersions;
@@ -86,7 +95,9 @@ class JavaToolingConfiguration {
 	}
 
 	@Bean
-	public MavenRuntime mavenRuntime(JavaVersions javaVersions, MavenVersion mavenVersion, MavenProperties properties) {
+	@ConditionalOnProperty(prefix = "tooling.maven", value = "enabled", havingValue = "true", matchIfMissing = true)
+	public MavenEnvironment mavenRuntime(JavaVersions javaVersions, MavenVersion mavenVersion,
+			MavenProperties properties) {
 
 		logger.log("JavaTooling", "🕵️ Checking presence of Maven %s…", mavenVersion.getExpectedVersion());
 
@@ -106,6 +117,22 @@ class JavaToolingConfiguration {
 		logger.log("JavaTooling", "✅ Found Maven %s", mavenInstallation);
 
 		return new MavenRuntime(workspace, logger, mavenInstallation, properties);
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = "tooling.maven", value = "enabled", havingValue = "false")
+	public MavenEnvironment disabledMavenRuntime() {
+		return new MavenEnvironment() {
+			@Override
+			public MavenEnvironment withJavaVersion(JavaVersion javaVersion) {
+				return this;
+			}
+
+			@Override
+			public MavenInvocationResult execute(SupportedProject project, CommandLine arguments) {
+				throw new UnsupportedOperationException("No Maven environment available in test profile");
+			}
+		};
 	}
 
 }

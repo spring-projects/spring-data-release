@@ -168,15 +168,6 @@ public class MavenRuntimeSupport {
 		return new SlfLogger(log, project);
 	}
 
-	public static class MavenInvocationResult {
-
-		private final List<String> log = new ArrayList<>();
-
-		public List<String> getLog() {
-			return log;
-		}
-	}
-
 	/**
 	 * Maven Logging Forwarder.
 	 */

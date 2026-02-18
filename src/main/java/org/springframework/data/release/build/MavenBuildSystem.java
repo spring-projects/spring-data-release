@@ -82,7 +82,7 @@ class MavenBuildSystem implements BuildSystem {
 	Workspace workspace;
 	ProjectionFactory projectionFactory;
 	Logger logger;
-	MavenRuntime mvn;
+	MavenEnvironment mvn;
 	DeploymentProperties properties;
 	Gpg gpg;
 

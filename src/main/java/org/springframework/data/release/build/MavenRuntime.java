@@ -38,7 +38,7 @@ import org.springframework.data.release.utils.Logger;
  * @author Mark Paluch
  */
 @Slf4j
-public class MavenRuntime extends MavenRuntimeSupport {
+public class MavenRuntime extends MavenRuntimeSupport implements MavenEnvironment {
 
 	private final Workspace workspace;
 	private final Logger logger;
@@ -67,10 +67,12 @@ public class MavenRuntime extends MavenRuntimeSupport {
 		logger.log("Maven", "Using " + getJdk() + " as default Java Runtime");
 	}
 
+	@Override
 	public MavenRuntime withJavaVersion(JavaVersion javaVersion) {
 		return new MavenRuntime(workspace, logger, getMavenHome(), properties, javaVersion);
 	}
 
+	@Override
 	public MavenInvocationResult execute(SupportedProject project, CommandLine arguments) {
 
 		logger.log(project, "📦 Executing mvn %s", arguments.toString());
