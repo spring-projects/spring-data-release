@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2022-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,14 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.release.build.Pom.RepositoryElementFactory;
+import org.springframework.data.release.git.Branch;
 import org.xmlbeam.XBProjector;
 
 /**
  * Unit tests for {@link MavenBuildSystem}.
  *
  * @author Mark Paluch
+ * @author Christoph Strobl
  */
 class MavenBuildSystemUnitTests {
 
@@ -80,7 +82,7 @@ class MavenBuildSystemUnitTests {
 	}
 
 	@Test
-	void ghActionsRegexShouldCaptureVesion() {
+	void ghActionsRegexShouldCaptureVersion() {
 
 		String workflow = """
 			- name: Setup Java and Maven
@@ -91,13 +93,67 @@ class MavenBuildSystemUnitTests {
 			  id: install-custom-java-version
 			""";
 
-		String newTag = "newTag";
-
-		String result = workflow.replaceAll(MavenBuildSystem.GH_ACTION_REGEX, "@" + newTag);
+		String result = MavenBuildSystem.updateGhActionReferencesToNewBranch(workflow, Branch.from("5.1.x"));
 
 		assertThat(result)
-			.contains("uses: spring-projects/spring-data-build/actions/setup-maven@newTag")
-			.contains("uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@newTag")
+			.contains("uses: spring-projects/spring-data-build/actions/setup-maven@5.1.x")
+			.contains("uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@5.1.x")
 			.contains("uses: actions/setup-java@v5.2.0");
+	}
+
+	@Test
+	void updateGhActionWorkflowPushBranchesReplacesMainAndIssuePatternOnlyInBranchesLine() {
+
+		String workflow = """
+			on:
+			  workflow_dispatch:
+			  push:
+			    branches: [ main, 'issue/**' ]
+			permissions: read-all
+			jobs:
+			  build-java:
+			    strategy:
+			      matrix:
+			        java-version: [ base, main ]
+			        mongodb-version: [ 'latest', '8.2', '8.0', '7.0' ]
+			""";
+
+		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+
+		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
+		assertThat(result).contains("java-version: [ base, main ]");
+	}
+
+	@Test
+	void updateGhActionWorkflowPushBranchesRemovesBranchesBetweenMainAndIssuePattern() {
+
+		String workflow = """
+			on:
+			  push:
+			    branches: [ main, 5.0.x, 4.5.x, 'issue/**' ]
+			jobs:
+			  build-java:
+			""";
+
+		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+
+		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
+		assertThat(result).doesNotContain("5.0.x").doesNotContain("4.5.x");
+	}
+
+	@Test
+	void leavesGhActionWorkflowPushBranchesIfNotForIssue() {
+
+		String workflow = """
+			on:
+			  push:
+			    branches: [ 5.0.x, 4.5.x ]
+			jobs:
+			  build-java:
+			""";
+
+		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+
+		assertThat(result).contains("branches: [ 5.0.x, 4.5.x ]");
 	}
 }

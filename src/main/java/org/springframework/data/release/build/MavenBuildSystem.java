@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.xml.transform.TransformerException;
@@ -72,6 +73,7 @@ import org.xmlbeam.io.StreamInput;
  * @author Oliver Gierke
  * @author Mark Paluch
  * @author Greg Turnquist
+ * @author Christoph Strobl
  */
 @Component
 @Order(100)
@@ -80,7 +82,11 @@ import org.xmlbeam.io.StreamInput;
 class MavenBuildSystem implements BuildSystem {
 
 	static String POM_XML = "pom.xml";
-	static String GH_ACTION_REGEX = "(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+";
+
+	static final Pattern GH_ACTION_REF_PATTERN = Pattern
+			.compile("(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+");
+	static final Pattern GH_ACTION_PUSH_BRANCHES_PATTERN = Pattern.compile(
+		"(branches:\\s*\\[\\s*)main((?:,\\s*[^,\\]]+)*)(\\s*,\\s*)'issue/\\*\\*'(\\s*])");
 
 	Workspace workspace;
 	ProjectionFactory projectionFactory;
@@ -137,7 +143,9 @@ class MavenBuildSystem implements BuildSystem {
 			return module;
 		}
 
-		// check if we have the build module in hand
+		/* check if we have the build module in hand
+		 * if so we need to update the public Github Actions located in the [actions] folder.
+		 * each action is located in a subfolder and named [action.yml] or [action.yaml]. */
 		if (module.getModule().getProject().equals(Projects.BUILD)) {
 			File ghActionsDirectory = workspace.getFile("actions", module.getSupportedProject());
 			if (ghActionsDirectory.isDirectory()) {
@@ -151,13 +159,16 @@ class MavenBuildSystem implements BuildSystem {
 					if (!ghActionFile.exists()) {
 						ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yaml", module.getSupportedProject());
 					}
-					if (ghActionFile.isFile()) {
-						setBranchForGithubAction(module, ghActionFile, targetBranch);
+					if (isYamlFile(ghActionFile)) {
+						updateGhActionToUseBranch(module, ghActionFile, targetBranch);
 					}
 				}
 			}
 		}
 
+		/* Github workflow YAML files located in .github/workflows need to be updated.
+		 * There is no need to update 'local' repository Github actions as those can only be referenced from
+		 * within a specific branch. */
 		File workflows = workspace.getFile(".github/workflows", module.getSupportedProject());
 		if (!workflows.isDirectory()) {
 			logger.log(module, "No GH Action workflows found, skipping config update.");
@@ -165,17 +176,17 @@ class MavenBuildSystem implements BuildSystem {
 		}
 
 		for (File workflowFile : workflows.listFiles()) {
-			if (!workflowFile.isFile() || (!workflowFile.getName().endsWith(".yml") && !workflowFile.getName().endsWith(".yaml"))) {
+			if (!isYamlFile(workflowFile)) {
 				continue;
 			}
 
-			setBranchForGithubAction(module, workflowFile, targetBranch);
+			updateGhActionToUseBranch(module, workflowFile, targetBranch);
 		}
 
 		return module;
 	}
 
-	void setBranchForGithubAction(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
+	void updateGhActionToUseBranch(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
 
 		if (!ghActionFile.isFile()) {
 			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
@@ -187,19 +198,19 @@ class MavenBuildSystem implements BuildSystem {
 			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
 			String content = new String(bytes, StandardCharsets.UTF_8);
 
-			String newContent = content.replaceAll(GH_ACTION_REGEX, String.format("@%s", branch));
+			String newContent = updateGhActionReferencesToNewBranch(content, branch);
+			newContent = updateGhActionWorkflowPushBranches(newContent, branch);
 
 			if (!newContent.equals(content)) {
-				logger.warn(moduleIteration, "GH action [%s] updated.".formatted(ghActionFile.getPath()));
+				logger.warn(moduleIteration, "GH action file [%s] updated.".formatted(ghActionFile.getPath()));
 				Files.write(ghActionFile.toPath(), newContent.getBytes(StandardCharsets.UTF_8));
 			} else {
-				logger.log(moduleIteration, "GH action [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
+				logger.log(moduleIteration, "GH action file [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
 			}
 		} catch (IOException e) {
 			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
 		}
 	}
-
 
 	@Override
 	@SneakyThrows
@@ -739,4 +750,43 @@ class MavenBuildSystem implements BuildSystem {
 
 		return s.getBytes(StandardCharsets.UTF_8);
 	}
+
+	/**
+	 * @param file must not be {@literal null}.
+	 * @return true if is a file that ends with either {@code .yml} or {@code .yaml}.
+	 */
+	private static boolean isYamlFile(File file) {
+		return file.isFile() && (file.getName().endsWith(".yml") || file.getName().endsWith(".yaml"));
+	}
+
+	/**
+	 * Replaces {@code uses} sections within GitHub Actions YAML string that points to spring-data-build with the given {@literal branch} version.
+	 *
+	 * @param yaml the full YAML content
+	 * @param branch the new branch (e.g. {@code "5.1.x"})
+	 * @return never {@literal null}.
+	 */
+	static String updateGhActionReferencesToNewBranch(String yaml, Branch branch) {
+		return GH_ACTION_REF_PATTERN.matcher(yaml)
+			.replaceAll(Matcher.quoteReplacement("@" + branch));
+	}
+
+	/**
+	 * Replaces the main branch and {@code 'issue/**'} pattern in the {@code branches}
+	 * section of a GitHub Actions workflow YAML string and removes any intermediate
+	 * branches
+	 *
+	 * @param yaml the full YAML content
+	 * @param newBranch the new branch (e.g. {@code "5.1.x"})
+	 * @return the content with {@code main} and {@code 'issue/**'} replaced by
+	 * {@code newBranchName} and {@code 'issue/newBranchName/**'}, and any intermediate
+	 * branches removed
+	 */
+	static String updateGhActionWorkflowPushBranches(String yaml, Branch newBranch) {
+
+		Matcher matcher = GH_ACTION_PUSH_BRANCHES_PATTERN.matcher(yaml);
+		String quoted = Matcher.quoteReplacement(newBranch.toString());
+		return matcher.replaceAll("$1" + quoted + "$3" + "'issue/" + quoted + "/**'" + "$4");
+	}
+
 }
