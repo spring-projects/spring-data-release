@@ -684,7 +684,8 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Map<String, Object> parameters = createParameters(GitProject.of(moduleIteration.getSupportedProject()));
 		Map<String, Object> body = new LinkedHashMap<>();
 
-		body.put("ref", Branch.from(moduleIteration).toString());
+		String branch = Branch.from(moduleIteration).toString();
+		body.put("ref", branch);
 
 		parameters.put("workflow_id", workflow.getId());
 
@@ -696,7 +697,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 					"Cannot trigger workflow '%s'. Status: %s".formatted(moduleIteration.getProject(), entity.getStatusCode()));
 		}
 
-		logger.log(moduleIteration, "Workflow '%s' started.", workflow.getName());
+		logger.log(moduleIteration, "Workflow '%s' on branch '%s' started.", workflow.getName(), branch);
 	}
 
 	@Cacheable("get-workflow")
