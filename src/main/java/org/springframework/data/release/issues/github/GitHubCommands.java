@@ -156,6 +156,7 @@ public class GitHubCommands extends TimedCommand {
 				+ render(iteration.getSupportStatus(), milestones));
 	}
 
+
 	private static String render(SupportStatus supportStatus, List<Milestone> milestones) {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append("Next %s Milestones:".formatted(supportStatus.name())).append(System.lineSeparator());

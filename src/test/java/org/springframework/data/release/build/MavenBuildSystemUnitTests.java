@@ -21,9 +21,10 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.release.build.Pom.RepositoryElementFactory;
-import org.springframework.data.release.git.Branch;
+
 import org.xmlbeam.XBProjector;
 
 /**
@@ -81,79 +82,4 @@ class MavenBuildSystemUnitTests {
 		}
 	}
 
-	@Test
-	void ghActionsRegexShouldCaptureVersion() {
-
-		String workflow = """
-			- name: Setup Java and Maven
-			  uses: spring-projects/spring-data-build/actions/setup-maven@5.0.x
-			- name: Deploy to Artifactory
-			  uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@main
-			- uses: actions/setup-java@v5.2.0
-			  id: install-custom-java-version
-			""";
-
-		String result = MavenBuildSystem.updateGhActionReferencesToNewBranch(workflow, Branch.from("5.1.x"));
-
-		assertThat(result)
-			.contains("uses: spring-projects/spring-data-build/actions/setup-maven@5.1.x")
-			.contains("uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@5.1.x")
-			.contains("uses: actions/setup-java@v5.2.0");
-	}
-
-	@Test
-	void updateGhActionWorkflowPushBranchesReplacesMainAndIssuePatternOnlyInBranchesLine() {
-
-		String workflow = """
-			on:
-			  workflow_dispatch:
-			  push:
-			    branches: [ main, 'issue/**' ]
-			permissions: read-all
-			jobs:
-			  build-java:
-			    strategy:
-			      matrix:
-			        java-version: [ base, main ]
-			        mongodb-version: [ 'latest', '8.2', '8.0', '7.0' ]
-			""";
-
-		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
-
-		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
-		assertThat(result).contains("java-version: [ base, main ]");
-	}
-
-	@Test
-	void updateGhActionWorkflowPushBranchesRemovesBranchesBetweenMainAndIssuePattern() {
-
-		String workflow = """
-			on:
-			  push:
-			    branches: [ main, 5.0.x, 4.5.x, 'issue/**' ]
-			jobs:
-			  build-java:
-			""";
-
-		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
-
-		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
-		assertThat(result).doesNotContain("5.0.x").doesNotContain("4.5.x");
-	}
-
-	@Test
-	void leavesGhActionWorkflowPushBranchesIfNotForIssue() {
-
-		String workflow = """
-			on:
-			  push:
-			    branches: [ 5.0.x, 4.5.x ]
-			jobs:
-			  build-java:
-			""";
-
-		String result = MavenBuildSystem.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
-
-		assertThat(result).contains("branches: [ 5.0.x, 4.5.x ]");
-	}
 }

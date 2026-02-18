@@ -20,12 +20,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,12 +41,15 @@ import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.ProjectAware;
+import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.ListWrapperCollector;
 import org.springframework.data.util.Streamable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Build executor service.
@@ -62,6 +63,7 @@ class BuildExecutor {
 	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
 	private final ExecutorService executor;
 	private final Workspace workspace;
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * Selects the build system for each module contained in the given iteration and executes the given function for it
@@ -179,19 +181,31 @@ class BuildExecutor {
 	@SneakyThrows
 	public JavaVersion detectJavaVersion(SupportedProject project) {
 
-		File ciProperties = workspace.getFile(InfrastructureOperations.CI_PROPERTIES, project);
+		File configJson = findConfigJson(project);
+		Map<String, Map<String, String>> map = objectMapper.readValue(configJson, Map.class);
+		String java = map.get("java").get("main");
 
-		if (!ciProperties.exists()) {
-			throw new IllegalStateException(String.format("Cannot find %s for project %s", ciProperties, project));
+		return JavaVersion.of(java);
+	}
+
+	private File findConfigJson(SupportedProject project) {
+
+		List<String> configJsonLocations = List.of(InfrastructureOperations.CONFIG_JSON,
+				".github/" + InfrastructureOperations.CONFIG_JSON, "ci/" + InfrastructureOperations.CONFIG_JSON,
+				"actions/env-config/" + InfrastructureOperations.CONFIG_JSON);
+
+		SupportedProject build = SupportedProject.of(Projects.BUILD, project.getStatus());
+		List<SupportedProject> projectCandidates = List.of(project, build);
+		for (SupportedProject projectCandidate : projectCandidates) {
+			for (String location : configJsonLocations) {
+				File file = workspace.getFile(location, projectCandidate);
+				if (file.isFile()) {
+					return file;
+				}
+			}
 		}
-
-		Properties properties = new Properties();
-
-		try (FileInputStream fis = new FileInputStream(ciProperties)) {
-			properties.load(fis);
-		}
-
-		return JavaVersion.fromDockerTag(properties.getProperty("java.main.tag"));
+		throw new IllegalStateException(
+				String.format("Cannot find %s for project %s", InfrastructureOperations.CONFIG_JSON, project));
 	}
 
 	/**

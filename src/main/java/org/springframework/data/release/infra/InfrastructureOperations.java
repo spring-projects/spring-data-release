@@ -20,17 +20,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.NameFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.Branch;
+import org.springframework.data.release.git.BranchMapping;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.issues.Tickets;
@@ -48,15 +57,21 @@ import org.springframework.stereotype.Component;
 
 /**
  * @author Mark Paluch
+ * @author Christoph Strobl
  */
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class InfrastructureOperations extends TimedCommand {
 
-	public static final String CI_PROPERTIES = "ci/pipeline.properties";
+	public static final String CONFIG_JSON = "config.json";
 
 	public static final String MAVEN_PROPERTIES = "dependency-upgrade-maven.properties";
+
+	static final Pattern GH_ACTION_REF_PATTERN = Pattern
+			.compile("(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+");
+	static final Pattern GH_ACTION_PUSH_BRANCHES_PATTERN = Pattern
+			.compile("(branches:\\s*\\[)\\s*main((?:\\s*,\\s*[^,\\]]+)*)(\\s*,\\s*)'issue(.*)\\*\\*'(\\s*])");
 
 	DependencyOperations dependencies;
 	ReadmeProcessor readmeProcessor;
@@ -66,13 +81,13 @@ public class InfrastructureOperations extends TimedCommand {
 	Logger logger;
 
 	/**
-	 * Distribute {@link #CI_PROPERTIES} from {@link Projects#BUILD} to all modules within {@link TrainIteration}.
+	 * Distribute build config from {@link Projects#BUILD} to all modules within {@link TrainIteration}.
 	 *
 	 * @param iteration
 	 */
 	void distributeCiProperties(TrainIteration iteration) {
-		distributeFiles(iteration, Arrays.asList("ci/pipeline.properties", ".mvn/extensions.xml", ".mvn/jvm.config"),
-				"CI Properties", Predicates.isTrue());
+		distributeFiles(iteration, Arrays.asList(".mvn/extensions.xml", ".mvn/jvm.config"), "Maven Build Config",
+				Predicates.isTrue());
 	}
 
 	void distribute(TrainIteration iteration, String file, String commitMessage) {
@@ -119,6 +134,127 @@ public class InfrastructureOperations extends TimedCommand {
 			git.commit(module, String.format("Update %s.", description), Optional.empty(), false);
 			git.push(module);
 		});
+	}
+
+	/**
+	 * Updates GitHub Actions YAML files to reference the new branch. This includes both public GitHub Actions located in
+	 * the [actions] folder and workflow YAML files located in [.github/workflows].
+	 *
+	 * @param module
+	 * @param branches
+	 * @return
+	 */
+	public ModuleIteration updateGhActionsConfig(ModuleIteration module, BranchMapping branches) {
+
+		Branch targetBranch = branches.getTargetBranch(module.getProject());
+		if (targetBranch == null) {
+			logger.warn(module, "No target branch available, skipping GH action config update.");
+			return module;
+		}
+
+		/* check if we have the build module in hand
+		 * if so we need to update the public GitHub Actions located in the [actions] folder.
+		 * each action is located in a subfolder and named [action.yml] or [action.yaml]. */
+		List<String> actionFileCandidates = List.of("action.yml", "action.yaml");
+		if (module.getProject().equals(Projects.BUILD)) {
+
+			File ghActionsDirectory = workspace.getFile("actions", module.getSupportedProject());
+			if (ghActionsDirectory.isDirectory()) {
+
+				Collection<File> actions = FileUtils.listFiles(ghActionsDirectory, new NameFileFilter(actionFileCandidates),
+						TrueFileFilter.INSTANCE);
+				for (File actionFile : actions) {
+					if (isYamlFile(actionFile)) {
+						updateActionBranch(module, actionFile, targetBranch);
+					}
+				}
+			}
+		}
+
+		/* Github workflow YAML files located in .github/workflows need to be updated.
+		 * There is no need to update 'local' repository Github actions as those can only be referenced from
+		 * within a specific branch. */
+		File workflows = workspace.getFile(".github/workflows", module.getSupportedProject());
+		if (!workflows.isDirectory()) {
+			logger.log(module, "No GH Action workflows found, skipping config update.");
+			return module;
+		}
+
+		Collection<File> workflowFiles = FileUtils.listFiles(workflows, new SuffixFileFilter(".yml", ".yaml"),
+				TrueFileFilter.INSTANCE);
+
+		for (File workflowFile : workflowFiles) {
+			if (!isYamlFile(workflowFile) || workflowFile.getName().contains("project.yml")
+					|| workflowFile.getName().contains("codeql.yml")) {
+				continue;
+			}
+
+			updateActionBranch(module, workflowFile, targetBranch);
+		}
+
+		return module;
+	}
+
+	void updateActionBranch(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
+
+		if (!ghActionFile.isFile()) {
+			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
+			return;
+		}
+
+		try {
+
+			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
+			String content = new String(bytes, StandardCharsets.UTF_8);
+
+			String newContent = updateGhActionReferencesToNewBranch(content, branch);
+			newContent = updateGhActionWorkflowPushBranches(newContent, branch);
+
+			if (!newContent.equals(content)) {
+				logger.log(moduleIteration, "GH action file [%s] updated.".formatted(ghActionFile.getPath()));
+				Files.writeString(ghActionFile.toPath(), newContent);
+			} else {
+				logger.log(moduleIteration, "GH action file [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
+			}
+		} catch (IOException e) {
+			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
+		}
+	}
+
+	/**
+	 * @param file must not be {@literal null}.
+	 * @return true if is a file that ends with either {@code .yml} or {@code .yaml}.
+	 */
+	private static boolean isYamlFile(File file) {
+		return file.isFile() && (file.getName().endsWith(".yml") || file.getName().endsWith(".yaml"));
+	}
+
+	/**
+	 * Replaces {@code uses} sections within GitHub Actions YAML string that points to spring-data-build with the given
+	 * {@literal branch} version.
+	 *
+	 * @param yaml the full YAML content
+	 * @param branch the new branch (e.g. {@code "5.1.x"})
+	 * @return never {@literal null}.
+	 */
+	static String updateGhActionReferencesToNewBranch(String yaml, Branch branch) {
+		return GH_ACTION_REF_PATTERN.matcher(yaml).replaceAll(Matcher.quoteReplacement("@" + branch));
+	}
+
+	/**
+	 * Replaces the main branch and {@code 'issue/**'} pattern in the {@code branches} section of a GitHub Actions
+	 * workflow YAML string and removes any intermediate branches
+	 *
+	 * @param yaml the full YAML content
+	 * @param newBranch the new branch (e.g. {@code "5.1.x"})
+	 * @return the content with {@code main} and {@code 'issue/**'} replaced by {@code newBranchName} and
+	 *         {@code 'issue/newBranchName/**'}, and any intermediate branches removed
+	 */
+	static String updateGhActionWorkflowPushBranches(String yaml, Branch newBranch) {
+
+		Matcher matcher = GH_ACTION_PUSH_BRANCHES_PATTERN.matcher(yaml);
+		String quoted = Matcher.quoteReplacement(newBranch.toString());
+		return matcher.replaceAll("branches: [ " + quoted + ", 'issue/" + quoted + "/**' ]");
 	}
 
 	private void verifyExistingFiles(Streamable<ModuleIteration> train, String file, String description) {

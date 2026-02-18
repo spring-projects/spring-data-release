@@ -21,7 +21,6 @@ import static org.springframework.data.release.model.Projects.*;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 
 import java.io.BufferedInputStream;
@@ -32,10 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.xml.transform.TransformerException;
@@ -43,6 +40,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.io.IOUtils;
+
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.release.build.CommandLine.Argument;
@@ -54,9 +52,6 @@ import org.springframework.data.release.deployment.DeploymentProperties;
 import org.springframework.data.release.deployment.DeploymentProperties.Authentication;
 import org.springframework.data.release.deployment.DeploymentProperties.MavenCentral;
 import org.springframework.data.release.deployment.StagingRepository;
-import org.springframework.data.release.git.Branch;
-import org.springframework.data.release.git.BranchMapping;
-import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
@@ -64,6 +59,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+
 import org.xmlbeam.ProjectionFactory;
 import org.xmlbeam.XBProjector;
 import org.xmlbeam.dom.DOMAccess;
@@ -82,11 +78,6 @@ import org.xmlbeam.io.StreamInput;
 class MavenBuildSystem implements BuildSystem {
 
 	static String POM_XML = "pom.xml";
-
-	static final Pattern GH_ACTION_REF_PATTERN = Pattern
-			.compile("(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+");
-	static final Pattern GH_ACTION_PUSH_BRANCHES_PATTERN = Pattern.compile(
-		"(branches:\\s*\\[\\s*)main((?:,\\s*[^,\\]]+)*)(\\s*,\\s*)'issue/\\*\\*'(\\s*])");
 
 	Workspace workspace;
 	ProjectionFactory projectionFactory;
@@ -131,120 +122,6 @@ class MavenBuildSystem implements BuildSystem {
 				updater.updateRepository(pom);
 			});
 		}
-
-		return module;
-	}
-
-	public ModuleIteration updateGhActionsConfig(ModuleIteration module, BranchMapping branches) {
-
-		Branch targetBranch = branches.getTargetBranch(module.getProject());
-		if (targetBranch == null) {
-			logger.warn(module, "No target branch available, skipping GH action config update.");
-			return module;
-		}
-
-		/* check if we have the build module in hand
-		 * if so we need to update the public Github Actions located in the [actions] folder.
-		 * each action is located in a subfolder and named [action.yml] or [action.yaml]. */
-		if (module.getModule().getProject().equals(Projects.BUILD)) {
-			File ghActionsDirectory = workspace.getFile("actions", module.getSupportedProject());
-			if (ghActionsDirectory.isDirectory()) {
-				for (File ghActionDirectory : ghActionsDirectory.listFiles()) {
-
-					if (!ghActionDirectory.isDirectory()) {
-						continue;
-					}
-
-					File ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yml", module.getSupportedProject());
-					if (!ghActionFile.exists()) {
-						ghActionFile = workspace.getFile("actions/" + ghActionDirectory.getName() + "/action.yaml", module.getSupportedProject());
-					}
-					if (isYamlFile(ghActionFile)) {
-						updateGhActionToUseBranch(module, ghActionFile, targetBranch);
-					}
-				}
-			}
-		}
-
-		/* Github workflow YAML files located in .github/workflows need to be updated.
-		 * There is no need to update 'local' repository Github actions as those can only be referenced from
-		 * within a specific branch. */
-		File workflows = workspace.getFile(".github/workflows", module.getSupportedProject());
-		if (!workflows.isDirectory()) {
-			logger.log(module, "No GH Action workflows found, skipping config update.");
-			return module;
-		}
-
-		for (File workflowFile : workflows.listFiles()) {
-			if (!isYamlFile(workflowFile)) {
-				continue;
-			}
-
-			updateGhActionToUseBranch(module, workflowFile, targetBranch);
-		}
-
-		return module;
-	}
-
-	void updateGhActionToUseBranch(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
-
-		if (!ghActionFile.isFile()) {
-			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
-			return;
-		}
-
-		try {
-
-			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
-			String content = new String(bytes, StandardCharsets.UTF_8);
-
-			String newContent = updateGhActionReferencesToNewBranch(content, branch);
-			newContent = updateGhActionWorkflowPushBranches(newContent, branch);
-
-			if (!newContent.equals(content)) {
-				logger.warn(moduleIteration, "GH action file [%s] updated.".formatted(ghActionFile.getPath()));
-				Files.write(ghActionFile.toPath(), newContent.getBytes(StandardCharsets.UTF_8));
-			} else {
-				logger.log(moduleIteration, "GH action file [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
-			}
-		} catch (IOException e) {
-			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
-		}
-	}
-
-	@Override
-	@SneakyThrows
-	public ModuleIteration updateBuildConfig(ModuleIteration module, BranchMapping branches) {
-
-		File jenkinsfile = workspace.getFile("Jenkinsfile", module.getSupportedProject());
-		if (!jenkinsfile.exists()) {
-			logger.log(module, "No Jenkinsfile found, attempting to update GH Actions config.");
-			return updateGhActionsConfig(module, branches);
-		}
-
-		byte[] bytes = Files.readAllBytes(jenkinsfile.toPath());
-		String content = new String(bytes, StandardCharsets.UTF_8);
-
-		for (ModuleIteration participatingModule : module.getTrainIteration()) {
-
-			Branch source = branches.getSourceBranch(participatingModule.getProject());
-			Branch target = branches.getTargetBranch(participatingModule.getProject());
-
-			if (source == null || target == null) {
-				continue;
-			}
-
-			GitProject project = GitProject.of(participatingModule.getSupportedProject());
-
-			String dependency = String.format("%s/%s", project.getRepositoryName(), source);
-			String replacement = String.format("%s/%s", project.getRepositoryName(), target);
-
-			content = content.replace(dependency, replacement);
-		}
-
-		Files.write(jenkinsfile.toPath(), content.getBytes(StandardCharsets.UTF_8));
-
-		logger.warn(module, "Jenkinsfile updated.");
 
 		return module;
 	}
@@ -749,44 +626,6 @@ class MavenBuildSystem implements BuildSystem {
 		}
 
 		return s.getBytes(StandardCharsets.UTF_8);
-	}
-
-	/**
-	 * @param file must not be {@literal null}.
-	 * @return true if is a file that ends with either {@code .yml} or {@code .yaml}.
-	 */
-	private static boolean isYamlFile(File file) {
-		return file.isFile() && (file.getName().endsWith(".yml") || file.getName().endsWith(".yaml"));
-	}
-
-	/**
-	 * Replaces {@code uses} sections within GitHub Actions YAML string that points to spring-data-build with the given {@literal branch} version.
-	 *
-	 * @param yaml the full YAML content
-	 * @param branch the new branch (e.g. {@code "5.1.x"})
-	 * @return never {@literal null}.
-	 */
-	static String updateGhActionReferencesToNewBranch(String yaml, Branch branch) {
-		return GH_ACTION_REF_PATTERN.matcher(yaml)
-			.replaceAll(Matcher.quoteReplacement("@" + branch));
-	}
-
-	/**
-	 * Replaces the main branch and {@code 'issue/**'} pattern in the {@code branches}
-	 * section of a GitHub Actions workflow YAML string and removes any intermediate
-	 * branches
-	 *
-	 * @param yaml the full YAML content
-	 * @param newBranch the new branch (e.g. {@code "5.1.x"})
-	 * @return the content with {@code main} and {@code 'issue/**'} replaced by
-	 * {@code newBranchName} and {@code 'issue/newBranchName/**'}, and any intermediate
-	 * branches removed
-	 */
-	static String updateGhActionWorkflowPushBranches(String yaml, Branch newBranch) {
-
-		Matcher matcher = GH_ACTION_PUSH_BRANCHES_PATTERN.matcher(yaml);
-		String quoted = Matcher.quoteReplacement(newBranch.toString());
-		return matcher.replaceAll("$1" + quoted + "$3" + "'issue/" + quoted + "/**'" + "$4");
 	}
 
 }

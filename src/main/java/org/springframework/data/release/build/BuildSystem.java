@@ -17,7 +17,6 @@ package org.springframework.data.release.build;
 
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.StagingRepository;
-import org.springframework.data.release.git.BranchMapping;
 import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
@@ -43,14 +42,6 @@ interface BuildSystem extends Plugin<SupportedProject> {
 	 * @param updateInformation must not be {@literal null}.
 	 */
 	<M extends ProjectAware> M updateProjectDescriptors(M iteration, UpdateInformation updateInformation);
-
-	/**
-	 * Updates the project build config for the given {@link ModuleIteration}.
-	 *
-	 * @param iteration must not be {@literal null}.
-	 * @param branches must not be {@literal null}.
-	 */
-	ModuleIteration updateBuildConfig(ModuleIteration iteration, BranchMapping branches);
 
 	/**
 	 * Prepares the project descriptor of the {@link ModuleIteration} for the given release {@link Phase}.

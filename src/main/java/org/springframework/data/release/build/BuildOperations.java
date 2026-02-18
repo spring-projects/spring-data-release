@@ -33,6 +33,7 @@ import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.MavenPublisher;
 import org.springframework.data.release.deployment.StagingRepository;
 import org.springframework.data.release.git.BranchMapping;
+import org.springframework.data.release.infra.InfrastructureOperations;
 import org.springframework.data.release.io.Workspace;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
@@ -61,6 +62,7 @@ public class BuildOperations {
 	private final @NonNull MavenProperties properties;
 	private final @NonNull BuildExecutor executor;
 	private final @NonNull MavenPublisher publisher;
+	private final @NonNull InfrastructureOperations infrastructure;
 	private final Workspace workspace;
 
 	/**
@@ -83,12 +85,12 @@ public class BuildOperations {
 		logger.log(iteration, "Update Project Descriptors done: %s", summary);
 	}
 
-	public void updateBuildConfig(TrainIteration iteration, BranchMapping branches) throws Exception {
+	public void updateBuildConfig(TrainIteration iteration, BranchMapping branches) {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
 
 		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
-				(system, it) -> system.updateBuildConfig(it, branches));
+				(system, it) -> infrastructure.updateGhActionsConfig(it, branches));
 
 		logger.log(iteration, "Update Build config done: %s", summary);
 	}
