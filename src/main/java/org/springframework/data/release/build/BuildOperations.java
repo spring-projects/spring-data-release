@@ -27,8 +27,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.assertj.core.util.VisibleForTesting;
-
 import org.springframework.data.release.deployment.DeploymentInformation;
 import org.springframework.data.release.deployment.MavenPublisher;
 import org.springframework.data.release.deployment.StagingRepository;
@@ -119,7 +117,6 @@ public class BuildOperations {
 	 * @param phase must not be {@literal null}.
 	 * @return
 	 */
-	@VisibleForTesting
 	public ModuleIteration prepareVersion(ModuleIteration iteration, Phase phase) {
 
 		Assert.notNull(iteration, "Module iteration must not be null!");
