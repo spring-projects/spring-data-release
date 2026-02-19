@@ -140,6 +140,24 @@ public class InfrastructureCommands extends TimedCommand {
 	}
 
 	/**
+	 * Update the triggering branch for GH workflows across all modules.
+	 *
+	 * @param iteration
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	@CliCommand(value = "infra workflow update-on-push-branches")
+	public void updateGitHubActionsBranches(@CliOption(key = "", mandatory = true) TrainIteration iteration)
+			throws IOException, InterruptedException {
+
+		logger.log(iteration, "Updating triggering branches in GH Workflows for Spring Data…");
+
+		git.prepare(iteration);
+
+		infra.updateGhActionsConfig(iteration);
+	}
+
+	/**
 	 * Generate GitHub Readme files.
 	 *
 	 * @param iteration

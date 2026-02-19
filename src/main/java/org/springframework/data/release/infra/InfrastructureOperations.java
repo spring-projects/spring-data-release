@@ -70,8 +70,11 @@ public class InfrastructureOperations extends TimedCommand {
 
 	static final Pattern GH_ACTION_REF_PATTERN = Pattern
 			.compile("(?<=uses: spring-projects/spring-data-build/actions/[\\w-]+)@[\\w./-]+");
+
+	static final Pattern GH_ACTION_NAME_PATTERN = Pattern.compile("name:(.*CI.*)");
+
 	static final Pattern GH_ACTION_PUSH_BRANCHES_PATTERN = Pattern
-			.compile("(branches:\\s*\\[)\\s*main((?:\\s*,\\s*[^,\\]]+)*)(\\s*,\\s*)'issue(.*)\\*\\*'(\\s*])");
+			.compile("branches:(.*\\[.*\\s*\\])");
 
 	DependencyOperations dependencies;
 	ReadmeProcessor readmeProcessor;
@@ -136,6 +139,22 @@ public class InfrastructureOperations extends TimedCommand {
 		});
 	}
 
+	public void updateGhActionsConfig(TrainIteration iteration) {
+
+		ExecutionUtils.run(executor, iteration, module -> {
+
+			BranchMapping branchMapping = new BranchMapping();
+			Branch buildBranch = Branch.from(iteration.getModule(Projects.BUILD));
+			branchMapping.add(Projects.BUILD, buildBranch, buildBranch);
+			branchMapping.add(module.getProject(), Branch.from(module), Branch.from(module));
+			updateGhActionsConfig(module, branchMapping);
+
+			git.commit(module, "Update GitHub action branch triggers.", Optional.empty(), false);
+			git.push(module);
+		});
+
+	}
+
 	/**
 	 * Updates GitHub Actions YAML files to reference the new branch. This includes both public GitHub Actions located in
 	 * the [actions] folder and workflow YAML files located in [.github/workflows].
@@ -165,7 +184,9 @@ public class InfrastructureOperations extends TimedCommand {
 						TrueFileFilter.INSTANCE);
 				for (File actionFile : actions) {
 					if (isYamlFile(actionFile)) {
-						updateActionBranch(module, actionFile, targetBranch);
+						if (updateActionBranch(module, actionFile, targetBranch, targetBranch)) {
+							git.add(module.getSupportedProject(), actionFile);
+						}
 					}
 				}
 			}
@@ -189,17 +210,26 @@ public class InfrastructureOperations extends TimedCommand {
 				continue;
 			}
 
-			updateActionBranch(module, workflowFile, targetBranch);
+			Branch buildBranch = branches.getTargetBranch(Projects.BUILD);
+			if (updateActionBranch(module, workflowFile, targetBranch, buildBranch)) {
+				git.add(module.getSupportedProject(), workflowFile);
+			}
 		}
 
 		return module;
 	}
 
-	void updateActionBranch(ModuleIteration moduleIteration, File ghActionFile, Branch branch) {
+	/**
+	 * @param moduleIteration
+	 * @param ghActionFile
+	 * @param branch branch of the actual project.
+	 * @param buildBranch branch used by Spring Data Build.
+	 */
+	boolean updateActionBranch(ModuleIteration moduleIteration, File ghActionFile, Branch branch, Branch buildBranch) {
 
 		if (!ghActionFile.isFile()) {
 			logger.log(moduleIteration, "Not a GH action file [%s]. Skipping branch update.", ghActionFile.getPath());
-			return;
+			return false;
 		}
 
 		try {
@@ -207,18 +237,25 @@ public class InfrastructureOperations extends TimedCommand {
 			byte[] bytes = Files.readAllBytes(ghActionFile.toPath());
 			String content = new String(bytes, StandardCharsets.UTF_8);
 
-			String newContent = updateGhActionReferencesToNewBranch(content, branch);
-			newContent = updateGhActionWorkflowPushBranches(newContent, branch);
+			String newContent = updateActionRefs(content, buildBranch);
+			newContent = updateOnPushBranches(newContent, branch);
+
+			if (ghActionFile.getName().contains("ci.y")) {
+				newContent = updateActionName(newContent, "CI " + branch);
+			}
 
 			if (!newContent.equals(content)) {
 				logger.log(moduleIteration, "GH action file [%s] updated.".formatted(ghActionFile.getPath()));
 				Files.writeString(ghActionFile.toPath(), newContent);
+				return true;
 			} else {
 				logger.log(moduleIteration, "GH action file [%s] unchanged. Skipping.".formatted(ghActionFile.getPath()));
 			}
 		} catch (IOException e) {
 			logger.warn(moduleIteration, "GH action file [%s] update failed.", ghActionFile.getPath());
 		}
+
+		return false;
 	}
 
 	/**
@@ -237,7 +274,7 @@ public class InfrastructureOperations extends TimedCommand {
 	 * @param branch the new branch (e.g. {@code "5.1.x"})
 	 * @return never {@literal null}.
 	 */
-	static String updateGhActionReferencesToNewBranch(String yaml, Branch branch) {
+	static String updateActionRefs(String yaml, Branch branch) {
 		return GH_ACTION_REF_PATTERN.matcher(yaml).replaceAll(Matcher.quoteReplacement("@" + branch));
 	}
 
@@ -245,16 +282,49 @@ public class InfrastructureOperations extends TimedCommand {
 	 * Replaces the main branch and {@code 'issue/**'} pattern in the {@code branches} section of a GitHub Actions
 	 * workflow YAML string and removes any intermediate branches
 	 *
-	 * @param yaml the full YAML content
-	 * @param newBranch the new branch (e.g. {@code "5.1.x"})
+	 * @param yaml the full YAML content.
+	 * @param branch the new branch (e.g. {@code "5.1.x"}).
 	 * @return the content with {@code main} and {@code 'issue/**'} replaced by {@code newBranchName} and
 	 *         {@code 'issue/newBranchName/**'}, and any intermediate branches removed
 	 */
-	static String updateGhActionWorkflowPushBranches(String yaml, Branch newBranch) {
+	static String updateOnPushBranches(String yaml, Branch branch) {
 
 		Matcher matcher = GH_ACTION_PUSH_BRANCHES_PATTERN.matcher(yaml);
-		String quoted = Matcher.quoteReplacement(newBranch.toString());
-		return matcher.replaceAll("branches: [ " + quoted + ", 'issue/" + quoted + "/**' ]");
+		String quoted = Matcher.quoteReplacement(branch.toString());
+
+		if (matcher.find()) {
+
+			String group = matcher.group(1);
+			String onBranches;
+			if (group.contains("issue/")) {
+				if (Branch.MAIN.equals(branch)) {
+					onBranches = "branches: [ " + quoted + ", 'issue/**' ]";
+				} else {
+					onBranches = "branches: [ " + quoted + ", 'issue/" + quoted + "/**' ]";
+				}
+			} else {
+				onBranches = "branches: [ " + quoted + " ]";
+			}
+
+			return matcher.replaceAll(onBranches);
+		}
+
+		return yaml;
+	}
+
+	/**
+	 * Update the name of a GitHub Action if it contains "CI" to reflect the new branch name.
+	 *
+	 * @param yaml the full YAML content
+	 * @param name the name to use.
+	 * @return updated YAML content.
+	 */
+	static String updateActionName(String yaml, String name) {
+
+		Matcher matcher = GH_ACTION_NAME_PATTERN.matcher(yaml);
+		String quoted = Matcher.quoteReplacement(name);
+		return matcher.replaceAll("name: " + quoted);
+
 	}
 
 	private void verifyExistingFiles(Streamable<ModuleIteration> train, String file, String description) {
@@ -314,4 +384,5 @@ public class InfrastructureOperations extends TimedCommand {
 			}
 		});
 	}
+
 }

@@ -912,6 +912,30 @@ public class GitOperations {
 	}
 
 	/**
+	 * Adds the {@code file} to the staging area.
+	 *
+	 * @param project must not be {@literal null}.
+	 * @param file must not be {@literal null} or empty.
+	 */
+	public void add(SupportedProject project, File file) {
+
+		Assert.notNull(project, "Project must not be null!");
+
+		logger.log(project, "git add \"%s\"", file);
+
+		doWithGit(project, git -> {
+
+			File base = workspace.getProjectDirectory(project);
+			String relative = base.toURI().relativize(file.toURI()).getPath();
+
+			AddCommand commitCommand = git.add()//
+					.addFilepattern(relative);
+
+			commitCommand.call();
+		});
+	}
+
+	/**
 	 * Adds the {@code filepattern} to the staging area.
 	 *
 	 * @param project must not be {@literal null}.

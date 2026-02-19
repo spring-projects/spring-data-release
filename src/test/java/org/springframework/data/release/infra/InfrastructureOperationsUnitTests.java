@@ -41,7 +41,7 @@ class InfrastructureOperationsUnitTests {
 				  id: install-custom-java-version
 				""";
 
-		String result = InfrastructureOperations.updateGhActionReferencesToNewBranch(workflow, Branch.from("5.1.x"));
+		String result = InfrastructureOperations.updateActionRefs(workflow, Branch.from("5.1.x"));
 
 		assertThat(result).contains("uses: spring-projects/spring-data-build/actions/setup-maven@5.1.x")
 				.contains("uses: spring-projects/spring-data-build/actions/maven-artifactory-deploy@5.1.x")
@@ -65,10 +65,39 @@ class InfrastructureOperationsUnitTests {
 				        mongodb-version: [ 'latest', '8.2', '8.0', '7.0' ]
 				""";
 
-		String result = InfrastructureOperations.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+		String result = InfrastructureOperations.updateOnPushBranches(workflow, Branch.from("5.1.x"));
 
 		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
 		assertThat(result).contains("java-version: [ base, main ]");
+	}
+
+	@Test
+	void updatesBranchesToMainCorrectly() {
+
+		String workflow = """
+				on:
+				  workflow_dispatch:
+				  push:
+				    branches: [ main, 'issue/**' ]
+				""";
+
+		String result = InfrastructureOperations.updateOnPushBranches(workflow, Branch.MAIN);
+
+		assertThat(result).contains("branches: [ main, 'issue/**' ]");
+	}
+
+	@Test
+	void updatesBomBranchesCorrectly() {
+
+		String workflow = """
+				on:
+				  push:
+				    branches: [ main, '2025.1.x', '2025.0.x' ]
+				""";
+
+		String result = InfrastructureOperations.updateOnPushBranches(workflow, Branch.from("2025.1.x"));
+
+		assertThat(result).contains("branches: [ 2025.1.x ]");
 	}
 
 	@Test
@@ -82,26 +111,25 @@ class InfrastructureOperationsUnitTests {
 				  build-java:
 				""";
 
-		String result = InfrastructureOperations.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+		String result = InfrastructureOperations.updateOnPushBranches(workflow, Branch.from("5.1.x"));
 
 		assertThat(result).contains("branches: [ 5.1.x, 'issue/5.1.x/**' ]");
 		assertThat(result).doesNotContain("5.0.x").doesNotContain("4.5.x");
 	}
 
 	@Test
-	void leavesGhActionWorkflowPushBranchesIfNotForIssue() {
+	void updatesName() {
 
 		String workflow = """
+				name: CI Build
 				on:
 				  workflow_dispatch:
 				  push:
 				    branches: [ 5.0.x, 4.5.x ]
-				jobs:
-				  build-java:
 				""";
 
-		String result = InfrastructureOperations.updateGhActionWorkflowPushBranches(workflow, Branch.from("5.1.x"));
+		String result = InfrastructureOperations.updateActionName(workflow, "CI 5.1.x");
 
-		assertThat(result).contains("workflow_dispatch").contains("branches: [ 5.0.x, 4.5.x ]");
+		assertThat(result).contains("name: CI 5.1.x");
 	}
 }
