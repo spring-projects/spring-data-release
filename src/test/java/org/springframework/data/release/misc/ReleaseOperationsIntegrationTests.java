@@ -33,7 +33,6 @@ import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
-import org.springframework.plugin.core.PluginRegistry;
 
 /**
  * Integration tests for {@link ReleaseOperations}.
@@ -43,7 +42,7 @@ import org.springframework.plugin.core.PluginRegistry;
 @Disabled("Requires changes to application-test.properties to enable remote GitHub/Jira access")
 class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 
-	@Autowired PluginRegistry<IssueTracker, SupportedProject> trackers;
+	@Autowired IssueTracker tracker;
 
 	@Autowired GitOperations gitOperations;
 
@@ -56,8 +55,6 @@ class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 		SupportedProject project = from.getSupportedProject(Projects.MONGO_DB);
 
 		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(project, from, to);
-		IssueTracker tracker = trackers.getRequiredPluginFor(project);
-
 		Tickets tickets = tracker.findTickets(to.getModule(Projects.MONGO_DB), ticketReferences);
 
 		assertThat(tickets).hasSize(15);
@@ -72,8 +69,6 @@ class ReleaseOperationsIntegrationTests extends AbstractIntegrationTests {
 		SupportedProject project = from.getSupportedProject(Projects.R2DBC);
 
 		List<TicketReference> ticketReferences = gitOperations.getTicketReferencesBetween(project, from, to);
-		IssueTracker tracker = trackers.getRequiredPluginFor(project);
-
 		Tickets tickets = tracker.findTickets(to.getModule(Projects.R2DBC), ticketReferences);
 
 		assertThat(tickets).hasSize(22);

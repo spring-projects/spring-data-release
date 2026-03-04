@@ -30,16 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
@@ -425,7 +416,7 @@ public class DependencyOperations {
 			}
 		}
 
-		Set<Ticket> result = new LinkedHashSet<>();
+		Set<Ticket> result = new TreeSet<>(Comparator.comparing(Ticket::getSummary));
 		upgradeTickets.forEach((k, v) -> {
 
 			String summary = getUpgradeTicketSummary(k.dependency(), k.version());

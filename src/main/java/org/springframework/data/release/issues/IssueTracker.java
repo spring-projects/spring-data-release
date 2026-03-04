@@ -23,7 +23,6 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
-import org.springframework.plugin.core.Plugin;
 
 /**
  * Interface for issue tracker operations.
@@ -31,7 +30,7 @@ import org.springframework.plugin.core.Plugin;
  * @author Oliver Gierke
  * @author Mark Paluch
  */
-public interface IssueTracker extends Plugin<SupportedProject> {
+public interface IssueTracker {
 
 	/**
 	 * Reset internal state (cache, etc).
@@ -167,14 +166,6 @@ public interface IssueTracker extends Plugin<SupportedProject> {
 	 * @return
 	 */
 	Ticket assignReleaseTicketToMe(ModuleIteration module);
-
-	/**
-	 * Start progress on release tickets.
-	 *
-	 * @param module
-	 * @return
-	 */
-	Ticket startReleaseTicketProgress(ModuleIteration module);
 
 	/**
 	 * Returns the {@link Changelog} for the given {@link ModuleIteration}.

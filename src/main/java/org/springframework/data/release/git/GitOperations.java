@@ -78,7 +78,6 @@ import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
 import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
@@ -104,7 +103,7 @@ public class GitOperations {
 	Executor executor;
 	Workspace workspace;
 	Logger logger;
-	PluginRegistry<IssueTracker, SupportedProject> issueTracker;
+	IssueTracker issueTracker;
 	GitProperties gitProperties;
 	Gpg gpg;
 
@@ -486,9 +485,6 @@ public class GitOperations {
 
 		Assert.notNull(project, "Project must not be null!");
 
-		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
-
 		return doWithGit(project, git -> {
 
 			update(project);
@@ -497,7 +493,7 @@ public class GitOperations {
 					.filter(branch -> branch.isIssueBranch(project.getProject().getTracker()))//
 					.collect(Collectors.toMap(Branch::toString, branch -> branch));
 
-			Collection<Ticket> tickets = tracker.findTickets(project, ticketIds.keySet().stream()
+			Collection<Ticket> tickets = issueTracker.findTickets(project, ticketIds.keySet().stream()
 					.map(it -> TicketReference.ofTicket(it, TicketReference.Style.GitHub, GitHubRepository.implicit()))
 					.collect(Collectors.toList()));
 
@@ -818,10 +814,7 @@ public class GitOperations {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.hasText(summary, "Summary must not be null or empty!");
 
-		SupportedProject project = module.getSupportedProject();
-		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
-		Ticket ticket = tracker.getReleaseTicketFor(module);
+		Ticket ticket = issueTracker.getReleaseTicketFor(module);
 
 		commit(module, ticket, summary, details, true);
 	}
@@ -839,11 +832,7 @@ public class GitOperations {
 		Assert.notNull(module, "Module iteration must not be null!");
 		Assert.hasText(summary, "Summary must not be null or empty!");
 
-		SupportedProject project = module.getSupportedProject();
-		IssueTracker tracker = issueTracker.getRequiredPluginFor(project,
-				() -> String.format("No issue tracker found for project %s!", project));
-		Ticket ticket = tracker.getReleaseTicketFor(module);
-
+		Ticket ticket = issueTracker.getReleaseTicketFor(module);
 		commit(module, ticket, summary, details, all);
 	}
 
@@ -1208,10 +1197,7 @@ public class GitOperations {
 
 	private Predicate<RevCommit> calculateFilter(ModuleIteration module, String summary) {
 
-		SupportedProject project = module.getSupportedProject();
-		Ticket releaseTicket = issueTracker
-				.getRequiredPluginFor(project, () -> String.format("No issue tracker found for project %s!", project))//
-				.getReleaseTicketFor(module);
+		Ticket releaseTicket = issueTracker.getReleaseTicketFor(module);
 
 		return revCommit -> {
 

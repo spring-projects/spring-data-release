@@ -15,7 +15,6 @@
  */
 package org.springframework.data.release.build;
 
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -30,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -45,7 +43,6 @@ import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.ListWrapperCollector;
 import org.springframework.data.util.Streamable;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -60,7 +57,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 class BuildExecutor {
 
-	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
+	private final BuildSystem buildSystem;
 	private final ExecutorService executor;
 	private final Workspace workspace;
 	private final ObjectMapper objectMapper;
@@ -156,11 +153,8 @@ class BuildExecutor {
 		Assert.notNull(module, "Module must not be null!");
 
 		CompletableFuture<T> result = new CompletableFuture<>();
-		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
-				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
 
-		BuildSystem buildSystem = buildSystems //
-				.getPluginFor(module.getSupportedProject(), exception) //
+		BuildSystem buildSystem = this.buildSystem
 				.withJavaVersion(detectJavaVersion(module.getSupportedProject()));
 
 		Runnable runnable = () -> {

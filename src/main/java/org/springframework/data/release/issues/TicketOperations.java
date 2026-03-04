@@ -27,7 +27,6 @@ import java.util.Optional;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,7 +39,7 @@ public class TicketOperations {
 
 	Logger logger;
 
-	PluginRegistry<IssueTracker, SupportedProject> tracker;
+	IssueTracker tracker;
 
 	/**
 	 * Create or look up ticket with a particular summary.
@@ -67,7 +66,6 @@ public class TicketOperations {
 
 		Tickets tickets = getTicketsWithSummary(module, summaries);
 		SupportedProject project = module.getSupportedProject();
-		IssueTracker tracker = this.tracker.getRequiredPluginFor(project);
 		List<Ticket> results = new ArrayList<>();
 
 		for (String summary : summaries) {
@@ -100,7 +98,6 @@ public class TicketOperations {
 	public Tickets getTicketsWithSummary(ModuleIteration module, List<String> summaries) {
 
 		SupportedProject project = module.getSupportedProject();
-		IssueTracker tracker = this.tracker.getRequiredPluginFor(project);
 		Tickets tickets = tracker.getTicketsFor(module);
 		List<Ticket> results = new ArrayList<>();
 
@@ -132,8 +129,6 @@ public class TicketOperations {
 	}
 
 	public void closeTickets(ModuleIteration module, Tickets tickets) {
-
-		IssueTracker tracker = this.tracker.getRequiredPluginFor(module.getSupportedProject());
 
 		for (Ticket ticket : tickets) {
 			tracker.closeTicket(module, ticket);

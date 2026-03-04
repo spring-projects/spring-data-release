@@ -15,8 +15,6 @@
  */
 package org.springframework.data.release.issues;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.CacheManager;
@@ -25,12 +23,10 @@ import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.release.issues.github.GitHubProperties;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.HttpComponentsClientHttpRequestFactoryBuilder;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.plugin.core.PluginRegistry;
 
 import com.fasterxml.jackson.annotation.JsonCreator.Mode;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -86,11 +82,6 @@ class IssueTrackerConfiguration {
 		converter.setObjectMapper(jacksonObjectMapper);
 
 		return new RestTemplateBuilder().messageConverters(converter).requestFactory(() -> clientHttpRequestFactory);
-	}
-
-	@Bean
-	PluginRegistry<IssueTracker, SupportedProject> issueTrackers(List<? extends IssueTracker> plugins) {
-		return PluginRegistry.of(plugins);
 	}
 
 	/**

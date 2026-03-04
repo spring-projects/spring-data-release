@@ -21,10 +21,8 @@ import org.springframework.data.release.model.JavaVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Phase;
 import org.springframework.data.release.model.ProjectAware;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
-import org.springframework.plugin.core.Plugin;
 
 /**
  * Plugin interface to back different build systems.
@@ -33,7 +31,7 @@ import org.springframework.plugin.core.Plugin;
  * @author Mark Paluch
  * @author Greg Turnquist
  */
-interface BuildSystem extends Plugin<SupportedProject> {
+interface BuildSystem {
 
 	/**
 	 * Updates the project descriptors for the given {@link ModuleIteration} using the given {@link UpdateInformation}.

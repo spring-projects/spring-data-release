@@ -241,7 +241,7 @@ public class InfrastructureOperations extends TimedCommand {
 			newContent = updateOnPushBranches(newContent, branch);
 
 			if (ghActionFile.getName().contains("ci.y")) {
-				newContent = updateActionName(newContent, "CI " + branch);
+				newContent = updateActionName(newContent, "CI Build");
 			}
 
 			if (!newContent.equals(content)) {

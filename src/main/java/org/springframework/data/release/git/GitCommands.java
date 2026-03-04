@@ -36,11 +36,9 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.ReleaseTrains;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.shell.support.table.Table;
@@ -55,7 +53,7 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 class GitCommands extends TimedCommand {
 
-	private final PluginRegistry<IssueTracker, SupportedProject> trackers;
+	private final @NonNull IssueTracker tracker;
 	private final @NonNull GitOperations git;
 	private final @NonNull Executor executor;
 
@@ -116,11 +114,8 @@ class GitCommands extends TimedCommand {
 
 	private Tickets toTickets(ModuleIteration module, List<TicketReference> ticketReferences) {
 
-		IssueTracker issueTracker = trackers.getRequiredPluginFor(module.getSupportedProject(),
-				() -> String.format("No issue tracker found for project %s!", module.getSupportedProject()));
-
 		List<TicketReference> ticketIds = ticketReferences.stream().filter(TicketReference::isIssue).collect(Collectors.toList());
-		List<Ticket> tickets = new ArrayList<>(issueTracker.findTickets(module, ticketIds).getTickets());
+		List<Ticket> tickets = new ArrayList<>(tracker.findTickets(module, ticketIds).getTickets());
 
 		return new Tickets(tickets);
 	}

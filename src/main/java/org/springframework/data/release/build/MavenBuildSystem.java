@@ -544,15 +544,6 @@ class MavenBuildSystem implements BuildSystem {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
-	 */
-	@Override
-	public boolean supports(SupportedProject project) {
-		return isMavenProject(project);
-	}
-
 	private boolean isMavenProject(SupportedProject project) {
 		return workspace.getFile(POM_XML, project).exists();
 	}

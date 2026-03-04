@@ -33,7 +33,6 @@ import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.git.GitProjects;
-import org.springframework.data.release.issues.IssueTracker;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
@@ -47,7 +46,6 @@ import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.util.Streamable;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 
@@ -64,7 +62,6 @@ public class GitHubCommands extends TimedCommand {
 
 	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-	@NonNull PluginRegistry<IssueTracker, SupportedProject> tracker;
 	@Getter
 	@NonNull GitHub gitHub;
 	@NonNull GitOperations git;
@@ -158,7 +155,6 @@ public class GitHubCommands extends TimedCommand {
 		throw new IllegalStateException("No scheduled milestone found for " + calver + ". Scheduled milestones:\n"
 				+ render(iteration.getSupportStatus(), milestones));
 	}
-
 
 	private static String render(SupportStatus supportStatus, List<Milestone> milestones) {
 		StringBuffer buffer = new StringBuffer();

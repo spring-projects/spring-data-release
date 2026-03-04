@@ -166,15 +166,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		return Changelog.of(moduleIteration, tickets);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.plugin.core.Plugin#supports(java.lang.Object)
-	 */
-	@Override
-	public boolean supports(SupportedProject project) {
-		return project.getProject().uses(Tracker.GITHUB);
-	}
-
 	@Override
 	public Tickets getTicketsFor(TrainIteration iteration) {
 		return getTicketsFor(iteration, false);
@@ -194,7 +185,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		}
 
 		return trainIteration.stream(). //
-				filter(moduleIteration -> supports(moduleIteration.getSupportedProject())). //
 				flatMap(moduleIteration -> getTicketsFor(moduleIteration, forCurrentUser).stream()). //
 				collect(Tickets.toTicketsCollector());
 	}
@@ -326,15 +316,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		Assert.notNull(module, "ModuleIteration must not be null.");
 
 		return assignTicketToMe(module.getSupportedProject(), getReleaseTicketFor(module));
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.release.jira.IssueTracker#startReleaseTicketProgress(org.springframework.data.release.model.ModuleIteration)
-	 */
-	@Override
-	public Ticket startReleaseTicketProgress(ModuleIteration module) {
-		return getReleaseTicketFor(module);
 	}
 
 	/**

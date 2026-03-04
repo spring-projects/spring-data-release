@@ -42,7 +42,6 @@ import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -55,7 +54,7 @@ import org.springframework.util.Assert;
 @RequiredArgsConstructor
 public class BuildOperations {
 
-	private final @NonNull PluginRegistry<BuildSystem, SupportedProject> buildSystems;
+	private final @NonNull BuildSystem buildSystem;
 	private final @NonNull Logger logger;
 	private final @NonNull MavenProperties properties;
 	private final @NonNull BuildExecutor executor;
@@ -379,8 +378,6 @@ public class BuildOperations {
 	public void verify(Train train) {
 
 		SupportedProject project = train.getSupportedProject(Projects.BUILD);
-		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
-
 		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verify(train);
 	}
 
@@ -392,8 +389,6 @@ public class BuildOperations {
 	public void verifyStagingAuthentication(Train train) {
 
 		SupportedProject project = train.getSupportedProject(Projects.BUILD);
-		BuildSystem buildSystem = buildSystems.getRequiredPluginFor(project);
-
 		buildSystem.withJavaVersion(executor.detectJavaVersion(project)).verifyStagingAuthentication(train);
 	}
 
@@ -411,8 +406,6 @@ public class BuildOperations {
 
 		Supplier<IllegalStateException> exception = () -> new IllegalStateException(
 				String.format("No build system plugin found for project %s!", module.getSupportedProject()));
-
-		BuildSystem buildSystem = buildSystems.getPluginFor(module.getSupportedProject(), exception);
 
 		return function.apply(buildSystem.withJavaVersion(executor.detectJavaVersion(module.getSupportedProject())),
 				module);

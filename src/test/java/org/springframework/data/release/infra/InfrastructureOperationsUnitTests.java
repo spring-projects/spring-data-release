@@ -128,8 +128,8 @@ class InfrastructureOperationsUnitTests {
 				    branches: [ 5.0.x, 4.5.x ]
 				""";
 
-		String result = InfrastructureOperations.updateActionName(workflow, "CI 5.1.x");
+		String result = InfrastructureOperations.updateActionName(workflow, "CI aaaa");
 
-		assertThat(result).contains("name: CI 5.1.x");
+		assertThat(result).contains("name: CI aaa");
 	}
 }

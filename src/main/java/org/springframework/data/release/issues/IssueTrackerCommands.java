@@ -27,19 +27,17 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.springframework.data.release.CliComponent;
 import org.springframework.data.release.TimedCommand;
+import org.springframework.data.release.issues.github.GitHub;
 import org.springframework.data.release.model.Module;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.Projects;
-import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.util.Streamable;
-import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
 import org.springframework.util.StringUtils;
@@ -53,12 +51,12 @@ import org.springframework.util.StringUtils;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class IssueTrackerCommands extends TimedCommand {
 
-	@NonNull PluginRegistry<IssueTracker, SupportedProject> tracker;
+	@NonNull GitHub gitHub;
 	@NonNull Executor executor;
 
 	@CliCommand("tracker evict")
 	public void evict() {
-		StreamSupport.stream(tracker.spliterator(), false).forEach(IssueTracker::reset);
+		gitHub.reset();
 	}
 
 	@CliCommand(value = "tracker tickets")
@@ -73,7 +71,7 @@ public class IssueTrackerCommands extends TimedCommand {
 			@CliOption(key = "tasks", specifiedDefaultValue = "true", unspecifiedDefaultValue = "false") boolean tasks,
 			@CliOption(key = "resolved", specifiedDefaultValue = "true") Boolean resolved) {
 
-		Predicate<Ticket> predicate = isReleasTicket(releaseTickets);
+		Predicate<Ticket> predicate = isReleaseTicket(releaseTickets);
 
 		if (resolved != null) {
 			predicate = predicate.and(it -> it.isResolved() == resolved);
@@ -90,7 +88,7 @@ public class IssueTrackerCommands extends TimedCommand {
 		return getTickets(iteration, moduleName, forCurrentUser, predicate);
 	}
 
-	@CliCommand("tracker open-tickets")
+	@CliCommand("tracker tickets list-open")
 	public String openTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "module") String moduleName,
 			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
@@ -98,7 +96,7 @@ public class IssueTrackerCommands extends TimedCommand {
 				false);
 	}
 
-	@CliCommand("tracker all-tickets")
+	@CliCommand("tracker tickets list")
 	public String allTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "module") String moduleName,
 			@CliOption(key = "filter-release-tickets") Boolean filterReleaseTickets) {
@@ -106,9 +104,36 @@ public class IssueTrackerCommands extends TimedCommand {
 				null);
 	}
 
-	@CliCommand(value = "tracker releasetickets")
+	@CliCommand(value = "tracker tickets create")
+	public String createTickets(@CliOption(key = "iteration", mandatory = true) TrainIteration iteration,
+			@CliOption(key = "subject", mandatory = true) String subject,
+			@CliOption(key = "description", mandatory = false) String description) {
+
+		Predicate<ModuleIteration> isBuildProject = module -> module.getProject() == Projects.BUILD;
+
+		List<Ticket> tickets = iteration.stream() //
+				.filter(isBuildProject.negate()) //
+				.map(module -> gitHub.createTicket(module, subject, TicketType.Task, false)).collect(Collectors.toList());
+
+		StringBuilder body = new StringBuilder();
+
+		for (Ticket ticket : tickets) {
+			body.append("- [ ] ").append(ticket.getUrl()).append("\n");
+		}
+
+		ModuleIteration module = iteration.getModule(Projects.BUILD);
+		Ticket buildTicket = gitHub.createTicket(module, subject, body.toString(), TicketType.Task, false);
+
+		List<Ticket> allTickets = new ArrayList<>();
+		allTickets.add(buildTicket);
+		allTickets.addAll(tickets);
+
+		return new Tickets(allTickets).toString();
+	}
+
+	@CliCommand(value = "tracker releasetickets list")
 	public String releaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		return runAndReturn(executor, iteration, module -> getTrackerFor(module).getReleaseTicketFor(module),
+		return runAndReturn(executor, iteration, gitHub::getReleaseTicketFor,
 				Tickets.toTicketsCollector()).toString();
 	}
 
@@ -120,10 +145,13 @@ public class IssueTrackerCommands extends TimedCommand {
 	 */
 	@CliCommand(value = "tracker prepare")
 	public String trackerPrepare(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+		return selfAssignReleaseTickets(iteration);
+	}
 
-		selfAssignReleaseTickets(iteration);
-
-		return startProgress(iteration);
+	@CliCommand("tracker close")
+	public void closeIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+		evict();
+		run(executor, withReleaseProject(iteration), gitHub::closeIteration);
 	}
 
 	/**
@@ -143,62 +171,27 @@ public class IssueTrackerCommands extends TimedCommand {
 		return createReleaseTickets(iteration);
 	}
 
-	@CliCommand(value = "tracker self-assign releasetickets")
+	@CliCommand(value = "tracker releasetickets self-assign")
 	public String selfAssignReleaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
-		return runAndReturn(executor, iteration, module -> getTrackerFor(module).assignReleaseTicketToMe(module),
+		return runAndReturn(executor, iteration, gitHub::assignReleaseTicketToMe,
 				Tickets.toTicketsCollector()).toString();
 	}
 
-	public String startProgress(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-
-		return runAndReturn(executor, iteration, module -> getTrackerFor(module).startReleaseTicketProgress(module),
-				Tickets.toTicketsCollector()).toString();
-	}
-
-	@CliCommand(value = "tracker create releaseversions")
+	@CliCommand(value = "tracker releaseversions create")
 	public void createReleaseVersions(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).createReleaseVersion(module));
+		run(executor, withReleaseProject(iteration), gitHub::createReleaseVersion);
 	}
 
-	@CliCommand(value = "tracker create releasetickets")
+	@CliCommand(value = "tracker releasetickets create")
 	public String createReleaseTickets(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
 
-		run(executor, iteration, module -> getTrackerFor(module).createReleaseTicket(module));
+		run(executor, iteration, gitHub::createReleaseTicket);
 
 		return releaseTickets(iteration);
 	}
 
-	@CliCommand(value = "tracker create tickets")
-	public String createTickets(@CliOption(key = "iteration", mandatory = true) TrainIteration iteration,
-			@CliOption(key = "subject", mandatory = true) String subject,
-			@CliOption(key = "description", mandatory = false) String description) {
-
-		Predicate<ModuleIteration> isBuildProject = module -> module.getProject() == Projects.BUILD;
-
-		List<Ticket> tickets = iteration.stream() //
-				.filter(isBuildProject.negate()) //
-				.map(module -> getTrackerFor(module).createTicket(module, subject, TicketType.Task, false))
-				.collect(Collectors.toList());
-
-		StringBuilder body = new StringBuilder();
-
-		for (Ticket ticket : tickets) {
-			body.append("- [ ] ").append(ticket.getUrl()).append("\n");
-		}
-
-		ModuleIteration module = iteration.getModule(Projects.BUILD);
-		Ticket buildTicket = getTrackerFor(module).createTicket(module, subject, body.toString(),
-				TicketType.Task, false);
-
-		List<Ticket> allTickets = new ArrayList<>();
-		allTickets.add(buildTicket);
-		allTickets.addAll(tickets);
-
-		return new Tickets(allTickets).toString();
-	}
-
-	private static Predicate<Ticket> isReleasTicket(boolean filterReleaseTickets) {
+	private static Predicate<Ticket> isReleaseTicket(boolean filterReleaseTickets) {
 		return it -> filterReleaseTickets == it.isReleaseTicket();
 	}
 
@@ -221,22 +214,11 @@ public class IssueTrackerCommands extends TimedCommand {
 
 		ModuleIteration module = iteration.getModule(project);
 
-		return getTrackerFor(module).getTicketsFor(module, forCurrentUser) //
+		return gitHub.getTicketsFor(module, forCurrentUser) //
 				.stream() //
 				.filter(ticketPredicate) //
 				.collect(Tickets.toTicketsCollector()) //
 				.toString(false);
-	}
-
-	@CliCommand("tracker close")
-	public void closeIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		evict();
-		run(executor, withReleaseProject(iteration), module -> getTrackerFor(module).closeIteration(module));
-	}
-
-	@CliCommand("tracker archive")
-	public void archiveIteration(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
-		run(executor, iteration, module -> getTrackerFor(module).archiveReleaseVersion(module));
 	}
 
 	private static Streamable<ModuleIteration> withReleaseProject(TrainIteration iteration) {
@@ -245,11 +227,4 @@ public class IssueTrackerCommands extends TimedCommand {
 		return iteration.and(new ModuleIteration(new Module(Projects.RELEASE, bom.getVersion()), iteration));
 	}
 
-	public IssueTracker getTrackerFor(ModuleIteration moduleIteration) {
-		return getTrackerFor(moduleIteration.getSupportedProject());
-	}
-
-	public IssueTracker getTrackerFor(SupportedProject project) {
-		return tracker.getRequiredPluginFor(project, () -> String.format("No issue tracker found for module %s!", project));
-	}
 }

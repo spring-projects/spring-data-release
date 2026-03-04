@@ -13,7 +13,6 @@
 	</parent>
 
 	<properties>
-		<spring-plugin.version>2.0.0.RELEASE</spring-plugin.version>
 		<jgit.version>7.4.0.202509020913-r</jgit.version>
 		<jetty.version>12.1.5</jetty.version>
 		<java.version>17</java.version>
@@ -154,12 +153,6 @@
 			<artifactId>lombok</artifactId>
 			<scope>provided</scope>
 			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.plugin</groupId>
-			<artifactId>spring-plugin-core</artifactId>
-			<version>${spring-plugin.version}</version>
 		</dependency>
 
 		<dependency>
