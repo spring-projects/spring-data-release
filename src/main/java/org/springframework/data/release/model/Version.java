@@ -176,6 +176,10 @@ public class Version implements Comparable<Version> {
 		return new Version(getMajor(), getMinor(), bugfix);
 	}
 
+	public String toMajorMinor() {
+		return String.format("%s.%s", getMajor(), getMinor());
+	}
+
 	public String toMajorMinorBugfix() {
 		return String.format("%s.%s.%s", getMajor(), getMinor(), getBugfix());
 	}

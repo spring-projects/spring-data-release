@@ -398,6 +398,11 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public String toShortString() {
+
+		if (version.getBugfix() == 0) {
+			return version.toMajorMinor();
+		}
+
 		return version.toString();
 	}
 

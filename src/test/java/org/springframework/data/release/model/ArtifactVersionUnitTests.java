@@ -59,7 +59,8 @@ class ArtifactVersionUnitTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "1.4.5.M1", "1.0.0-alpha-1", "2.1.0-alpha0", "2.1.0-alpha0", "2.0.64-beta" })
+	@ValueSource(
+			strings = { "1.4.5.M1", "1.0.0-alpha-1", "2.1.0-alpha0", "2.1.0-alpha0", "2.0.64-beta", "1.0.0-beta.11" })
 	void parsesMilestoneCorrectly(String version) {
 
 		ArtifactVersion artifactVersion = ArtifactVersion.of(version);
@@ -131,6 +132,8 @@ class ArtifactVersionUnitTests {
 
 	@Test
 	void ordersCorrectly() {
+
+		assertThat(ArtifactVersion.of("1.0.0-beta.11")).isGreaterThan(ArtifactVersion.of("1.0.0-beta.2"));
 
 		assertThat(ArtifactVersion.of("1.9.0.RELEASE")).isLessThan(ArtifactVersion.of("1.10.0.RELEASE"));
 		assertThat(ArtifactVersion.of("1.9.25.1.RELEASE")).isLessThan(ArtifactVersion.of("1.9.25.2.RELEASE"));

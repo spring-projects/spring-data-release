@@ -181,8 +181,8 @@ class VersionedStringComparatorUnitTests {
 	@Test
 	void shouldCompareComplexPreReleaseIdentifiers() {
 
-		assertThat(comparator.compare("Version 1.0.0-alpha", "Version 1.0.0-beta")).isNegative();
-		assertThat(comparator.compare("Version 1.0.0-beta.2", "Version 1.0.0-beta.11")).isPositive();
+		assertThat("Version 1.0.0-alpha").usingComparator(comparator).isLessThan("Version 1.0.0-beta");
+		assertThat("Version 1.0.0-beta.2").usingComparator(comparator).isLessThan("Version 1.0.0-beta.11");
 	}
 
 	@Test

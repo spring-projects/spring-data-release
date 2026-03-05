@@ -233,7 +233,7 @@ public class GitOperations {
 
 	public void prepare(ModuleIteration module) {
 		doPrepare(module);
-		reset(module.getSupportedProject(), Branch.from(module));
+		reset(module);
 	}
 
 	private void doPrepare(ModuleIteration module) {
@@ -396,40 +396,6 @@ public class GitOperations {
 
 	public enum UpdateStrategy {
 		CLONE, FETCH
-	}
-
-	/**
-	 * Updates the given {@link Project} by fetching all tags.
-	 *
-	 * @param project must not be {@literal null}.
-	 */
-	@SneakyThrows
-	public void fetchTags(Project project, Train train) {
-
-		Assert.notNull(project, "Project must not be null!");
-
-		logger.log(project, "Updating project tags…");
-
-		SupportedProject supportedProject = train.getSupportedProject(project);
-		GitProject gitProject = getGitProject(supportedProject);
-		String repositoryName = gitProject.getRepositoryName();
-
-		if (workspace.hasProjectDirectory(supportedProject)) {
-
-			doWithGit(gitProject.getProject(), git -> {
-
-				logger.log(project, "Found existing repository %s. Obtaining tags…", repositoryName);
-				logger.log(project, "git fetch --tags");
-
-				call(git.fetch() //
-						.setTagOpt(TagOpt.FETCH_TAGS));
-
-			});
-		} else {
-			clone(gitProject);
-		}
-
-		logger.log(project, "Project tags update done!");
 	}
 
 	private GitProject getGitProject(SupportedProject project) {
@@ -1267,6 +1233,10 @@ public class GitOperations {
 		} catch (Exception o_O) {
 			throw new RuntimeException(o_O);
 		}
+	}
+
+	public void reset(ModuleIteration module) {
+		reset(module.getSupportedProject(), Branch.from(module));
 	}
 
 	private void reset(SupportedProject project, Branch branch) {

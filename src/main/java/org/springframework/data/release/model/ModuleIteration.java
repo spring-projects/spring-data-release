@@ -48,6 +48,12 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 	 */
 	@Override
 	public Version getVersion() {
+
+		if (trainIteration.getIteration().isMilestone() || trainIteration.getIteration().isReleaseCandidate()
+				|| trainIteration.getIteration().isGAIteration()) {
+			return module.getVersion().withBugfix(0);
+		}
+
 		return module.getVersion();
 	}
 

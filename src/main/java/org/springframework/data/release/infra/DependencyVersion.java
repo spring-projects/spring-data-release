@@ -37,7 +37,7 @@ import org.springframework.util.ObjectUtils;
 @Value
 class DependencyVersion implements Comparable<DependencyVersion> {
 
-	private static Pattern VERSION = Pattern.compile("((?>(?>\\d+)[\\.]?)+)((?>-)?[a-zA-Z]+)?(\\d+)?");
+	private static Pattern CHAR_PREFIX_VERSION = Pattern.compile("([a-zA-Z]+)(\\d+\\..*)");
 	private static Pattern NAME_VERSION = Pattern.compile("([A-Za-z]+)-(RELEASE|SR(\\d+)|SNAPSHOT|BUILD-SNAPSHOT)");
 
 	private static Comparator<DependencyVersion> TRAIN_VERSION_COMPARATOR = Comparator
@@ -50,14 +50,21 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 
 	public static DependencyVersion of(String identifier) {
 
-		Matcher bomMatcher = NAME_VERSION.matcher(identifier);
+		Matcher matcher = NAME_VERSION.matcher(identifier);
 
-		if (bomMatcher.find()) {
+		if (matcher.find()) {
 
-			String group = bomMatcher.group(1);
-			String suffix = bomMatcher.group(2);
+			String group = matcher.group(1);
+			String suffix = matcher.group(2);
 			String newIdentifier = ((int) group.charAt(0)) + ".0.0-" + suffix;
 			return new DependencyVersion(identifier, group, ArtifactVersion.of(newIdentifier), null);
+		}
+
+		matcher = CHAR_PREFIX_VERSION.matcher(identifier);
+
+		if (matcher.matches()) {
+			String version = matcher.group(2);
+			return new DependencyVersion(identifier, null, ArtifactVersion.of(version), null);
 		}
 
 		return new DependencyVersion(identifier, null, ArtifactVersion.of(identifier), null);
