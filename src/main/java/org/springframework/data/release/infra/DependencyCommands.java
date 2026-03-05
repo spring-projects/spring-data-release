@@ -69,9 +69,13 @@ public class DependencyCommands extends TimedCommand {
 	@CliCommand(value = "dependency check")
 	public void check(@CliOption(key = "", mandatory = true) TrainIteration iteration,
 			@CliOption(key = "all", mandatory = false) Boolean reportAll,
+			@CliOption(key = "no-git-prepare", unspecifiedDefaultValue = "false",
+					specifiedDefaultValue = "true") boolean noGitPrepare,
 			@CliOption(key = "project", mandatory = false) Project project) throws IOException {
 
-		git.prepare(iteration);
+		if (!noGitPrepare) {
+			git.prepare(iteration);
+		}
 
 		createDependencyUpgradeProposals(iteration, reportAll != null ? reportAll : false,
 				it -> (it.equals(Projects.BUILD) && (project == null || it.equals(project))), BUILD_PROPERTIES);

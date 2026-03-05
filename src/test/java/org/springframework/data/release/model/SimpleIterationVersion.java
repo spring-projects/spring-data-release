@@ -23,7 +23,13 @@ public class SimpleIterationVersion implements IterationVersion {
 	Version version;
 	Iteration iteration;
 
-	/* 
+	public SimpleIterationVersion(Version version, Iteration iteration) {
+
+		this.version = version.getComponents() >= 3 ? version : version.withBugfix(0);
+		this.iteration = iteration;
+	}
+
+	/*
 	 * (non-Javadoc)
 	 * @see org.springframework.data.release.model.IterationVersion#isBranchVersion()
 	 */
@@ -32,7 +38,7 @@ public class SimpleIterationVersion implements IterationVersion {
 		return iteration.isServiceIteration();
 	}
 
-	/* 
+	/*
 	 * (non-Javadoc)
 	 * @see org.springframework.data.release.model.IterationVersion#usesModifierVersionFormat()
 	 */

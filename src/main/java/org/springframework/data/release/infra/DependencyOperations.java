@@ -542,18 +542,27 @@ public class DependencyOperations {
 
 		Optional<DependencyVersion> latestMinor = findLatestMinor(policy, currentVersion, allVersions);
 		Optional<DependencyVersion> latest = findLatest(policy, allVersions);
-		List<DependencyVersion> newerVersions = allVersions.stream() //
-				.sorted() //
-				.filter(it -> it.compareTo(currentVersion) > 0) //
-				.collect(Collectors.toList());
 
-		DependencyVersion latestToUse = latest.filter(it -> it.isNewer(currentVersion)).orElse(currentVersion);
+		try {
+			List<DependencyVersion> newerVersions = allVersions.stream() //
+					.sorted() //
+					.filter(it -> it.compareTo(currentVersion) > 0) //
+					.collect(Collectors.toList());
 
-		DependencyVersion latestMinorFallback = latest
-				.filter(it -> isUpgradeable(policy, it, currentVersion) && it.isNewer(currentVersion)).orElse(currentVersion);
+			DependencyVersion latestToUse = latest.filter(it -> it.isNewer(currentVersion)).orElse(currentVersion);
 
-		return DependencyUpgradeProposal.of(policy, currentVersion, latestMinor.orElse(latestMinorFallback), latestToUse,
-				newerVersions);
+			DependencyVersion latestMinorFallback = latest
+					.filter(it -> isUpgradeable(policy, it, currentVersion) && it.isNewer(currentVersion)).orElse(currentVersion);
+
+			return DependencyUpgradeProposal.of(policy, currentVersion, latestMinor.orElse(latestMinorFallback), latestToUse,
+					newerVersions);
+		} catch (Exception e) {
+
+			System.out.println(allVersions.stream().map(it -> it.getVersion().toString()).map(it -> "\"" + it + "\"")
+					.collect(Collectors.joining(", ")));
+
+			throw new RuntimeException(e);
+		}
 	}
 
 	private static boolean isUpgradeable(DependencyUpgradePolicy policy, DependencyVersion proposal,
@@ -565,8 +574,7 @@ public class DependencyOperations {
 				return proposal.getTrainName().equals(currentVersion.getTrainName());
 			}
 
-			if (proposal.getVersion().getMajor() == currentVersion.getVersion().getMajor()
-					&& proposal.getVersion().getMinor() == currentVersion.getVersion().getMinor()) {
+			if (proposal.hasSameMajorMinor(currentVersion)) {
 				return true;
 			}
 
@@ -611,8 +619,7 @@ public class DependencyOperations {
 				return it.getTrainName().equals(currentVersion.getTrainName());
 			}
 
-			if (it.getVersion().getMajor() == currentVersion.getVersion().getMajor()
-					&& it.getVersion().getMinor() == currentVersion.getVersion().getMinor()) {
+			if (it.hasSameMajorMinor(currentVersion)) {
 				return true;
 			}
 
@@ -681,7 +688,10 @@ public class DependencyOperations {
 
 			MavenMetadata metadata = io.read(MavenMetadata.class);
 
-			return metadata.getVersions().stream().filter(dependency::shouldInclude).flatMap(s -> {
+			return metadata.getVersions().stream() //
+					.filter(dependency::shouldInclude) //
+					.filter(it -> Character.isDigit(it.charAt(0))) //
+					.flatMap(s -> {
 
 				try {
 					return Stream.of(DependencyVersion.of(s));

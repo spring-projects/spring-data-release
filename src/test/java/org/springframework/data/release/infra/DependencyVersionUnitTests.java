@@ -51,7 +51,6 @@ class DependencyVersionUnitTests {
 				.map(DependencyVersion::getIdentifier) //
 				.collect(Collectors.toList());
 
-		System.out.println(sorted);
 		assertThat(sorted).containsExactly("1.0.0.M1", "1.0.0.M2", "1.0.0.RC1", "1.0.0");
 	}
 

@@ -18,12 +18,15 @@ package org.springframework.data.release.model;
 import lombok.Getter;
 import lombok.With;
 
+import java.util.Comparator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Value object to represent version of a particular artifact.
@@ -34,47 +37,84 @@ import org.springframework.util.ObjectUtils;
 public class ArtifactVersion implements Comparable<ArtifactVersion> {
 
 	private static final Pattern PATTERN = Pattern
-			.compile("(\\d+)\\.(\\d+)(\\.\\d+)?(\\.((SR\\d+)|(RC\\d+)|(M\\d+)|(BUILD-SNAPSHOT)|(RELEASE)))");
+			.compile("((\\d+)(\\.\\d+)+)(\\.((SR\\d+)|(RC\\d+)|(M\\d+)|(BUILD-SNAPSHOT)|(RELEASE)))");
+
+	private static final Pattern VERSION_FALLBACK = Pattern.compile("((\\d+)(\\.\\d+)+)([.-])?(.*)");
 
 	private static final Pattern MODIFIER_PATTERN = Pattern
-			.compile("((\\d+)\\.(\\d+)(\\.\\d+)?)(-((RC\\d+)|(M\\d+)|(SNAPSHOT)))?");
+			.compile("((\\d+)(\\.\\d+)+)(-((RC\\d+)|(M\\d+)|(SNAPSHOT)))?");
 
 	private static final String RELEASE_SUFFIX = "RELEASE";
-	private static final String MILESTONE_SUFFIX = "M\\d";
-	private static final String RC_SUFFIX = "RC\\d";
-	private static final String SNAPSHOT_SUFFIX = "BUILD-SNAPSHOT";
+	private static final String MILESTONE_SUFFIX = "M\\d+";
+	private static final String RC_SUFFIX = "RC\\d+";
+	private static final String BUILD_SNAPSHOT_SUFFIX = "BUILD-SNAPSHOT";
 	private static final String SNAPSHOT_MODIFIER = "SNAPSHOT";
 
+	private static final Pattern MILESTONE_OR_RC_PATTERN = Pattern.compile("(SR|RC|M)(\\d+)");
+
+	private static final Pattern SEMVER_SUFFIX = Pattern.compile("([a-zA-Z]+)([.-])?(\\d*)");
+
+	private static final Pattern SEMVER_PATTERN = Pattern
+			.compile("((\\d+)(\\.\\d+)+)(([.-])(" + SEMVER_SUFFIX.pattern() + "))?");
+
 	private static final String VALID_SUFFIX = String.format("%s|%s|%s|%s|-%s|-%s|-%s", RELEASE_SUFFIX, MILESTONE_SUFFIX,
-			RC_SUFFIX, SNAPSHOT_SUFFIX, RELEASE_SUFFIX, MILESTONE_SUFFIX, SNAPSHOT_MODIFIER);
+			RC_SUFFIX, BUILD_SNAPSHOT_SUFFIX, RELEASE_SUFFIX, MILESTONE_SUFFIX, SNAPSHOT_MODIFIER);
 
 	private final @Getter Version version;
 	private final @With boolean modifierFormat;
-	private final @Getter String suffix;
+	private final @With boolean skipSeparator;
+	private final @Getter Suffix suffix;
 
 	/**
 	 * Creates a new {@link ArtifactVersion} from the given logical {@link Version}.
 	 *
 	 * @param version must not be {@literal null}.
 	 * @param modifierFormat
-	 * @param suffix must not be {@literal null} or empty.
 	 */
-	private ArtifactVersion(Version version, boolean modifierFormat, String suffix) {
+	private ArtifactVersion(Version version, boolean modifierFormat) {
+		this(version, modifierFormat, modifierFormat ? Release.INSTANCE : Release.RELEASE);
+	}
+
+	/**
+	 * Creates a new {@link ArtifactVersion} from the given logical {@link Version}.
+	 *
+	 * @param version must not be {@literal null}.
+	 * @param modifierFormat
+	 */
+	private ArtifactVersion(Version version, boolean modifierFormat, Suffix suffix) {
 
 		Assert.notNull(version, "Version must not be null!");
-		Assert.hasText(suffix, "Suffix must not be null or empty!");
+		Assert.notNull(suffix, "Suffix must not be null!");
 
 		this.version = version;
 		this.modifierFormat = modifierFormat;
+		this.skipSeparator = false;
+		this.suffix = suffix;
+	}
+
+	/**
+	 * Creates a new {@link ArtifactVersion} from the given logical {@link Version}.
+	 *
+	 * @param version must not be {@literal null}.
+	 * @param modifierFormat
+	 */
+	private ArtifactVersion(Version version, boolean modifierFormat, boolean skipSeparator, Suffix suffix) {
+
+		Assert.notNull(version, "Version must not be null!");
+		Assert.notNull(suffix, "Suffix must not be null!");
+
+		this.version = version;
+		this.modifierFormat = modifierFormat;
+		this.skipSeparator = skipSeparator;
 		this.suffix = suffix;
 	}
 
 	public static ArtifactVersion of(Version version) {
-		return of(version, false);
+		return new ArtifactVersion(version, false, Release.RELEASE);
 	}
 
 	public static ArtifactVersion of(Version version, boolean useModifierFormat) {
-		return new ArtifactVersion(version, useModifierFormat, RELEASE_SUFFIX);
+		return new ArtifactVersion(version, useModifierFormat, useModifierFormat ? Release.INSTANCE : Release.RELEASE);
 	}
 
 	/**
@@ -97,7 +137,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 
 			Assert.isTrue(suffix.matches(VALID_SUFFIX), String.format("Invalid version suffix: %s!", source));
 
-			return new ArtifactVersion(version, false, suffix);
+			return new ArtifactVersion(version, false, Suffix.parse(suffix));
 		}
 
 		matcher = MODIFIER_PATTERN.matcher(source);
@@ -105,9 +145,32 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		if (matcher.matches()) {
 
 			Version version = Version.parse(matcher.group(1));
+			String suffix = matcher.group(5);
+
+			return new ArtifactVersion(version, true, Suffix.parse(suffix));
+		}
+
+		matcher = SEMVER_PATTERN.matcher(source);
+
+		if (matcher.matches()) {
+
+			Version version = Version.parse(matcher.group(1));
+			String modifierdelimiter = matcher.group(5);
 			String suffix = matcher.group(6);
 
-			return new ArtifactVersion(version, true, suffix == null ? RELEASE_SUFFIX : suffix);
+			return new ArtifactVersion(version, modifierdelimiter.equals("-"), Suffix.parse(suffix));
+		}
+
+		matcher = VERSION_FALLBACK.matcher(source);
+
+		if (matcher.matches()) {
+
+			Version version = Version.parse(matcher.group(1));
+			String modifierdelimiter = matcher.group(4);
+			String suffix = matcher.group(5);
+
+			return new ArtifactVersion(version, "-".equals(modifierdelimiter),
+					!("-".equals(modifierdelimiter) || ".".equals(modifierdelimiter)), Suffix.parse(suffix));
 		}
 
 		throw new IllegalArgumentException(
@@ -129,15 +192,15 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		boolean modifierVersionFormat = iterationVersion.usesModifierVersionFormat();
 
 		if (iteration.isGAIteration()) {
-			return new ArtifactVersion(version, modifierVersionFormat, RELEASE_SUFFIX);
+			return new ArtifactVersion(version, modifierVersionFormat);
 		}
 
 		if (iteration.isServiceIteration()) {
 			Version bugfixVersion = version.withBugfix(iteration.getBugfixValue());
-			return new ArtifactVersion(bugfixVersion, modifierVersionFormat, RELEASE_SUFFIX);
+			return of(bugfixVersion, modifierVersionFormat);
 		}
 
-		return new ArtifactVersion(version, modifierVersionFormat, iteration.getName());
+		return new ArtifactVersion(version, modifierVersionFormat, Suffix.parse(iteration.getName()));
 	}
 
 	/**
@@ -165,7 +228,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public ArtifactVersion getReleaseVersion() {
-		return new ArtifactVersion(version, modifierFormat, RELEASE_SUFFIX);
+		return new ArtifactVersion(version, modifierFormat);
 	}
 
 	/**
@@ -174,7 +237,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public ArtifactVersion getSnapshotVersion() {
-		return new ArtifactVersion(version, modifierFormat, getSnapshotSuffix());
+		return snapshotOf(version);
 	}
 
 	/**
@@ -183,7 +246,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public boolean isReleaseVersion() {
-		return suffix.equals("") || suffix.equals(RELEASE_SUFFIX);
+		return suffix instanceof Release;
 	}
 
 	/**
@@ -192,7 +255,13 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public boolean isMilestoneVersion() {
-		return suffix.matches(MILESTONE_SUFFIX);
+
+		if (suffix instanceof SemVerSuffix sv && sv.isMilestone()) {
+			return true;
+		}
+
+		String canonical = suffix.canonical().toLowerCase();
+		return canonical.contains("alpha") || canonical.contains("beta");
 	}
 
 	/**
@@ -201,23 +270,22 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 * @return
 	 */
 	public boolean isReleaseCandidateVersion() {
-		return suffix.matches(RC_SUFFIX);
+
+		if (suffix instanceof SemVerSuffix sv && sv.isReleaseCandidate()) {
+			return true;
+		}
+
+		return suffix.canonical().toLowerCase().contains("rc");
+	}
+
+	public String getSuffix() {
+		return suffix.canonical();
 	}
 
 	public int getLevel() {
 
-		if (isMilestoneVersion()) {
-			Pattern pattern = Pattern.compile("M(\\d+)");
-			Matcher matcher = pattern.matcher(suffix);
-			matcher.find();
-			return Integer.parseInt(matcher.group(1));
-		}
-
-		if (isReleaseCandidateVersion()) {
-			Pattern pattern = Pattern.compile("RC(\\d+)");
-			Matcher matcher = pattern.matcher(suffix);
-			matcher.find();
-			return Integer.parseInt(matcher.group(1));
+		if (suffix instanceof SemVerSuffix sv) {
+			return sv.counter();
 		}
 
 		if (isBugFixVersion()) {
@@ -229,11 +297,11 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	}
 
 	public boolean isSnapshotVersion() {
-		return suffix.matches(SNAPSHOT_SUFFIX) || suffix.matches(SNAPSHOT_MODIFIER);
+		return suffix instanceof Snapshot;
 	}
 
 	public boolean isBugFixVersion() {
-		return isReleaseVersion() && !version.toMajorMinorBugfix().endsWith(".0");
+		return isReleaseVersion() && version.getBugfix() != 0;
 	}
 
 	/**
@@ -244,15 +312,15 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 */
 	public ArtifactVersion getNextDevelopmentVersion() {
 
-		if (suffix.equals(RELEASE_SUFFIX)) {
+		if (isReleaseVersion() || isBugFixVersion()) {
 
 			boolean isGaVersion = version.withBugfix(0).equals(version);
 			Version nextVersion = isGaVersion ? version.nextMinor() : version.nextBugfix();
 
-			return new ArtifactVersion(nextVersion, modifierFormat, getSnapshotSuffix());
+			return snapshotOf(nextVersion);
 		}
 
-		return isSnapshotVersion() ? this : new ArtifactVersion(version, modifierFormat, getSnapshotSuffix());
+		return isSnapshotVersion() ? this : snapshotOf(version);
 	}
 
 	/**
@@ -263,24 +331,24 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 */
 	public ArtifactVersion getNextBugfixVersion() {
 
-		if (suffix.equals(RELEASE_SUFFIX)) {
-			return new ArtifactVersion(version.nextBugfix(), modifierFormat, getSnapshotSuffix());
+		if (isReleaseVersion()) {
+			return snapshotOf(version.nextBugfix());
 		}
 
-		return isSnapshotVersion() ? this : new ArtifactVersion(version, modifierFormat, getSnapshotSuffix());
+		return isSnapshotVersion() ? this : snapshotOf(version);
 	}
 
 	/**
 	 * @return the next minor version retaining the modifier and snapshot suffix.
 	 */
 	public ArtifactVersion getNextMinorVersion() {
-		return new ArtifactVersion(version.nextMinor(), modifierFormat, suffix);
+		return versionOf(version.nextMinor());
 	}
 
 	public String getReleaseTrainSuffix() {
 
 		if (isSnapshotVersion() || isMilestoneVersion() || isReleaseCandidateVersion()) {
-			return suffix;
+			return suffix.toString();
 		}
 
 		if (isBugFixVersion()) {
@@ -308,16 +376,20 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	@Override
 	public String toString() {
 
-		if (modifierFormat) {
-
-			if (isSnapshotVersion() || isMilestoneVersion() || isReleaseCandidateVersion()) {
-				return String.format("%s-%s", version.toMajorMinorBugfix(), suffix);
-			}
-
-			return version.toMajorMinorBugfix();
+		if (skipSeparator) {
+			return String.format("%s%s", version.toString(), suffix);
 		}
 
-		return String.format("%s.%s", version.toMajorMinorBugfix(), suffix);
+		if (modifierFormat) {
+
+			if (isSnapshotVersion() || isMilestoneVersion() || isReleaseCandidateVersion() || suffix instanceof Generic) {
+				return String.format("%s-%s", version.toString(), suffix);
+			}
+
+			return version.toString();
+		}
+
+		return String.format("%s.%s", version.toString(), suffix);
 	}
 
 	/**
@@ -330,7 +402,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	}
 
 	private String getSnapshotSuffix() {
-		return modifierFormat ? SNAPSHOT_MODIFIER : SNAPSHOT_SUFFIX;
+		return modifierFormat ? SNAPSHOT_MODIFIER : BUILD_SNAPSHOT_SUFFIX;
 	}
 
 	public String getMajorMinor(boolean includeSuffix) {
@@ -346,6 +418,14 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return String.format("%s.x", getMajorMinor(false));
 	}
 
+	private ArtifactVersion snapshotOf(Version version) {
+		return new ArtifactVersion(version, modifierFormat, Suffix.parse(getSnapshotSuffix()));
+	}
+
+	private ArtifactVersion versionOf(Version version) {
+		return new ArtifactVersion(version, modifierFormat, suffix);
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -358,13 +438,217 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		return version.equals(other.version) && isReleaseVersion() == other.isReleaseVersion()
 				&& isSnapshotVersion() == other.isSnapshotVersion() && isMilestoneVersion() == other.isMilestoneVersion()
 				&& isReleaseCandidateVersion() == other.isReleaseCandidateVersion()
-				&& ObjectUtils.nullSafeEquals(suffix, other.suffix);
+				&& ObjectUtils.nullSafeEquals(suffix.canonical(), other.suffix.canonical());
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(version, isReleaseVersion(), isSnapshotVersion(), isMilestoneVersion(),
-				isReleaseCandidateVersion(), suffix);
+				isReleaseCandidateVersion(), suffix.canonical());
+	}
+
+	/**
+	 * Version suffix such as {@code SNAPSHOT}, {@code M1}, {@code RC1} or {@code RELEASE}.
+	 */
+	interface Suffix extends Comparable<Suffix> {
+
+		/**
+		 * Parse the suffix into a {@link Suffix} instance.
+		 *
+		 * @param suffix
+		 * @return
+		 */
+		static Suffix parse(String suffix) {
+
+			if (suffix == null || !StringUtils.hasText(suffix)) {
+				return Release.INSTANCE;
+			}
+
+			if (suffix.equals("RELEASE")) {
+				return Release.RELEASE;
+			}
+
+			if (suffix.equalsIgnoreCase("Final")) {
+				return new Release(suffix);
+			}
+
+			if (suffix.equals(BUILD_SNAPSHOT_SUFFIX)) {
+				return Snapshot.BUILD_SNAPSHOT;
+			} else if (suffix.equals(SNAPSHOT_MODIFIER)) {
+				return Snapshot.INSTANCE;
+			}
+
+			Matcher milestoneMatcher = MILESTONE_OR_RC_PATTERN.matcher(suffix);
+
+			if (milestoneMatcher.find()) {
+				String type = milestoneMatcher.group(1);
+				int counter = Integer.parseInt(milestoneMatcher.group(2));
+				return new SemVerSuffix(type, counter, "");
+			}
+
+			Matcher semVerPattern = SEMVER_SUFFIX.matcher(suffix);
+
+			if (semVerPattern.matches()) {
+				String type = semVerPattern.group(1);
+				String separator = semVerPattern.group(2);
+				String counterString = semVerPattern.group(3);
+				int counter = StringUtils.hasText(counterString) ? Integer.parseInt(counterString) : -1;
+				return new SemVerSuffix(type, counter, separator);
+			}
+
+			return new Generic(suffix);
+		}
+
+		/**
+		 * Canonical suffix representation.
+		 */
+		String canonical();
+	}
+
+	/**
+	 * Snapshot suffix such as {@code SNAPSHOT} or {@code BUILD-SNAPSHOT}.
+	 *
+	 * @param canonical
+	 */
+	record Snapshot(String canonical) implements Suffix {
+
+		private final static Snapshot INSTANCE = new Snapshot("SNAPSHOT");
+
+		private final static Snapshot BUILD_SNAPSHOT = new Snapshot("BUILD-SNAPSHOT");
+
+		@Override
+		public int compareTo(Suffix o) {
+			return o instanceof Snapshot ? 0 : -1;
+		}
+
+		@Override
+		public String toString() {
+			return canonical();
+		}
+
+	}
+
+	/**
+	 * Release suffix (or no suffix at all).
+	 *
+	 * @param canonical
+	 */
+	record Release(String canonical) implements Suffix {
+
+		private final static Release INSTANCE = new Release("");
+
+		private final static Release RELEASE = new Release("RELEASE");
+
+		@Override
+		public int compareTo(Suffix o) {
+
+			if (o instanceof SemVerSuffix sv) {
+				if (sv.type.equals("SR")) {
+					return -1;
+				}
+			}
+
+			return o instanceof Release ? 0 : -1;
+		}
+
+		@Override
+		public String toString() {
+			return canonical();
+		}
+
+	}
+
+	/**
+	 * Generic suffix that doesn't fit into any of the other categories. Will be sorted alphabetically by canonical value.
+	 *
+	 * @param canonical
+	 */
+	record Generic(String canonical) implements Suffix {
+
+		private static final Comparator<Suffix> COMPARATOR = Comparator.comparing(Suffix::canonical,
+				String.CASE_INSENSITIVE_ORDER);
+
+		@Override
+		public int compareTo(Suffix o) {
+
+			if (o instanceof Release) {
+				return -1;
+			}
+
+			if (o instanceof Snapshot) {
+				return 1;
+			}
+
+			return COMPARATOR.compare(this, o);
+		}
+
+		@Override
+		public String toString() {
+			return canonical();
+		}
+
+	}
+
+	/**
+	 * Semantic versioning suffix such as {@code M1}, {@code RC1} or {@code SR1}.
+	 *
+	 * @param type
+	 * @param counter
+	 * @param dot
+	 */
+	record SemVerSuffix(String type, int counter, String separator) implements Suffix {
+
+		private static final Comparator<SemVerSuffix> COMPARATOR = Comparator.comparing(SemVerSuffix::getCanonicalType)
+				.thenComparingInt(SemVerSuffix::counter);
+
+		private String getCanonicalType() {
+			return type.toLowerCase(Locale.ROOT);
+		}
+
+		@Override
+		public int compareTo(Suffix o) {
+
+			if (o instanceof Snapshot) {
+				return 1;
+			}
+
+			if (o instanceof Release) {
+				return type.equals("SR") ? 1 : -1;
+			}
+
+			if (o instanceof SemVerSuffix other) {
+				return COMPARATOR.compare(this, other);
+			}
+
+			return Generic.COMPARATOR.compare(this, o);
+		}
+
+		public boolean isMilestone() {
+			return getCanonicalType().equals("m") || getCanonicalType().equals("alpha") || getCanonicalType().equals("beta");
+		}
+
+		public boolean isReleaseCandidate() {
+			return getCanonicalType().equals("rc") || getCanonicalType().equals("cr");
+		}
+
+		@Override
+		public String canonical() {
+
+			if (counter == -1) {
+				return type;
+			}
+
+			if (separator == null) {
+				return "%s%d".formatted(type, counter);
+			}
+			return "%s%s%d".formatted(type, separator, counter);
+		}
+
+		@Override
+		public String toString() {
+			return canonical();
+		}
+
 	}
 
 }

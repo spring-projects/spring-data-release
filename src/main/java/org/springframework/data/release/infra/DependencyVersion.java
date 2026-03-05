@@ -20,11 +20,10 @@ import lombok.With;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.springframework.data.release.model.Version;
+import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -41,30 +40,12 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 	private static Pattern VERSION = Pattern.compile("((?>(?>\\d+)[\\.]?)+)((?>-)?[a-zA-Z]+)?(\\d+)?");
 	private static Pattern NAME_VERSION = Pattern.compile("([A-Za-z]+)-(RELEASE|SR(\\d+)|SNAPSHOT|BUILD-SNAPSHOT)");
 
-	private static Comparator<DependencyVersion> VERSION_COMPARATOR = Comparator.comparing(DependencyVersion::getVersion)
-			.thenComparing((o1, o2) -> {
-
-				// no modifier means release so it's higher order
-				if (o1.getModifier().isEmpty() && !o2.getModifier().isEmpty()) {
-					return 1;
-				}
-
-				if (!o1.getModifier().isEmpty() && o2.getModifier().isEmpty()) {
-					return -1;
-				}
-
-				return 0;
-			}).thenComparing(DependencyVersion::getModifier).thenComparing(DependencyVersion::getCounter)
-			.thenComparing(DependencyVersion::getIdentifier);
-
 	private static Comparator<DependencyVersion> TRAIN_VERSION_COMPARATOR = Comparator
 			.comparing(DependencyVersion::getTrainName).thenComparing(DependencyVersion::getVersion);
 
 	String identifier;
 	String trainName;
-	Version version;
-	String modifier;
-	int counter;
+	ArtifactVersion version;
 	@With LocalDateTime createdAt;
 
 	public static DependencyVersion of(String identifier) {
@@ -73,47 +54,21 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 
 		if (bomMatcher.find()) {
 
-			Version version = Version.of(0);
-			String modifier = "";
-			if (identifier.contains("-SR")) {
-				version = Version.of(Integer.parseInt(bomMatcher.group(3)));
-			}
-
-			if (identifier.endsWith("-SNAPSHOT")) {
-				modifier = "SNAPSHOT";
-			}
-
-			return new DependencyVersion(identifier, bomMatcher.group(1), version, modifier, 0, null);
+			String group = bomMatcher.group(1);
+			String suffix = bomMatcher.group(2);
+			String newIdentifier = ((int) group.charAt(0)) + ".0.0-" + suffix;
+			return new DependencyVersion(identifier, group, ArtifactVersion.of(newIdentifier), null);
 		}
 
-		Matcher versionMatcher = VERSION.matcher(identifier);
-
-		if (versionMatcher.find()) {
-			Version version = null;
-			String modifier;
-			String counter;
-			String versionString = versionMatcher.group(1);
-
-			versionString = versionString.endsWith(".") ? versionString.substring(0, versionString.length() - 1)
-					: versionString;
-			try {
-				version = Version.parse(versionString);
-			} catch (RuntimeException e) {
-				throw new IllegalArgumentException(String.format("Cannot parse version number %s", versionString), e);
-			}
-
-			modifier = versionMatcher.group(2);
-			counter = versionMatcher.group(3);
-
-			return new DependencyVersion(identifier, null, version, modifier == null ? "" : modifier.toUpperCase(Locale.ROOT),
-					counter != null ? Integer.parseInt(counter) : 0, null);
-		}
-
-		throw new IllegalArgumentException(String.format("Cannot parse version identifier %s", identifier));
+		return new DependencyVersion(identifier, null, ArtifactVersion.of(identifier), null);
 	}
 
 	public boolean isNewer(DependencyVersion other) {
 		return this.compareTo(other) > 0;
+	}
+
+	public boolean hasSameMajorMinor(DependencyVersion other) {
+		return version.getVersion().hasSameMajorMinor(other.getVersion().getVersion());
 	}
 
 	@Override
@@ -128,7 +83,7 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 
 	@Override
 	public int hashCode() {
-		return ObjectUtils.nullSafeHash(identifier, trainName, version, modifier, counter);
+		return ObjectUtils.nullSafeHash(identifier, trainName, version);
 	}
 
 	@Override
@@ -147,7 +102,7 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 		}
 
 		if (version != null && o.version != null) {
-			return VERSION_COMPARATOR.compare(this, o);
+			return version.compareTo(o.version);
 		}
 
 		return identifier.compareTo(o.identifier);
@@ -159,19 +114,7 @@ class DependencyVersion implements Comparable<DependencyVersion> {
 	}
 
 	public boolean hasPreReleaseModifier() {
-
-		if (ObjectUtils.isEmpty(getModifier())) {
-			return false;
-		}
-
-		if (getModifier().equalsIgnoreCase("final")) {
-			return false;
-		}
-
-		if (getModifier().equalsIgnoreCase("release")) {
-			return false;
-		}
-
-		return true;
+		return !version.isReleaseVersion() && !version.isBugFixVersion();
 	}
+
 }

@@ -42,7 +42,7 @@ public class JavaVersion {
 		return of("JDK " + version, candidate -> {
 
 			if (expectedVersion.getBugfix() == 0 && expectedVersion.getBuild() == 0) {
-				return candidate.withBugfix(0).is(expectedVersion);
+				return candidate.hasSameMajorMinor(expectedVersion);
 			}
 
 			return candidate.is(expectedVersion);

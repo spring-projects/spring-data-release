@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -13,13 +12,29 @@ import org.springframework.util.StringUtils;
  * Value object to represent a Version consisting of major, minor and bugfix part.
  *
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 public class Version implements Comparable<Version> {
 
-	private final BigDecimal major;
-	private final BigDecimal minor;
-	private final BigDecimal bugfix;
-	private final BigDecimal build;
+	private final BigDecimal[] parts;
+
+	/**
+	 * Creates a new {@link Version} from the given integer values. At least one value has to be given but a maximum of 4.
+	 *
+	 * @param parts must not be {@literal null} or empty.
+	 */
+	private Version(int... parts) {
+		this(Arrays.stream(parts).mapToObj(BigDecimal::valueOf).toArray(BigDecimal[]::new));
+	}
+
+	/**
+	 * Creates a new {@link Version} from the given integer values. At least one value has to be given but a maximum of 4.
+	 *
+	 * @param parts must not be {@literal null} or empty.
+	 */
+	private Version(int major, int minor, int bugfix) {
+		this(BigDecimal.valueOf(major), BigDecimal.valueOf(minor), BigDecimal.valueOf(bugfix));
+	}
 
 	/**
 	 * Creates a new {@link Version} from the given integer values. At least one value has to be given but a maximum of 4.
@@ -31,15 +46,10 @@ public class Version implements Comparable<Version> {
 		Assert.notNull(parts, "Parts must not be null!");
 		Assert.isTrue(parts.length > 0, "We need at least 1 part!");
 
-		this.major = parts[0];
-		this.minor = parts.length > 1 ? parts[1] : BigDecimal.ZERO;
-		this.bugfix = parts.length > 2 ? parts[2] : BigDecimal.ZERO;
-		this.build = parts.length > 3 ? parts[3] : BigDecimal.ZERO;
+		this.parts = parts;
 
-		Assert.isTrue(major.longValue() >= 0, "Major version must be greater or equal zero!");
-		Assert.isTrue(minor.longValue() >= 0, "Minor version must be greater or equal zero!");
-		Assert.isTrue(bugfix.longValue() >= 0, "Bugfix version must be greater or equal zero!");
-		Assert.isTrue(build.longValue() >= 0, "Build version must be greater or equal zero!");
+		Assert.isTrue(getMajor() >= 0, "Major version must be greater or equal zero!");
+		Assert.isTrue(getMinor() >= 0, "Minor version must be greater or equal zero!");
 	}
 
 	public static Version of(int... parts) {
@@ -66,20 +76,24 @@ public class Version implements Comparable<Version> {
 		return new Version(intParts);
 	}
 
+	public int getComponents() {
+		return parts.length;
+	}
+
 	public int getMajor() {
-		return major.intValueExact();
+		return parts.length > 0 ? parts[0].intValue() : 0;
 	}
 
 	public int getMinor() {
-		return minor.intValueExact();
+		return parts.length > 1 ? parts[1].intValue() : 0;
 	}
 
 	public int getBugfix() {
-		return bugfix.intValueExact();
+		return parts.length > 2 ? parts[2].intValue() : 0;
 	}
 
 	public int getBuild() {
-		return build.intValueExact();
+		return parts.length > 3 ? parts[3].intValue() : 0;
 	}
 
 	/**
@@ -113,6 +127,16 @@ public class Version implements Comparable<Version> {
 	}
 
 	/**
+	 * Returns whether the current {@link Version} has the same major and minor version as the given one.
+	 *
+	 * @param other
+	 * @return
+	 */
+	public boolean hasSameMajorMinor(Version other) {
+		return getMajor() == other.getMajor() && getMinor() == other.getMinor();
+	}
+
+	/**
 	 * Returns whether the current {@link Version} is less (older) than the given one.
 	 *
 	 * @param version
@@ -133,27 +157,27 @@ public class Version implements Comparable<Version> {
 	}
 
 	public Version nextMajor() {
-		return new Version(this.major.add(BigDecimal.ONE));
+		return new Version(getMajor() + 1, 0, 0);
 	}
 
 	public Version nextMinor() {
-		return new Version(this.major, this.minor.add(BigDecimal.ONE));
+		return new Version(getMajor(), getMinor() + 1, 0);
 	}
 
 	public Version nextBugfix() {
-		return new Version(this.major, this.minor, this.bugfix.add(BigDecimal.ONE));
+		return new Version(getMajor(), getMinor(), getBugfix() + 1);
 	}
 
 	public Version withBugfix(BigDecimal bugfix) {
-		return new Version(this.major, this.minor, bugfix);
+		return new Version(getMajor(), getMinor(), bugfix.intValueExact());
 	}
 
 	public Version withBugfix(int bugfix) {
-		return new Version(this.major, this.minor, BigDecimal.valueOf(bugfix));
+		return new Version(getMajor(), getMinor(), bugfix);
 	}
 
 	public String toMajorMinorBugfix() {
-		return String.format("%s.%s.%s", major, minor, bugfix);
+		return String.format("%s.%s.%s", getMajor(), getMinor(), getBugfix());
 	}
 
 	/*
@@ -166,20 +190,17 @@ public class Version implements Comparable<Version> {
 			return 1;
 		}
 
-		if (!Objects.equals(major, that.major)) {
-			return major.compareTo(that.major);
-		}
+		int maxLength = Math.max(this.parts.length, that.parts.length);
 
-		if (!Objects.equals(minor, that.minor)) {
-			return minor.compareTo(that.minor);
-		}
+		for (int i = 0; i < maxLength; i++) {
 
-		if (!Objects.equals(bugfix, that.bugfix)) {
-			return bugfix.compareTo(that.bugfix);
-		}
+			BigDecimal thisPart = i < this.parts.length ? this.parts[i] : BigDecimal.ZERO;
+			BigDecimal thatPart = i < that.parts.length ? that.parts[i] : BigDecimal.ZERO;
 
-		if (!Objects.equals(build, that.build)) {
-			return build.compareTo(that.build);
+			int comparison = thisPart.compareTo(thatPart);
+			if (comparison != 0) {
+				return comparison;
+			}
 		}
 
 		return 0;
@@ -200,10 +221,7 @@ public class Version implements Comparable<Version> {
 			return false;
 		}
 
-		Version that = (Version) obj;
-
-		return Objects.equals(this.major, that.major) && Objects.equals(this.minor, that.minor)
-				&& Objects.equals(this.bugfix, that.bugfix) && Objects.equals(this.build, that.build);
+		return toString().equals(obj.toString());
 	}
 
 	/*
@@ -213,12 +231,7 @@ public class Version implements Comparable<Version> {
 	@Override
 	public int hashCode() {
 
-		int result = 17;
-		result += 31 * major.hashCode();
-		result += 31 * minor.hashCode();
-		result += 31 * bugfix.hashCode();
-		result += 31 * build.hashCode();
-		return result;
+		return Arrays.hashCode(parts);
 	}
 
 	/*
@@ -228,16 +241,10 @@ public class Version implements Comparable<Version> {
 	@Override
 	public String toString() {
 
-		List<BigDecimal> digits = new ArrayList<>();
-		digits.add(major);
-		digits.add(minor);
+		List<BigDecimal> digits = new ArrayList<>(Arrays.asList(parts));
 
-		if (build.longValue() != 0 || bugfix.longValue() != 0) {
-			digits.add(bugfix);
-		}
-
-		if (build.longValue() != 0) {
-			digits.add(build);
+		while (digits.size() < 1) {
+			digits.add(BigDecimal.ZERO);
 		}
 
 		return StringUtils.collectionToDelimitedString(digits, ".");
