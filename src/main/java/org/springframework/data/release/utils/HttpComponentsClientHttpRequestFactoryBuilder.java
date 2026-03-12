@@ -19,15 +19,21 @@ import java.net.URI;
 
 import org.apache.hc.client5.http.ContextBuilder;
 import org.apache.hc.client5.http.auth.AuthCache;
+import org.apache.hc.client5.http.auth.AuthChallenge;
 import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.BearerToken;
+import org.apache.hc.client5.http.auth.ChallengeType;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.auth.BearerScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.HttpHost;
 
+import org.springframework.data.release.model.Password;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 /**
@@ -39,6 +45,7 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 
 	private final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
 	private final BasicAuthCache authCache = new BasicAuthCache();
+	private Password bearerToken;
 
 	private HttpComponentsClientHttpRequestFactoryBuilder() {
 
@@ -63,13 +70,27 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 	}
 
 	/**
+	 * Configure Bearer token authentication. The Bearer token will be added to the Authorization header for all requests.
+	 *
+	 * @param bearerToken the Bearer token to use
+	 * @return this builder instance
+	 */
+	public HttpComponentsClientHttpRequestFactoryBuilder withBearerToken(String uri, Password bearerToken) {
+
+		addBearerAuth(credsProvider, authCache, uri, bearerToken);
+		return this;
+	}
+
+	/**
 	 * Build the {@link HttpComponentsClientHttpRequestFactory}.
 	 *
 	 * @return
 	 */
 	public HttpComponentsClientHttpRequestFactory build() {
 
-		CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
+		HttpClientBuilder clientBuilder = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider);
+
+		CloseableHttpClient httpClient = clientBuilder.build();
 
 		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
@@ -97,5 +118,28 @@ public class HttpComponentsClientHttpRequestFactoryBuilder {
 
 		authCache.put(host, basicScheme);
 	}
+
+	private static void addBearerAuth(BasicCredentialsProvider credsProvider, AuthCache authCache, String requestUrl,
+			Password bearer) {
+
+		HttpHost host = HttpHost.create(URI.create(requestUrl));
+
+		BearerToken token = new BearerToken(bearer.toString());
+		credsProvider.setCredentials(new AuthScope(host), token);
+
+		BearerScheme bearerScheme = new BearerScheme();
+
+		try {
+			bearerScheme.isResponseReady(HttpHost.create(URI.create(requestUrl)), credsProvider, new HttpClientContext());
+			bearerScheme.processChallenge(new AuthChallenge(ChallengeType.TARGET, "bearer", "", null),
+					new HttpClientContext());
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		authCache.put(host, bearerScheme);
+	}
+
 
 }

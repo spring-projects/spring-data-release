@@ -70,7 +70,7 @@ class IssueTrackerConfiguration {
 	HttpComponentsClientHttpRequestFactory clientHttpRequestFactory(GitHubProperties gitHubProperties) {
 
 		return HttpComponentsClientHttpRequestFactoryBuilder.builder()
-				.withAuthentication(gitHubProperties.getApiUrl(), gitHubProperties.getHttpCredentials()).build();
+				.withBearerToken(gitHubProperties.getApiUrl(), gitHubProperties.getHttpCredentials().getPassword()).build();
 	}
 
 	@Bean
