@@ -551,6 +551,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 				if (sv.type.equals("SR")) {
 					return -1;
 				}
+				return 1;
 			}
 
 			return o instanceof Release ? 0 : -1;

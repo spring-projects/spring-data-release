@@ -143,6 +143,10 @@ class ArtifactVersionUnitTests {
 				.isGreaterThan(ArtifactVersion.of("1.9.0-M1"));
 		assertThat(ArtifactVersion.of("1.9.0-M2")).isGreaterThan(ArtifactVersion.of("1.9.0-SNAPSHOT"))
 				.isLessThan(ArtifactVersion.of("1.9.0-RC1")).isLessThan(ArtifactVersion.of("1.9.0"));
+
+		assertThat(ArtifactVersion.of("1.9.0.M1")).isLessThan(ArtifactVersion.of("1.9.0"))
+				.isLessThan(ArtifactVersion.of("1.9.0.RELEASE")).isLessThan(ArtifactVersion.of("1.9.0-SR1"));
+		assertThat(ArtifactVersion.of("1.9.0.RELEASE")).isGreaterThan(ArtifactVersion.of("1.9.0.M1"));
 	}
 
 	@Test
@@ -152,4 +156,5 @@ class ArtifactVersionUnitTests {
 		assertThat(ArtifactVersion.of("1.0.0-M1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.0-SNAPSHOT"));
 		assertThat(ArtifactVersion.of("1.0.1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.2-SNAPSHOT"));
 	}
+
 }
