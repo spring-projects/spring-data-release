@@ -19,10 +19,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -176,10 +178,28 @@ class BuildExecutor {
 	public JavaVersion detectJavaVersion(SupportedProject project) {
 
 		File configJson = findConfigJson(project);
-		Map<String, Map<String, String>> map = objectMapper.readValue(configJson, Map.class);
-		String java = map.get("java").get("main");
 
-		return JavaVersion.of(java);
+		if (configJson != null) {
+
+			Map<String, Map<String, String>> map = objectMapper.readValue(configJson, Map.class);
+			String java = map.get("java").get("main");
+			return JavaVersion.of(java);
+		}
+
+		File ciProperties = workspace.getFile(InfrastructureOperations.CI_PROPERTIES, project);
+
+		if (!ciProperties.exists()) {
+			throw new IllegalStateException(String.format("Cannot find %s or %s for project %s",
+					InfrastructureOperations.CONFIG_JSON, InfrastructureOperations.CI_PROPERTIES, project));
+		}
+
+		Properties properties = new Properties();
+
+		try (FileInputStream fis = new FileInputStream(ciProperties)) {
+			properties.load(fis);
+		}
+
+		return JavaVersion.fromDockerTag(properties.getProperty("java.main.tag"));
 	}
 
 	private File findConfigJson(SupportedProject project) {
@@ -198,8 +218,8 @@ class BuildExecutor {
 				}
 			}
 		}
-		throw new IllegalStateException(
-				String.format("Cannot find %s for project %s", InfrastructureOperations.CONFIG_JSON, project));
+
+		return null;
 	}
 
 	/**

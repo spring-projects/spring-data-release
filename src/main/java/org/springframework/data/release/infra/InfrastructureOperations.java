@@ -64,6 +64,8 @@ import org.springframework.stereotype.Component;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class InfrastructureOperations extends TimedCommand {
 
+	public static final String CI_PROPERTIES = "ci/pipeline.properties";
+
 	public static final String CONFIG_JSON = "config.json";
 
 	public static final String MAVEN_PROPERTIES = "dependency-upgrade-maven.properties";
