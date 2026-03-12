@@ -184,6 +184,24 @@ public class BuildOperations {
 	 * @param iteration must not be {@literal null}.
 	 * @return
 	 */
+	public List<DeploymentInformation> dryRelease(TrainIteration iteration) {
+
+		StagingRepository localStaging = iteration.isPublic() ? initializeStagingRepository() : StagingRepository.EMPTY;
+
+		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
+
+		logger.log(iteration, "Dry Release: %s", summary);
+
+		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+	}
+
+	/**
+	 * Performs the release build for all modules in the given {@link TrainIteration}.
+	 *
+	 * @param iteration must not be {@literal null}.
+	 * @return
+	 */
 	public List<DeploymentInformation> performRelease(TrainIteration iteration) {
 
 		StagingRepository localStaging = iteration.isPublic() ? initializeStagingRepository() : StagingRepository.EMPTY;

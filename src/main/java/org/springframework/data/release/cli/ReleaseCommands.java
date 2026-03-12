@@ -72,7 +72,8 @@ class ReleaseCommands extends TimedCommand {
 	 * @param iteration
 	 * @throws Exception
 	 */
-	@CliCommand(value = "prepare-it")
+	@CliCommand(value = "prepare-it",
+			help = "Prepares a release (update versions and project descriptors, trigger pre-release checks, create tags and prepare the next development version).")
 	public void prepareIt(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
 
 		gitHub.verifyScheduledRelease(iteration);
@@ -97,7 +98,7 @@ class ReleaseCommands extends TimedCommand {
 	 * @param iteration
 	 * @throws Exception
 	 */
-	@CliCommand(value = "ship-it")
+	@CliCommand(value = "ship-it", help = "Ships a full release.")
 	public void shipIt(@CliOption(key = "", mandatory = true) TrainIteration iteration) throws Exception {
 
 		gitHub.verifyScheduledRelease(iteration);
@@ -138,7 +139,7 @@ class ReleaseCommands extends TimedCommand {
 		git.commit(iteration, "Release version %s.");
 	}
 
-	@CliCommand(value = "release build")
+	@CliCommand(value = "release build", help = "Triggers the release build with smoke tests and artifact promotion.")
 	public void buildRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "project", mandatory = false) String projectName) {
 
@@ -161,7 +162,8 @@ class ReleaseCommands extends TimedCommand {
 		}
 	}
 
-	@CliCommand(value = "release local-stage")
+	@CliCommand(value = "release local-stage",
+			help = "Stages the release of the iteration of the given train locally. This is useful to test the staging process and to prepare for the actual release.")
 	public void stageRelease(@CliOption(key = "", mandatory = true) TrainIteration iteration, //
 			@CliOption(key = "project", mandatory = false) String projectName) {
 
@@ -176,9 +178,9 @@ class ReleaseCommands extends TimedCommand {
 			Project project = Projects.requiredByName(projectName);
 			ModuleIteration module = iteration.getModule(project);
 
-			build.stageRelease(module);
+			deployment.rollback(build.stageRelease(module));
 		} else {
-			build.stageRelease(iteration);
+			build.stageRelease(iteration).forEach(deployment::rollback);
 		}
 	}
 
