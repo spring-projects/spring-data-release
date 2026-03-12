@@ -173,6 +173,8 @@ public class Dependencies {
 
 	public static final Dependency POSTGRES_R2DBC = Dependency.of("Postgres R2DBC Driver", "org.postgresql:r2dbc-postgresql");
 
+	public static final Dependency R2DBC_POOL = Dependency.of("R2DBC Pool", "io.r2dbc:r2dbc-pool");
+
 	public static final Dependency ORACLE_JDBC = Dependency.of("Oracle JDBC Driver", "com.oracle.database.jdbc:ojdbc11");
 
 	public static final Dependency ORACLE_R2DBC = Dependency.of("Oracle R2DBC Driver", "com.oracle.database.r2dbc:oracle-r2dbc");

@@ -136,6 +136,7 @@ public class ProjectDependencies implements Streamable<ProjectDependencies.Proje
 		config.add(Projects.RELATIONAL, ProjectDependency.managedProperty("r2dbc-mysql.version", Dependencies.MYSQL_R2DBC));
 		config.add(Projects.RELATIONAL,
 				ProjectDependency.managedProperty("oracle-r2dbc.version", Dependencies.ORACLE_R2DBC));
+		config.add(Projects.RELATIONAL, ProjectDependency.managedProperty("r2dbc-pool.version", Dependencies.R2DBC_POOL));
 	}
 
 	private final List<ProjectDependency> dependencies;

@@ -69,11 +69,14 @@ public class DependencyCommands extends TimedCommand {
 	@CliCommand(value = "dependency check")
 	public void check(@CliOption(key = "", mandatory = true) TrainIteration iteration,
 			@CliOption(key = "all", mandatory = false) Boolean reportAll,
-			@CliOption(key = "no-git-prepare", unspecifiedDefaultValue = "false",
-					specifiedDefaultValue = "true") boolean noGitPrepare,
+			@CliOption(key = "no-git-fetch", unspecifiedDefaultValue = "false",
+					specifiedDefaultValue = "true") boolean noGitFetch,
 			@CliOption(key = "project", mandatory = false) Project project) throws IOException {
 
-		if (!noGitPrepare) {
+		if (noGitFetch) {
+			git.checkout(iteration);
+			git.reset(iteration);
+		} else {
 			git.prepare(iteration);
 		}
 
@@ -167,7 +170,8 @@ public class DependencyCommands extends TimedCommand {
 			Thread.sleep(1500);
 
 			operations.closeUpgradeTickets(module, tickets);
-			logger.log(module, "Upgraded %d dependencies", upgradesToApply.getDependencies().size());
+			int count = upgradesToApply.getDependencies().size();
+			logger.log(module, "Upgraded %d %s", count, count == 1 ? "dependency" : "dependencies");
 		});
 	}
 

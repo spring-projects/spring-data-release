@@ -197,12 +197,24 @@ public class GitHubCommands extends TimedCommand {
 	}
 
 	@CliCommand(value = "github trigger snapshots")
-	public void triggerSnapshots(@CliOption(key = "", mandatory = true) TrainIteration trainIteration) {
+	public void triggerSnapshots(@CliOption(key = "", mandatory = false) TrainIteration trainIteration) {
 
-		ExecutionUtils.run(executor, trainIteration, it -> {
-			GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), "snapshots.yml");
-			gitHub.triggerDownstreamWorkflow(workflow, it);
-		});
+		if (trainIteration == null) {
+
+			List<Train> latest = new ArrayList<>(ReleaseTrains.latest(3));
+			Collections.reverse(latest);
+
+			for (int i = 0; i < latest.size(); i++) {
+				Train train = latest.get(i);
+				triggerSnapshots(train.getIteration(i == 0 ? Iteration.M1 : Iteration.SR1));
+			}
+		} else {
+
+			ExecutionUtils.run(executor, trainIteration, it -> {
+				GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), "snapshots.yml");
+				gitHub.triggerDownstreamWorkflow(workflow, it);
+			});
+		}
 	}
 
 	public void triggerAntoraWorkflow(SupportedProject project) {
