@@ -166,7 +166,7 @@ public class IssueTrackerCommands extends TimedCommand {
 
 		createReleaseVersions(iteration);
 
-		Thread.sleep(500); // give GitHub a bit of time to make tickets visible
+		Thread.sleep(1500); // give GitHub a bit of time to make tickets visible
 
 		return createReleaseTickets(iteration);
 	}
