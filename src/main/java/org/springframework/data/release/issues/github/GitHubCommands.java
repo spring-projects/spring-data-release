@@ -195,6 +195,15 @@ public class GitHubCommands extends TimedCommand {
 
 	@CliCommand(value = "github trigger snapshots")
 	public void triggerSnapshots(@CliOption(key = "", mandatory = false) TrainIteration trainIteration) {
+		triggerActions(trainIteration, "snapshots.yml");
+	}
+
+	@CliCommand(value = "github trigger ci")
+	public void triggerCi(@CliOption(key = "", mandatory = false) TrainIteration trainIteration) {
+		triggerActions(trainIteration, "ci.yml");
+	}
+
+	public void triggerActions(TrainIteration trainIteration, String workflowName) {
 
 		if (trainIteration == null) {
 
@@ -208,7 +217,7 @@ public class GitHubCommands extends TimedCommand {
 		} else {
 
 			ExecutionUtils.run(executor, trainIteration, it -> {
-				GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), "snapshots.yml");
+				GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), workflowName);
 				gitHub.triggerDownstreamWorkflow(workflow, it);
 			});
 		}
