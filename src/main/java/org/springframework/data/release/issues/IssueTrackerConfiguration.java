@@ -15,7 +15,6 @@
  */
 package org.springframework.data.release.issues;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -74,7 +73,7 @@ class IssueTrackerConfiguration {
 	}
 
 	@Bean
-	@Qualifier("tracker")
+	@TrackerRestTemplate
 	RestTemplateBuilder restTemplate(ClientHttpRequestFactory clientHttpRequestFactory,
 			ObjectMapper jacksonObjectMapper) {
 

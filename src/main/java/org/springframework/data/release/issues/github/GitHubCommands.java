@@ -15,13 +15,6 @@
  */
 package org.springframework.data.release.issues.github;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -45,6 +38,7 @@ import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
+import org.springframework.data.release.utils.GitHubExecutor;
 import org.springframework.data.util.Streamable;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -54,19 +48,23 @@ import org.springframework.shell.core.annotation.CliOption;
  *
  * @author Mark Paluch
  */
-@Slf4j
 @CliComponent
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GitHubCommands extends TimedCommand {
 
 	private static final DateTimeFormatter DUE_ON_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-	@Getter
-	@NonNull GitHub gitHub;
-	@NonNull GitOperations git;
-	@NonNull GitHubLabels gitHubLabels;
-	@NonNull Executor executor;
+	private final GitHub gitHub;
+	private final GitOperations git;
+	private final GitHubLabels gitHubLabels;
+	private final Executor executor;
+
+	public GitHubCommands(GitHub gitHub, GitOperations git, GitHubLabels gitHubLabels,
+			@GitHubExecutor Executor executor) {
+		this.gitHub = gitHub;
+		this.git = git;
+		this.gitHubLabels = gitHubLabels;
+		this.executor = executor;
+	}
 
 	@CliCommand(value = "github update labels")
 	public void createOrUpdateLabels(@CliOption(key = "project", mandatory = false) Project project,
@@ -112,7 +110,6 @@ public class GitHubCommands extends TimedCommand {
 		}
 
 		ExecutionUtils.run(executor, iteration, it -> {
-
 			if (it.getSupportedProject().getProject().getTracker() == Tracker.GITHUB) {
 				createOrUpdateRelease(it, previousIteration);
 			}

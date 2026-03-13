@@ -22,10 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.release.git.GitProject;
+import org.springframework.data.release.issues.TrackerRestTemplate;
+import org.springframework.data.release.model.Project;
 import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.HttpEntity;
@@ -50,7 +51,7 @@ public class GitHubLabels extends GitHubSupport {
 
 	private final Logger logger;
 
-	public GitHubLabels(@Qualifier("tracker") RestTemplateBuilder templateBuilder, Logger logger,
+	public GitHubLabels(@TrackerRestTemplate RestTemplateBuilder templateBuilder, Logger logger,
 			GitHubProperties properties) {
 
 		super(createOperations(templateBuilder, properties));

@@ -16,7 +16,6 @@
 package org.springframework.data.release.git;
 
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 
@@ -74,6 +73,7 @@ import org.springframework.data.release.issues.TicketStatus;
 import org.springframework.data.release.issues.github.GitHubRepository;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.ExecutionUtils;
+import org.springframework.data.release.utils.GitHubExecutor;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Pair;
 import org.springframework.data.util.Streamable;
@@ -91,21 +91,30 @@ import org.springframework.util.StringUtils;
  * @author Mark Paluch
  */
 @Component
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GitOperations {
+
+	public GitOperations(@GitHubExecutor Executor executor, Workspace workspace, Logger logger, IssueTracker issueTracker,
+			GitProperties gitProperties, Gpg gpg) {
+		this.executor = executor;
+		this.workspace = workspace;
+		this.logger = logger;
+		this.issueTracker = issueTracker;
+		this.gitProperties = gitProperties;
+		this.gpg = gpg;
+	}
 
 	private enum BranchCheckoutMode {
 		CREATE_ONLY, CREATE_AND_UPDATE;
 	}
 
-	GitServer server = new GitServer();
-	Executor executor;
-	Workspace workspace;
-	Logger logger;
-	IssueTracker issueTracker;
-	GitProperties gitProperties;
-	Gpg gpg;
+	private final GitServer server = new GitServer();
+	private final Executor executor;
+	private final Workspace workspace;
+	private final Logger logger;
+	private final IssueTracker issueTracker;
+	private final GitProperties gitProperties;
+	private final Gpg gpg;
 
 	/**
 	 * Resets the repositories for all modules of the given {@link Train}.

@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -40,6 +39,7 @@ import org.springframework.data.release.issues.Ticket;
 import org.springframework.data.release.issues.TicketReference;
 import org.springframework.data.release.issues.TicketType;
 import org.springframework.data.release.issues.Tickets;
+import org.springframework.data.release.issues.TrackerRestTemplate;
 import org.springframework.data.release.issues.github.GitHubWorkflows.GitHubWorkflow;
 import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.Logger;
@@ -93,7 +93,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	private final Logger logger;
 	private final GitHubProperties properties;
 
-	public GitHub(@Qualifier("tracker") RestTemplateBuilder templateBuilder, Logger logger, GitHubProperties properties) {
+	public GitHub(@TrackerRestTemplate RestTemplateBuilder templateBuilder, Logger logger, GitHubProperties properties) {
 
 		super(createOperations(templateBuilder, properties));
 		this.logger = logger;

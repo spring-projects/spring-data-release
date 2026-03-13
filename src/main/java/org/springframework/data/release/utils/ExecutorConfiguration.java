@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean;
 
 /**
@@ -32,11 +33,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean;
 class ExecutorConfiguration {
 
 	@Bean
+	@Primary
 	@ConditionalOnProperty(prefix = "maven", name = "parallelize")
 	public ThreadPoolExecutorFactoryBean threadPoolExecutorFactoryBean() {
 
 		int processors = Runtime.getRuntime().availableProcessors();
-		int threadCount = Math.max(4, processors - 4);
+		int threadCount = Math.max(4, processors > 10 ? processors - 4 : processors - 1);
 		log.info(String.format("Setting up Executor Service with %d Threads, %d processors", threadCount, processors));
 
 		ThreadPoolExecutorFactoryBean scheduler = new ThreadPoolExecutorFactoryBean();
@@ -47,6 +49,20 @@ class ExecutorConfiguration {
 	}
 
 	@Bean
+	@GitHubExecutor
+	public ThreadPoolExecutorFactoryBean gitExecutor() {
+
+		int parallelity = Runtime.getRuntime().availableProcessors() * 2;
+
+		ThreadPoolExecutorFactoryBean scheduler = new ThreadPoolExecutorFactoryBean();
+		scheduler.setCorePoolSize(parallelity);
+		scheduler.setQueueCapacity(parallelity * 10);
+
+		return scheduler;
+	}
+
+	@Bean
+	@Primary
 	@ConditionalOnProperty(prefix = "maven", name = "parallelize", matchIfMissing = true, havingValue = "false")
 	public ExecutorService executorService() {
 		return ExecutionUtils.immediateExecutorService();

@@ -52,6 +52,7 @@ import org.springframework.util.Assert;
  * @author Oliver Gierke
  * @author Greg Turnquist
  */
+@SuppressWarnings("InvisibleCharacter")
 @CliComponent
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

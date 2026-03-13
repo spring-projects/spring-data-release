@@ -15,10 +15,6 @@
  */
 package org.springframework.data.release.infra;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +39,7 @@ import org.springframework.data.release.model.SupportedProject;
 import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
+import org.springframework.data.release.utils.GitHubExecutor;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -54,17 +51,23 @@ import org.springframework.shell.support.table.Table;
  * @author Mark Paluch
  */
 @CliComponent
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DependencyCommands extends TimedCommand {
 
 	public static final String BUILD_PROPERTIES = "dependency-upgrade-build.properties";
 	public static final String MODULE_PROPERTIES = "dependency-upgrade-modules.properties";
 
-	DependencyOperations operations;
-	ExecutorService executor;
-	GitOperations git;
-	Logger logger;
+	private final DependencyOperations operations;
+	private final ExecutorService executor;
+	private final GitOperations git;
+	private final Logger logger;
+
+	public DependencyCommands(DependencyOperations operations, @GitHubExecutor ExecutorService executor,
+			GitOperations git, Logger logger) {
+		this.operations = operations;
+		this.executor = executor;
+		this.git = git;
+		this.logger = logger;
+	}
 
 	@CliCommand(value = "dependency check")
 	public void check(@CliOption(key = "", mandatory = true) TrainIteration iteration,
