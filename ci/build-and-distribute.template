@@ -1,7 +1,0 @@
-workspace cleanup
-github milestone verify ${VERSION}
-git update ${VERSION}
-release build ${VERSION}
-artifactory release create ${VERSION}
-release distribute ${VERSION}
-quit
