@@ -27,9 +27,16 @@ import org.junit.jupiter.api.Test;
 class TrainIterationUnitTests {
 
 	@Test
-	void shouldRenderToString() {
+	void shouldRenderMilestoneToString() {
 
 		TrainIteration iteration = ReleaseTrains.A.getIteration(Iteration.M1);
 		assertThat(iteration).hasToString("2026.0.0-M1");
+	}
+
+	@Test
+	void shouldRenderServiceReleaseToString() {
+
+		TrainIteration iteration = ReleaseTrains.A.getIteration(Iteration.SR1);
+		assertThat(iteration).hasToString("2026.0.1");
 	}
 }

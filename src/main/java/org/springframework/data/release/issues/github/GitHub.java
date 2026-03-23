@@ -638,7 +638,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 	public void triggerAntoraWorkflow(GitHubWorkflow workflow, SupportedProject workflowRepository,
 			SupportedProject project) {
 
-		logger.log("GitHub", "Triggering [%s] Antora workflow for %s…", project.getSupportStatus(), project.getName());
+		logger.log(project, "Triggering [%s] Antora workflow for %s…", project.getSupportStatus(), project.getName());
 
 		Map<String, Object> parameters = createParameters(GitProject.of(workflowRepository));
 		Map<String, Object> body = new LinkedHashMap<>();
@@ -658,11 +658,13 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 		logger.log("GitHub", "[%s] Antora workflow for %s started…", project.getSupportStatus(), project.getName());
 	}
 
-	public void triggerDownstreamWorkflow(GitHubWorkflow workflow, ModuleIteration moduleIteration) {
+	public void workflowDispatch(GitHubWorkflow workflow, ModuleIteration moduleIteration) {
 
-		logger.log(moduleIteration, "Triggering workflow '%s'…", workflow.getName());
+		SupportedProject project = moduleIteration.getSupportedProject();
 
-		Map<String, Object> parameters = createParameters(GitProject.of(moduleIteration.getSupportedProject()));
+		logger.log(moduleIteration, "Triggering [%s] workflow '%s'…", project.getSupportStatus(), workflow.getName());
+
+		Map<String, Object> parameters = createParameters(GitProject.of(project));
 		Map<String, Object> body = new LinkedHashMap<>();
 
 		String branch = Branch.from(moduleIteration).toString();

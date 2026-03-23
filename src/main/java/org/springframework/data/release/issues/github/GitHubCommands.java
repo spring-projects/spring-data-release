@@ -189,7 +189,7 @@ public class GitHubCommands extends TimedCommand {
 
 		ExecutionUtils.run(executor, iteration.filter(it -> it.getProject().dependsOn(sourceProject.getProject())), it -> {
 			GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), workflowName);
-			gitHub.triggerDownstreamWorkflow(workflow, it);
+			gitHub.workflowDispatch(workflow, it);
 		});
 	}
 
@@ -218,7 +218,7 @@ public class GitHubCommands extends TimedCommand {
 
 			ExecutionUtils.run(executor, trainIteration, it -> {
 				GitHubWorkflows.GitHubWorkflow workflow = gitHub.getWorkflow(it.getSupportedProject(), workflowName);
-				gitHub.triggerDownstreamWorkflow(workflow, it);
+				gitHub.workflowDispatch(workflow, it);
 			});
 		}
 	}

@@ -37,7 +37,7 @@ class GithubMilestoneUnitTests {
 
 		assertIterationVersion(Iteration.M1, "2.4 M1 (2020.0.0)");
 		assertIterationVersion(Iteration.RC1, "2.4 RC1 (2020.0.0)");
-		assertIterationVersion(Iteration.GA, "2.4 GA (2020.0.0)");
+		assertIterationVersion(Iteration.GA, "2.4 (2020.0.0)");
 
 		assertIterationVersion(Iteration.SR1, "2.4.1 (2020.0.1)");
 		assertIterationVersion(Iteration.SR2, "2.4.2 (2020.0.2)");

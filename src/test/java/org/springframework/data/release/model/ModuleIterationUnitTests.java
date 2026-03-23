@@ -20,7 +20,10 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 /**
+ * Unit tests for {@link ModuleIteration}.
+ *
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 class ModuleIterationUnitTests {
 
@@ -33,6 +36,15 @@ class ModuleIterationUnitTests {
 		assertThat(module.getShortVersionString()).isEqualTo("2.4 M1");
 		assertThat(module.getMediumVersionString()).isEqualTo("2.4 M1 (2020.0.0)");
 		assertThat(module.getFullVersionString()).isEqualTo("2.4.0-M1 (2020.0.0)");
+	}
+
+	@Test
+	void shouldRenderToString() {
+
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
+		ModuleIteration module = iteration.getModule(Projects.JPA);
+
+		assertThat(module).hasToString("Spring Data JPA 2.4 M1 (2020.0.0)");
 	}
 
 	@Test

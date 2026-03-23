@@ -112,17 +112,14 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 		builder.append(ArtifactVersion.of(this).toShortString());
 
 		Iteration iteration = trainIteration.getIteration();
+		String majorMinorBugfix = trainIteration.getCalver().toMajorMinorBugfix();
 
-		if (iteration.isServiceIteration()) {
+		if (iteration.isServiceIteration() || iteration.isGAIteration()) {
 			builder.append(" (");
-			if (getTrain().usesCalver()) {
-				builder.append(trainIteration.getName());
-			} else {
-				builder.append(trainIteration);
-			}
+			builder.append(majorMinorBugfix);
 		} else {
 			builder.append(" ").append(iteration.getName()).append(" (");
-			builder.append(trainIteration.getName());
+			builder.append(majorMinorBugfix);
 		}
 
 		return builder.append(")").toString();
@@ -151,7 +148,7 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 	public String getFullVersionString() {
 
 		String result = ArtifactVersion.of(this).toString();
-		return result.concat(" (").concat(trainIteration.toString()).concat(")");
+		return result.concat(" (").concat(trainIteration.getCalver().toMajorMinorBugfix()).concat(")");
 	}
 
 	public SupportStatus getSupportStatus() {
