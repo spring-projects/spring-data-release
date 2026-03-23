@@ -39,8 +39,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.apache.commons.io.IOUtils;
-
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.release.build.CommandLine.Argument;
@@ -597,7 +595,7 @@ class MavenBuildSystem implements BuildSystem {
 		String s = writer.toString();
 
 		if (s.contains("standalone=\"no\"?><")) {
-			s = s.replaceAll(Pattern.quote("standalone=\"no\"?><"), "standalone=\"no\"?>" + IOUtils.LINE_SEPARATOR + "<");
+			s = s.replaceAll(Pattern.quote("standalone=\"no\"?><"), "standalone=\"no\"?>" + System.lineSeparator() + "<");
 		}
 
 		if (s.contains("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>")) {
@@ -606,14 +604,14 @@ class MavenBuildSystem implements BuildSystem {
 		}
 
 		if (s.contains("--><project ")) {
-			s = s.replaceAll(Pattern.quote("--><project "), "-->" + IOUtils.LINE_SEPARATOR + "<project ");
+			s = s.replaceAll(Pattern.quote("--><project "), "-->" + System.lineSeparator() + "<project ");
 		}
 
 		s = s.replace(String.format("<repositories>%n\t\t%n\t</repositories>"),
 				String.format("<repositories>%n\t</repositories>"));
 
-		if (!s.endsWith(IOUtils.LINE_SEPARATOR)) {
-			s += IOUtils.LINE_SEPARATOR;
+		if (!s.endsWith(System.lineSeparator())) {
+			s += System.lineSeparator();
 		}
 
 		return s.getBytes(StandardCharsets.UTF_8);

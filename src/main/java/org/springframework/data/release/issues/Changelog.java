@@ -22,8 +22,6 @@ import lombok.RequiredArgsConstructor;
 import java.util.Date;
 import java.util.Locale;
 
-import org.apache.commons.io.IOUtils;
-
 import org.springframework.data.release.model.ArtifactVersion;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.format.datetime.DateFormatter;
@@ -58,13 +56,13 @@ public class Changelog {
 
 		if (header) {
 
-			builder.append(indentation).append(headline).append(IOUtils.LINE_SEPARATOR).append(indentation);
+			builder.append(indentation).append(headline).append(System.lineSeparator()).append(indentation);
 
 			for (int i = 0; i < headline.length(); i++) {
 				builder.append("-");
 			}
 
-			builder.append(IOUtils.LINE_SEPARATOR);
+			builder.append(System.lineSeparator());
 		}
 
 		for (Ticket ticket : tickets) {
@@ -78,7 +76,7 @@ public class Changelog {
 				builder.append(".");
 			}
 
-			builder.append(IOUtils.LINE_SEPARATOR);
+			builder.append(System.lineSeparator());
 		}
 
 		return builder.toString();

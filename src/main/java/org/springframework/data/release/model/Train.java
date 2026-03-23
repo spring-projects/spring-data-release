@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.IOUtils;
 import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -226,12 +225,12 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append(name).//
-				append(IOUtils.LINE_SEPARATOR).//
-				append(IOUtils.LINE_SEPARATOR);
+				append(System.lineSeparator()).//
+				append(System.lineSeparator());
 
 		builder.append(modules.stream().//
 				map(Module::toString).//
-				collect(Collectors.joining(IOUtils.LINE_SEPARATOR)));
+				collect(Collectors.joining(System.lineSeparator())));
 
 		return builder.toString();
 	}

@@ -212,7 +212,7 @@ public class GitHubCommands extends TimedCommand {
 
 			for (int i = 0; i < latest.size(); i++) {
 				Train train = latest.get(i);
-				triggerSnapshots(train.getIteration(i == 0 ? Iteration.M1 : Iteration.SR1));
+				triggerActions(train.getIteration(i == 0 ? Iteration.M1 : Iteration.SR1), workflowName);
 			}
 		} else {
 

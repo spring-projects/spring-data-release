@@ -22,9 +22,10 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+
 import org.springframework.data.release.model.ArtifactVersion;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -105,7 +106,7 @@ public interface Pom {
 
 			Document doc = createDocument();
 			Element repos = doc.createElement("repositories");
-			repos.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repos.appendChild(doc.createTextNode(System.lineSeparator()));
 			repos.appendChild(doc.createTextNode("\t\t"));
 
 			for (int i = 0; i < repositories.size(); i++) {
@@ -113,7 +114,7 @@ public interface Pom {
 				Repository repo = repositories.get(i);
 
 				repos.appendChild(toElement(doc, repo));
-				repos.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+				repos.appendChild(doc.createTextNode(System.lineSeparator()));
 
 				if (i + 1 == repositories.size()) {
 					repos.appendChild(indent(doc, 1));
@@ -129,15 +130,15 @@ public interface Pom {
 
 			Element repository = doc.createElement("repository");
 
-			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repository.appendChild(doc.createTextNode(System.lineSeparator()));
 
 			repository.appendChild(indent(doc, 3));
 			repository.appendChild(createElement(doc, "id", repo.getId()));
-			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repository.appendChild(doc.createTextNode(System.lineSeparator()));
 
 			repository.appendChild(indent(doc, 3));
 			repository.appendChild(createElement(doc, "url", repo.getUrl()));
-			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repository.appendChild(doc.createTextNode(System.lineSeparator()));
 
 			if (repo.getSnapshots() != null) {
 				appendEnabledConfig(doc, "snapshots", repo.getSnapshots(), repository);
@@ -155,16 +156,16 @@ public interface Pom {
 		private static void appendEnabledConfig(Document doc, String tagName, boolean value, Element repository) {
 
 			Element snapshots = doc.createElement(tagName);
-			snapshots.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			snapshots.appendChild(doc.createTextNode(System.lineSeparator()));
 
 			snapshots.appendChild(indent(doc, 4));
 			snapshots.appendChild(createElement(doc, "enabled", Boolean.toString(value)));
-			snapshots.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			snapshots.appendChild(doc.createTextNode(System.lineSeparator()));
 			snapshots.appendChild(indent(doc, 3));
 
 			repository.appendChild(indent(doc, 3));
 			repository.appendChild(snapshots);
-			repository.appendChild(doc.createTextNode(IOUtils.LINE_SEPARATOR));
+			repository.appendChild(doc.createTextNode(System.lineSeparator()));
 		}
 
 		private static Element createElement(Document doc, String name, String content) {

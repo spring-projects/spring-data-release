@@ -15,7 +15,6 @@
  */
 package org.springframework.data.release.cli;
 
-import org.apache.commons.io.IOUtils;
 import org.springframework.boot.SpringBootVersion;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -46,8 +45,8 @@ class SpringDataReleaseCliBannerProvider implements BannerProvider {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append(FileUtils.readBanner(SpringDataReleaseCliBannerProvider.class, "banner.txt"));
-		builder.append(getVersion()).append(IOUtils.LINE_SEPARATOR);
-		builder.append(IOUtils.LINE_SEPARATOR);
+		builder.append(getVersion()).append(System.lineSeparator());
+		builder.append(System.lineSeparator());
 
 		return builder.toString();
 	}

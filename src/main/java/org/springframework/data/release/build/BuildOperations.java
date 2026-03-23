@@ -76,7 +76,7 @@ public class BuildOperations {
 
 		UpdateInformation updateInformation = UpdateInformation.of(iteration, phase);
 
-		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
 				(system, it) -> system.updateProjectDescriptors(it, updateInformation));
 
 		logger.log(iteration, "Update Project Descriptors done: %s", summary);
@@ -86,7 +86,7 @@ public class BuildOperations {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
 
-		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
 				(system, it) -> infrastructure.updateGhActionsConfig(it, branches));
 
 		logger.log(iteration, "Update Build config done: %s", summary);
@@ -103,7 +103,7 @@ public class BuildOperations {
 		Assert.notNull(iteration, "Train iteration must not be null!");
 		Assert.notNull(phase, "Phase must not be null!");
 
-		BuildExecutor.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<ModuleIteration> summary = executor.doWithBuildSystemOrdered(iteration,
 				(system, module) -> system.prepareVersion(module, phase));
 
 		logger.log(iteration, "Prepare versions: %s", summary);
@@ -188,12 +188,12 @@ public class BuildOperations {
 
 		StagingRepository localStaging = iteration.isPublic() ? initializeStagingRepository() : StagingRepository.EMPTY;
 
-		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
 
 		logger.log(iteration, "Dry Release: %s", summary);
 
-		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+		return summary.executions().stream().map(BuildResults.ExecutionResult::getResult).collect(Collectors.toList());
 	}
 
 	/**
@@ -207,7 +207,7 @@ public class BuildOperations {
 		StagingRepository localStaging = iteration.isPublic() ? initializeStagingRepository() : StagingRepository.EMPTY;
 		StagingRepository stagingRepository = StagingRepository.EMPTY;
 
-		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
 
 		if (iteration.isPublic()) {
@@ -222,7 +222,7 @@ public class BuildOperations {
 			publishDeployment(iteration, stagingRepository);
 		}
 
-		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+		return summary.executions().stream().map(BuildResults.ExecutionResult::getResult).collect(Collectors.toList());
 	}
 
 	/**
@@ -236,12 +236,12 @@ public class BuildOperations {
 
 		StagingRepository localStaging = initializeStagingRepository();
 
-		BuildExecutor.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
+		BuildResults.Summary<DeploymentInformation> summary = executor.doWithBuildSystemOrdered(iteration,
 				(buildSystem, moduleIteration) -> buildSystem.deploy(moduleIteration, localStaging));
 
 		logger.log(iteration, "Release: %s", summary);
 
-		return summary.getExecutions().stream().map(BuildExecutor.ExecutionResult::getResult).collect(Collectors.toList());
+		return summary.executions().stream().map(BuildResults.ExecutionResult::getResult).collect(Collectors.toList());
 	}
 
 	/**
@@ -315,7 +315,7 @@ public class BuildOperations {
 
 		Assert.notNull(iteration, "Train iteration must not be null!");
 
-		BuildExecutor.Summary<?> summary = executor.doWithBuildSystemAnyOrder(iteration,
+		BuildResults.Summary<?> summary = executor.doWithBuildSystemAnyOrder(iteration,
 				BuildSystem::triggerDistributionBuild);
 
 		logger.log(iteration, "Distribution build: %s", summary);
@@ -330,7 +330,7 @@ public class BuildOperations {
 
 		Assert.notNull(train, "Train must not be null!");
 
-		BuildExecutor.Summary<?> summary = executor.doWithBuildSystemAnyOrder(train, BuildSystem::triggerDistributionBuild);
+		BuildResults.Summary<?> summary = executor.doWithBuildSystemAnyOrder(train, BuildSystem::triggerDistributionBuild);
 
 		logger.log(train, "Distribution build: %s", summary);
 	}
