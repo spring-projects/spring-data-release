@@ -39,6 +39,7 @@ import org.springframework.data.release.model.Train;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.GitHubExecutor;
+import org.springframework.data.release.utils.Logger;
 import org.springframework.data.util.Streamable;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
@@ -57,13 +58,15 @@ public class GitHubCommands extends TimedCommand {
 	private final GitOperations git;
 	private final GitHubLabels gitHubLabels;
 	private final Executor executor;
+	private final Logger logger;
 
 	public GitHubCommands(GitHub gitHub, GitOperations git, GitHubLabels gitHubLabels,
-			@GitHubExecutor Executor executor) {
+			@GitHubExecutor Executor executor, Logger logger) {
 		this.gitHub = gitHub;
 		this.git = git;
 		this.gitHubLabels = gitHubLabels;
 		this.executor = executor;
+		this.logger = logger;
 	}
 
 	@CliCommand(value = "github update labels")
@@ -94,6 +97,14 @@ public class GitHubCommands extends TimedCommand {
 
 			createOrUpdateRelease(iteration, null);
 		}, 2);
+	}
+
+	@CliCommand(value = "github changelog")
+	public void changelog(@CliOption(key = "", mandatory = true) TrainIteration iteration) {
+
+		for (ModuleIteration moduleIteration : iteration) {
+			logger.log(moduleIteration, gitHub.getChangelogFor(moduleIteration));
+		}
 	}
 
 	@CliCommand(value = "github release create")

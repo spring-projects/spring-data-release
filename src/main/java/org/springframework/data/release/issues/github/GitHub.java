@@ -60,7 +60,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 @Component
 public class GitHub extends GitHubSupport implements IssueTracker {
 
-	private static final String MILESTONE_URI = "/repos/{owner}/{repo}/milestones?state={state}&per_page=60";
+	private static final String MILESTONE_URI = "/repos/{owner}/{repo}/milestones?state={state}&per_page=100";
 	private static final String ISSUES_BY_MILESTONE_AND_ASSIGNEE_URI_TEMPLATE = "/repos/spring-projects/{repo}/issues?milestone={id}&state=all&assignee={assignee}";
 	private static final String ISSUES_BY_MILESTONE_URI_TEMPLATE = "/repos/{owner}/{repo}/issues?milestone={id}&state=all";
 	private static final String MILESTONES_URI_TEMPLATE = "/repos/{owner}/{repo}/milestones";
@@ -396,6 +396,9 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 			Map<String, Object> parameters = createParameters(repository);
 			parameters.put("state", state);
 
+			if (!result.isEmpty()) {
+				return result;
+			}
 			doWithPaging(MILESTONE_URI, HttpMethod.GET, parameters, new HttpEntity<>(new HttpHeaders()), MILESTONES_TYPE,
 					milestones -> {
 						for (Milestone milestone : milestones) {
@@ -408,7 +411,7 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 								}
 							}
 						}
-						return true;
+						return result.isEmpty();
 					});
 		}
 

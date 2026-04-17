@@ -58,6 +58,10 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		return train.contains(project);
 	}
 
+	public TrainIteration nextIteration() {
+		return train.getIteration(iteration.getNext());
+	}
+
 	public ModuleIteration getPreviousIteration(ModuleIteration module) {
 
 		Iteration previousIteration = train.getIterations().getPreviousIteration(iteration);
@@ -137,7 +141,6 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 	public String getNextIterationName() {
 
 		Version version = getTrain().getCalver().nextMinor();
-
 		return version.toMajorMinorBugfix();
 	}
 
@@ -149,4 +152,5 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 	public SupportStatus getSupportStatus() {
 		return train.getSupportStatus();
 	}
+
 }

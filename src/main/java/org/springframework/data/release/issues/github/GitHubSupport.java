@@ -65,7 +65,7 @@ class GitHubSupport {
 
 		ResponseEntity<T> exchange = operations.exchange(endpointUri, method, entity, type, parameters);
 
-		Pattern pattern = Pattern.compile("<([^ ]*)>; rel=\"(\\w+)\"");
+		Pattern pattern = Pattern.compile("<([^ ]*)>;\\s*rel=\"(\\w+)\"");
 
 		while (true) {
 
