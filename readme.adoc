@@ -13,8 +13,15 @@ The <<pre-release,*Pre-Release tasks*>> and <<post-release,*Post-Release tasks*>
 
 The <<build,*Build and publish the release*>> phase runs on the CI server.
 
+ifdef::env-github[]
+:MERMAID: source, mermaid
+endif::[]
+ifndef::env-github[]
+:MERMAID: mermaid
+endif::[]
+
 [#release-flow]
-[mermaid]
+[{MERMAID}]
 ----
 flowchart LR
   pre[PreReleaseTasks] --> ci[BuildAndPublish]
@@ -25,7 +32,7 @@ flowchart LR
 ----
 
 [[pre-release]]
-=== Pre-Release tasks
+=== 🍃 Pre-Release tasks
 
 . Ensure all work on CVEs potentially contained in the release is done (incl. backports etc.).
 . Upgrade dependencies in Spring Data Build parent pom (mind minor/major version rules).
@@ -38,49 +45,68 @@ flowchart LR
 
  $ prepare-it $trainIteration
 
-. Next: <<build,*Build and distribute the release*>>.
+. 🚥 Continue with <<build,*Build and distribute the release*>>.
 
 [[build]]
-=== Build and distribute the release
+=== 🌿 Build and distribute the release
 
-. In GitHub, open the repository and run Actions → `Release Spring Data` on branch `main`, with `$trainIteration` as the workflow input.
-. When smoke tests pass: for Maven Central the staging repository is already released; for Artifactory the release is already staged and promoted.
-No extra promotion step is required.
-. Next: <<post-release,*Post-Release tasks*>>.
+[%header,cols="1,1"]
+|===
+|Action
+|Command
+
+|Go to the Spring Data Release repository
+|
+
+|Start the `Release Spring Data` action
+| Run workflow on `main` branch and provide the `$trainIteration`
+|===
+
+* For a Maven central release, if the smoke test has passed, the repository will already have been released, so there is nothing more to do.
+* For an Artifactory release, if the smoke test has passed, the release will already have been staged and promoted, so there is nothing more to do.
+* 🚥 Continue with <<post-release,*Post-Release tasks*>>.
 
 [[post-release]]
-=== Post-Release tasks
+=== 🍀 Post-Release tasks
 
-. Close release tickets:
+[%header,cols="1,1"]
+|===
+|Action
+|Command
 
- $ tracker close $trainIteration
+|Close release tickets.
+|`$ tracker close $trainIteration`
 
-. Create new release versions and tickets for the upcoming version:
+|Create new release versions and tickets for upcoming version
+|`$ tracker setup-next $trainIteration.next`
 
- $ tracker setup-next $trainIteration.next
+|===
 
-. Next: <<pre-release,*Pre-Release tasks*>> when you are shipping another release from this train.
-. When this was the last release of the train, continue with <<post-all-release,*Post-All-Releases tasks*>>.
+* 🚥 Go to <<pre-release,*Pre-Release tasks*>> to ship the next release 🔂.
+* 🚥 If this has been the last release 🏁, continue with <<post-all-release,*Post-All-Releases tasks*>> for the final steps.
 
 [[post-all-release]]
-=== Post-All-Releases tasks
+=== 🍃 Post-All-Releases tasks
 
-. Update versions in the Projects Service (`$releaseTrains` as comma-separated code names, e.g. `W,X,Y,Z`):
+[%header,cols="1,1"]
+|===
+|Action
+|Command
 
- $ projects update $releaseTrains
+|Update versions in the Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `W,X,Y,Z`
+|`$ projects update $releaseTrains`
 
-. Create the list of docs for release announcements:
+|Create list of docs for release announcements
+|`$ announcement $trainIteration`
 
- $ announcement $trainIteration
+|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository)
+|`$ release documentation $trainIteration`
 
-. After all artifacts are available in the final Maven repository, trigger the Antora documentation build:
+|Announce release (Blog, Twitter) and notify downstream dependency projects as needed.
+|N.A.
+|===
 
- $ release documentation $trainIteration
-
-. Announce the release (blog, social channels) and notify downstream consumers as needed.
-
-Congratulations.
-You completed the release.
+Congratulations 🥳 You completed the release ❤️.
 
 === Appendix
 
