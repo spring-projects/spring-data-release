@@ -105,7 +105,8 @@ class BuildExecutor {
 
 			if (considerDependencyOrder) {
 
-				boolean potentiallyAdvanceModule = buildResults.hasPendingDependencyBuild(moduleIteration);
+				// TODO: Build was running while Commons tried to advance
+				boolean potentiallyAdvanceModule = false; // buildResults.hasPendingDependencyBuild(moduleIteration);
 
 				// trigger build for dependencies if this
 				if (potentiallyAdvanceModule) {
