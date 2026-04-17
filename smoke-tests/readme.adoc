@@ -14,7 +14,7 @@ $ mvnw -Pmaven-central -Dspring-data-bom.version=${trainIteration} -DstagingRepo
 
 == Artifactory
 
-To run smoke tests against a Artifactory staging repository:
+To run smoke tests against an Artifactory staging repository:
 
 [source,shell]
 ----

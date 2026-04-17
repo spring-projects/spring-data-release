@@ -1,20 +1,31 @@
 == General Notes
 
-* Make sure to <<setup,initially set-up your environment>>.
-* Use the command `help` to get a list of all commands in the release tools.
-* After fixing a problem use `workspace cleanup` to clean-up any mess left behind by the previous step.
+* <<setup,Set up your environment>> (one-time).
+* Run `help` for a list of release tool commands.
+* After fixing a failure, use `workspace cleanup` to reset state from the previous step.
+
+Many steps use TLS.
+If a proxy or security tool adds trust anchors to the browser but not the JVM, Java may fail to connect; align trust with the JDK you use for the CLI, or turn off that interception while releasing.
 
 == The release process
 
-The <<pre-release,*Pre-Release tasks*>> and <<post-release,*Post-Release tasks*>> phases of making a release (opening tickets/closing tickets) is still done manually.
+The <<pre-release,*Pre-Release tasks*>> and <<post-release,*Post-Release tasks*>> phases of making a release (opening and closing tickets) are locally ran tasks.
 
-The <<build,*Build and publish the release*>> phase is what's covered by the CI server.
+The <<build,*Build and publish the release*>> phase runs on the CI server.
 
-Note many steps of the release process use SSL connections.
-If you are "using" a tool that performs a MITM attack on SSL connections by adding extra root certificates in your browsers but not in the Java keychain, the process will fail with some error indicating the inability to establish a secure connection.
+[#release-flow]
+[mermaid]
+----
+flowchart LR
+  pre[PreReleaseTasks] --> ci[BuildAndPublish]
+  ci --> post[PostReleaseTasks]
+  post --> more{MoreReleases}
+  more -->|yes| pre
+  more -->|no| postAll[PostAllReleasesTasks]
+----
 
 [[pre-release]]
-=== 🍃 Pre-Release tasks
+=== Pre-Release tasks
 
 . Ensure all work on CVEs potentially contained in the release is done (incl. backports etc.).
 . Upgrade dependencies in Spring Data Build parent pom (mind minor/major version rules).
@@ -22,74 +33,54 @@ If you are "using" a tool that performs a MITM attack on SSL connections by addi
 
  $ tracker open-tickets $trainIteration
 
-. Announce release preparations to mailing list (https://groups.google.com/forum/#!forum/spring-data-dev)
-. Create release tag, verify the release can be built, and publish tags:
+. Announce release preparations to the mailing list (https://groups.google.com/forum/#!forum/spring-data-dev).
+. Create the release tag, verify the release can be built, and publish tags:
 
  $ prepare-it $trainIteration
 
-. 🚥 Continue with <<build,*Build and distribute the release*>>.
+. Next: <<build,*Build and distribute the release*>>.
 
 [[build]]
-=== 🌿 Build and distribute the release
+=== Build and distribute the release
 
-[%header,cols="1,1"]
-|===
-|Action
-|Command
-
-|Go to the Spring Data Release repository
-|
-
-|Start the `Release Spring Data` action
-| Run workflow on `main` branch and provide the `$trainIteration`
-
-|===
-
-* For a Maven central release, if the smoke test has passed, the repository will already have been released, so there is nothing more to do.
-* For an Artifactory release, if the smoke test has passed, the release will already have been staged and promoted, so there is nothing more to do.
-* 🚥 Continue with <<post-release,*Post-Release tasks*>>.
+. In GitHub, open the repository and run Actions → `Release Spring Data` on branch `main`, with `$trainIteration` as the workflow input.
+. When smoke tests pass: for Maven Central the staging repository is already released; for Artifactory the release is already staged and promoted.
+No extra promotion step is required.
+. Next: <<post-release,*Post-Release tasks*>>.
 
 [[post-release]]
-=== 🍀 Post-Release tasks
+=== Post-Release tasks
 
-[%header,cols="1,1"]
-|===
-|Action
-|Command
+. Close release tickets:
 
-|Close release tickets.
-|`$ tracker close $trainIteration`
+ $ tracker close $trainIteration
 
-|Create new release versions and tickets for upcoming version
-|`$ tracker setup-next $trainIteration.next`
+. Create new release versions and tickets for the upcoming version:
 
-|===
+ $ tracker setup-next $trainIteration.next
 
-* 🚥 Go to <<pre-release,*Pre-Release tasks*>> to ship the next release 🔂.
-* 🚥 If this has been the last release 🏁, continue with <<post-all-release,*Post-All-Releases tasks*>> for the final steps.
+. Next: <<pre-release,*Pre-Release tasks*>> when you are shipping another release from this train.
+. When this was the last release of the train, continue with <<post-all-release,*Post-All-Releases tasks*>>.
 
 [[post-all-release]]
-=== 🍃 Post-All-Releases tasks
+=== Post-All-Releases tasks
 
-[%header,cols="1,1"]
-|===
-|Action
-|Command
+. Update versions in the Projects Service (`$releaseTrains` as comma-separated code names, e.g. `W,X,Y,Z`):
 
-|Update versions in the Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `W,X,Y,Z`
-|`$ projects update $releaseTrains`
+ $ projects update $releaseTrains
 
-|Create list of docs for release announcements
-|`$ announcement $trainIteration`
+. Create the list of docs for release announcements:
 
-|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository)
-|`$ release documentation $trainIteration`
+ $ announcement $trainIteration
 
-|Announce release (Blog, Twitter) and notify downstream dependency projects as needed.
-|N.A.
-|===
+. After all artifacts are available in the final Maven repository, trigger the Antora documentation build:
 
-Congratulations 🥳 You completed the release ❤️.
+ $ release documentation $trainIteration
+
+. Announce the release (blog, social channels) and notify downstream consumers as needed.
+
+Congratulations.
+You completed the release.
 
 === Appendix
 
@@ -104,7 +95,7 @@ Both are available in the Spring/Pivotal Last Pass repository.
 
 ===== Prepare local configuration and credentials
 
-1. Add an `application-local.properties` to the project root and add the following properties:
+1. Add an `application-local.properties` file in the project root with the following properties:
 
  * `git.username` - Your GitHub username.
  * `git.password` - Your GitHub Password (or API key with scopes: `public_repo, read:org, repo:status, repo_deployment, user` when using 2FA).
@@ -117,18 +108,20 @@ Both are available in the Spring/Pivotal Last Pass repository.
  * `gpg.keyname` - The GPG key name.
  * `gpg.passphrase` - The password of your GPG key.
  * `gpg.executable` - Path to your GPG executable, typically `/usr/local/MacGPG2/bin/gpg2`
- or `/usr/local/bin/gpg`.
+or `/usr/local/bin/gpg`.
  * `project-service.key` - Project Service authentication token. Must be a valid GitHub token. Can be the same as `git.password` when using a GitHub token as password.
 Use the following scopes: `project, read:org, repo, user, workflow`.
 
-(See link:application-local.template[`application-local.template`] for details)
+(See link:application-local.template[`application-local.template`] for details.)
 
-1. Verify your local settings (authentication, correct Maven, Java, and GPG setup):
+2. Verify your local settings (authentication, correct Maven, Java, and GPG setup):
 
  $ verify local
 
-
+[[cli-reference]]
 ==== Detailed commands performed by `spring-data-release-cli`
+
+The <<post-release,*Post-Release tasks*>> and <<post-all-release,*Post-All-Releases tasks*>> sections list the tracker, documentation, projects service, and announcement commands you run after CI; they are not repeated in the table below.
 
 |===
 |Action |Command
@@ -143,12 +136,6 @@ Use the following scopes: `project, read:org, repo, user, workflow`.
 |Distribute documentation and static resources from tag |`$ release distribute $trainIteration`
 |Push the created commits to GitHub |`$ github push $trainIteration`
 |Push new maintenance branches if the release version was a GA release (`X.Y.0` version) |`$ git push $trainIteration.next`
-2+| *Post-release tasks*
-|Close JIRA tickets and GitHub release tickets. |`$ tracker close $trainIteration`
-|Create new release versions and tickets for upcoming version |`$ tracker setup-next $trainIteration.next`
-|Trigger Antora documentation build (once all artifacts have arrived at the final Maven repository) |`$ release documentation $trainIteration`
-|Update versions in Projects Service. `$releaseTrains` is given as comma separated lists of code names, without spaces. E.g. `Moore,Neumann` |`$ projects update $releaseTrains`
-|Create list of docs for release announcements |`$ announcement $trainIteration`
 |===
 
 ==== Utilities
@@ -238,6 +225,8 @@ Resolve external links in reference documentation and print their status.
 $ docs check-links $trainIteration
 ----
 
+Flags for `docs check-links`:
+
 |===
 |Flag |Description
 
@@ -266,6 +255,8 @@ Resolve external links of any web page (remote/local) and print their status.
 $ check-links $url
 ----
 
+Flags for `check-links`:
+
 |===
 |Flag |Description
 
@@ -284,7 +275,7 @@ $ check-links file:///usr/git/spring-data-mongodb/target/site/reference/html/ind
 
 In order to run the test you need either `MAVEN_HOME` setup properly, or run your maven build like this:
 
-```
+```bash
 mvn clean verify -Dmaven.maven-home=/opt/homebrew/bin/mvn
 ```
 
@@ -294,19 +285,18 @@ Obviously, the path given should be the location of your Maven installation.
 
 === Certificate Error (Local)
 
-Happens typically when when tyring to resolve dependencies locally when running the preparation.
+Happens typically when trying to resolve dependencies locally when running the preparation.
 
 *Solution:* Check WSS and disable if running.
 
-=== Docker Image Unavailable (CI)
+[[conventions]]
+== Conventions
 
-Happens typically after bumping the java version which does not necessarily trigger container recreation.
+`$trainIteration`::
+Release train label passed to CLI commands and CI (for example `Turing GA` or `2022.0.1`).
 
-[source,bash]
-----
-10:41:58  Error: No such object: springci/spring-data-release-tools:0.27
-----
+`$trainIteration.next`::
+Literal placeholder usgithub trigger-downstream-workflow --source-repository spring-data-commons --workflow snapshots.yml --head-branch 3.5.xed in commands such as `tracker setup-next` and `git push` for the *next* train after the one you just shipped.
 
-*Solution:* alter the `Dockerfile` (eg. add a newline) and push things again. This will trigger the rebuild of the release tools container image.
-
-
+`$releaseTrains`::
+Comma-separated release-train code names with no spaces (for example `X,Y,T`).
