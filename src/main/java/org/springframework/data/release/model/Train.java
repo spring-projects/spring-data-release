@@ -281,6 +281,17 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 	}
 
 	/**
+	 * Return whether the given name (train name or calver {@code year.minor}) matches the name of this train.
+	 */
+	public boolean matches(String name) {
+
+		if (calver != null && calver.toMajorMinor().equals(name)) {
+			return true;
+		}
+		return getName().equalsIgnoreCase(name);
+	}
+
+	/**
 	 * Value object to represent a set of {@link Iteration}s.
 	 *
 	 * @author Oliver Gierke

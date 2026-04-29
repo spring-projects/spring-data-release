@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
 public class ReleaseTrains {
 
 	public static final List<Train> TRAINS;
-	public static final Train A, OCKHAM, VAUGHAN, W, X, Y, Z;
+	public static final Train A, OCKHAM, RAJ, VAUGHAN, W, X, Y, Z;
 
 	static {
 
@@ -49,7 +49,7 @@ public class ReleaseTrains {
 				.withCalver("2021.1") //
 				.withSupportStatus(SupportStatus.EOL);
 
-		Train RAJ = Q.next("Raj", Transition.MINOR) //
+		RAJ = Q.next("Raj", Transition.MINOR) //
 				.withCalver("2021.2") //
 				.withSupportStatus(SupportStatus.COMMERCIAL);
 
@@ -120,7 +120,7 @@ public class ReleaseTrains {
 	public static Train getTrainByName(String name) {
 
 		return TRAINS.stream() //
-				.filter(it -> it.getName().equalsIgnoreCase(name)) //
+				.filter(it -> it.matches(name)) //
 				.findFirst() //
 				.orElseThrow(() -> new IllegalArgumentException("Cannot resolve " + name + " to a Release Train"));
 	}

@@ -377,9 +377,11 @@ public class DependencyOperations {
 		Project release = Projects.RELEASE;
 		MilestoneRepository milestones = getOpenMilestones(supportStatus, release);
 
-		ExecutionUtils.run(executor, Streamable.of(targetProjects), it -> {
-			gitOperations.update(SupportedProject.of(it, supportStatus));
-		});
+		if (gitUpdate) {
+			ExecutionUtils.run(executor, Streamable.of(targetProjects), it -> {
+				gitOperations.update(SupportedProject.of(it, supportStatus));
+			});
+		}
 
 		Map<UpgradeProposal, TrainIteration> upgradeTickets = new LinkedHashMap<>();
 
@@ -410,6 +412,7 @@ public class DependencyOperations {
 					gitOperations.checkout(module.getSupportedProject(), Branch.from(module),
 							GitOperations.BranchCheckoutMode.CREATE_ONLY);
 				}
+
 				DependencyVersions currentDependencies = getCurrentDependencies(
 						SupportedProject.of(targetProject, supportStatus));
 
