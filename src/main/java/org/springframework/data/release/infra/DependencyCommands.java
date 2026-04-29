@@ -182,10 +182,12 @@ public class DependencyCommands extends TimedCommand {
 	public Tickets createDependencyUpgradeTickets(
 			@CliOption(key = "status", unspecifiedDefaultValue = "OSS") SupportStatus supportStatus,
 			@CliOption(key = "trains", unspecifiedDefaultValue = "3") String trainNames,
-			@CliOption(key = "dry-run", unspecifiedDefaultValue = "false", specifiedDefaultValue = "true") boolean dryRun) {
+			@CliOption(key = "dry-run", unspecifiedDefaultValue = "false", specifiedDefaultValue = "true") boolean dryRun,
+			@CliOption(key = "git-update", unspecifiedDefaultValue = "true",
+					specifiedDefaultValue = "true") boolean gitUpdate) {
 		List<Train> latest = ReleaseTrains.getTrains(trainNames, 3).stream()
 				.filter(it -> it.getSupportStatus().equals(supportStatus)).toList();
-		return operations.createDependencyUpgradeTicketsForScheduledReleases(supportStatus, latest, dryRun);
+		return operations.createDependencyUpgradeTicketsForScheduledReleases(supportStatus, latest, dryRun, gitUpdate);
 	}
 
 	private void createDependencyUpgradeProposals(TrainIteration iteration, boolean reportAll,

@@ -35,7 +35,20 @@ class ModuleIterationUnitTests {
 
 		assertThat(module.getShortVersionString()).isEqualTo("2.4 M1");
 		assertThat(module.getMediumVersionString()).isEqualTo("2.4 M1 (2020.0.0)");
+		assertThat(module.getMilestoneName()).isEqualTo("2.4 M1 (2020.0.0)");
 		assertThat(module.getFullVersionString()).isEqualTo("2.4.0-M1 (2020.0.0)");
+	}
+
+	@Test
+	void includesGASuffixForGAReleases() {
+
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA);
+		ModuleIteration module = iteration.getModule(Projects.JPA);
+
+		assertThat(module.getShortVersionString()).isEqualTo("2.4 GA");
+		assertThat(module.getMediumVersionString()).isEqualTo("2.4 GA (2020.0.0)");
+		assertThat(module.getMilestoneName()).isEqualTo("2.4 GA (2020.0.0)");
+		assertThat(module.getFullVersionString()).isEqualTo("2.4.0 (2020.0.0)");
 	}
 
 	@Test
@@ -55,6 +68,7 @@ class ModuleIterationUnitTests {
 
 		assertThat(module.getShortVersionString()).isEqualTo("2.4.1");
 		assertThat(module.getMediumVersionString()).isEqualTo("2.4.1 (2020.0.1)");
+		assertThat(module.getMilestoneName()).isEqualTo("2.4.1 (2020.0.1)");
 		assertThat(module.getFullVersionString()).isEqualTo("2.4.1 (2020.0.1)");
 	}
 

@@ -104,7 +104,7 @@ public class GitOperations {
 		this.gpg = gpg;
 	}
 
-	private enum BranchCheckoutMode {
+	public enum BranchCheckoutMode {
 		CREATE_ONLY, CREATE_AND_UPDATE;
 	}
 
@@ -942,7 +942,7 @@ public class GitOperations {
 	 * @param branch must not be {@literal null}.
 	 * @param mode must not be {@literal null}.
 	 */
-	private void checkout(SupportedProject project, Branch branch, BranchCheckoutMode mode) {
+	public void checkout(SupportedProject project, Branch branch, BranchCheckoutMode mode) {
 
 		Assert.notNull(project, "Project must not be null!");
 		Assert.notNull(branch, "Branch must not be null!");

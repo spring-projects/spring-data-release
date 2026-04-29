@@ -114,9 +114,14 @@ public class ModuleIteration implements IterationVersion, ProjectAware, Lifecycl
 		Iteration iteration = trainIteration.getIteration();
 		String majorMinorBugfix = trainIteration.getCalver().toMajorMinorBugfix();
 
-		if (iteration.isServiceIteration() || iteration.isGAIteration()) {
+		if (iteration.isGAIteration()) {
+			builder.append(" ").append(iteration.getName());
+		}
+
+		if (iteration.isGAIteration() || iteration.isServiceIteration()) {
 			builder.append(" (");
 			builder.append(majorMinorBugfix);
+
 		} else {
 			builder.append(" ").append(iteration.getName()).append(" (");
 			builder.append(majorMinorBugfix);

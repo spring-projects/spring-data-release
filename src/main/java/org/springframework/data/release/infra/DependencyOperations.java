@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.data.release.build.Pom;
+import org.springframework.data.release.git.Branch;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.git.GitProject;
 import org.springframework.data.release.io.Workspace;
@@ -365,9 +366,10 @@ public class DependencyOperations {
 
 	/**
 	 * @param trains
+	 * @param gitUpdate
 	 */
 	public Tickets createDependencyUpgradeTicketsForScheduledReleases(SupportStatus supportStatus, List<Train> trains,
-			boolean dryRun) {
+			boolean dryRun, boolean gitUpdate) {
 
 		Project build = Projects.BUILD;
 		List<Project> targetProjects = List.of(Projects.BUILD, Projects.LDAP);
@@ -401,7 +403,13 @@ public class DependencyOperations {
 
 			for (Project targetProject : targetProjects) {
 
-				gitOperations.prepare(nextIteration.getModule(targetProject));
+				if (gitUpdate) {
+					gitOperations.prepare(nextIteration.getModule(targetProject));
+				} else {
+					ModuleIteration module = nextIteration.getModule(targetProject);
+					gitOperations.checkout(module.getSupportedProject(), Branch.from(module),
+							GitOperations.BranchCheckoutMode.CREATE_ONLY);
+				}
 				DependencyVersions currentDependencies = getCurrentDependencies(
 						SupportedProject.of(targetProject, supportStatus));
 
@@ -429,12 +437,12 @@ public class DependencyOperations {
 			if (dryRun) {
 
 				Tickets existingTickets = tickets.getTicketsWithSummary(module, List.of(summary));
-				Ticket ticket = existingTickets.isEmpty() ? Ticket.open("DRY RUN", summary, TicketType.DependencyUpgrade)
+				Ticket ticket = existingTickets.isEmpty()
+						? Ticket.open("DRY RUN", summary, TicketType.DependencyUpgrade, Set.of(module.getMilestoneName()))
 						: existingTickets.getTickets().get(0);
 
 				result.add(ticket);
 			} else {
-
 				result.add(tickets.getOrCreateTicketsWithSummary(module, TicketType.DependencyUpgrade, summary));
 			}
 		});

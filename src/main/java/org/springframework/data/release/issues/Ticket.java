@@ -24,6 +24,7 @@ import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.TrainIteration;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Value object to represent a {@link Ticket}.
@@ -39,36 +40,43 @@ public class Ticket {
 	String assignee;
 	TicketStatus ticketStatus;
 	Set<TicketType> type;
+	Set<String> milestones;
 
 	public Ticket(String id, String summary, String url, String assignee, TicketStatus ticketStatus) {
-		this(id, summary, url, assignee, ticketStatus, Set.of());
+		this(id, summary, url, assignee, ticketStatus, Set.of(), Set.of());
 	}
 
 	public Ticket(String id, String summary, TicketStatus ticketStatus) {
-		this(id, summary, ticketStatus, Set.of());
+		this(id, summary, ticketStatus, Set.of(), Set.of());
 	}
 
 	public Ticket(String id, String summary, String url, String assignee, TicketStatus ticketStatus,
-			Set<TicketType> type) {
+			Set<TicketType> type, Set<String> milestones) {
 		this.id = id;
 		this.summary = summary;
 		this.url = url;
 		this.assignee = assignee;
 		this.type = type;
 		this.ticketStatus = ticketStatus;
+		this.milestones = milestones;
 	}
 
-	public Ticket(String id, String summary, TicketStatus ticketStatus, Set<TicketType> type) {
+	public Ticket(String id, String summary, TicketStatus ticketStatus, Set<TicketType> type, Set<String> milestones) {
 		this.id = id;
 		this.summary = summary;
 		this.type = type;
+		this.milestones = milestones;
 		this.assignee = null;
 		this.url = null;
 		this.ticketStatus = ticketStatus;
 	}
 
 	public static Ticket open(String id, String summary, TicketType ticketType) {
-		return new Ticket(id, summary, TicketStatus.open(), EnumSet.of(ticketType));
+		return new Ticket(id, summary, TicketStatus.open(), EnumSet.of(ticketType), Set.of());
+	}
+
+	public static Ticket open(String id, String summary, TicketType ticketType, Set<String> milestones) {
+		return new Ticket(id, summary, TicketStatus.open(), EnumSet.of(ticketType), milestones);
 	}
 
 	/*
@@ -77,7 +85,27 @@ public class Ticket {
 	 */
 	@Override
 	public String toString() {
-		return String.format("%14s - %s%s (%s)", id, type.isEmpty() ? "" : type + " ", summary, url);
+
+		String detail = "";
+
+		if (!this.milestones.isEmpty()) {
+
+			String milestones = StringUtils.collectionToDelimitedString(this.milestones, ", ");
+			if (getSummary().contains(milestones)) {
+				detail = "🛣️🗿";
+			} else {
+				detail = "🛣️" + milestones + "🗿";
+			}
+		}
+
+		if (StringUtils.hasText(url)) {
+			if (StringUtils.hasText(detail)) {
+				detail += ", ";
+			}
+
+			detail += url;
+		}
+		return String.format("%14s - %s%s (%s)", id, type.isEmpty() ? "" : type + " ", summary, detail);
 	}
 
 	public boolean isResolved() {

@@ -336,8 +336,6 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 
 	private GitHubReadIssue close(ModuleIteration module, Ticket ticket) {
 
-		String repositoryName = GitProject.of(module).getRepositoryName();
-
 		Map<String, Object> parameters = createParameters(module);
 		parameters.put("id", stripHash(ticket));
 
@@ -881,9 +879,14 @@ public class GitHub extends GitHubSupport implements IssueTracker {
 			});
 		}
 
+		Set<String> milestones = new HashSet<>();
+		Milestone milestone = issue.getMilestone();
+		if (milestone != null) {
+			milestones.add(milestone.getTitle());
+		}
 		return new Ticket(issue.getId(), issue.getTitle(), issue.getUrl(),
 				issue.getAssignees().isEmpty() ? null : issue.getAssignees().get(0), new GithubTicketStatus(issue.getState()),
-				ticketTypes);
+				ticketTypes, milestones);
 	}
 
 	private static Map<String, Object> createParameters(ProjectAware projectAware) {

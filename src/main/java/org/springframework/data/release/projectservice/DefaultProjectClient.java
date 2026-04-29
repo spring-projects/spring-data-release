@@ -32,6 +32,7 @@ import org.springframework.data.release.model.Projects;
 import org.springframework.data.release.model.SupportStatus;
 import org.springframework.data.release.utils.Logger;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
 
 import com.jayway.jsonpath.JsonPath;
@@ -130,7 +131,11 @@ class DefaultProjectClient implements ProjectService {
 		getVersionsToWrite(versions) //
 				.filter(version -> !versionsInWebsite.contains(version.getVersion())) //
 				.peek(metadata -> logger.log(project, "Creating project version %s…", metadata.getVersion())) //
-				.forEach(payload -> operations.postForObject(resource, payload, String.class));
+				.forEach(payload -> {
+					try {
+						operations.postForObject(resource, payload, String.class);
+					} catch (RestClientException e) {}
+				});
 	}
 
 	private static boolean requiresWriteVersions(MaintainedVersions versions, List<String> versionsInWebsite) {
@@ -156,7 +161,11 @@ class DefaultProjectClient implements ProjectService {
 				.filter(version -> !versionsToRetain.contains(version)) //
 				.map(version -> configuration.getProjectReleaseResource(project, version))//
 				.peek(uri -> logger.log(project, "Deleting existing project version at %s…", uri)) //
-				.forEach(operations::delete);
+				.forEach(url -> {
+					try {
+						operations.delete(url);
+					} catch (RestClientException e) {}
+				});
 	}
 
 	private Stream<String> getVersionsToDelete(Project project) {

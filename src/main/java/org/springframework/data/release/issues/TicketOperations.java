@@ -97,7 +97,6 @@ public class TicketOperations {
 	 */
 	public Tickets getTicketsWithSummary(ModuleIteration module, List<String> summaries) {
 
-		SupportedProject project = module.getSupportedProject();
 		Tickets tickets = tracker.getTicketsFor(module);
 		List<Ticket> results = new ArrayList<>();
 
