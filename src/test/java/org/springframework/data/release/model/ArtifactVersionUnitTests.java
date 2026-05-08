@@ -149,12 +149,16 @@ class ArtifactVersionUnitTests {
 		assertThat(ArtifactVersion.of("1.9.0.RELEASE")).isGreaterThan(ArtifactVersion.of("1.9.0.M1"));
 	}
 
-	@Test
+	@Test // GH-146
 	void returnsCorrectBugfixVersions() {
 
 		assertThat(ArtifactVersion.of("1.0.0").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.1-SNAPSHOT"));
 		assertThat(ArtifactVersion.of("1.0.0-M1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.0-SNAPSHOT"));
 		assertThat(ArtifactVersion.of("1.0.1").getNextBugfixVersion()).isEqualTo(ArtifactVersion.of("1.0.2-SNAPSHOT"));
+		assertThat(ArtifactVersion.of("1.0.0.1")).hasToString("1.0.0.1");
+		assertThat(ArtifactVersion.of("1.0.0.0")).hasToString("1.0.0.0");
+		assertThat(ArtifactVersion.of("1.0.0.1").toShortString()).isEqualTo("1.0.0.1");
+		assertThat(ArtifactVersion.of("1.0.0.0").toShortString()).isEqualTo("1.0");
 	}
 
 }

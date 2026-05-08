@@ -15,9 +15,6 @@
  */
 package org.springframework.data.release.model;
 
-import lombok.Value;
-
-@Value
 public class SimpleIterationVersion implements IterationVersion {
 
 	Version version;
@@ -25,8 +22,13 @@ public class SimpleIterationVersion implements IterationVersion {
 
 	public SimpleIterationVersion(Version version, Iteration iteration) {
 
-		this.version = version.getComponents() >= 3 ? version : version.withBugfix(0);
+		this.version = version.withBugfix(iteration.getBugfixValue());
 		this.iteration = iteration;
+	}
+
+	@Override
+	public Iteration getIteration() {
+		return iteration;
 	}
 
 	/*
@@ -46,4 +48,10 @@ public class SimpleIterationVersion implements IterationVersion {
 	public boolean usesModifierVersionFormat() {
 		return false;
 	}
+
+	@Override
+	public Version getVersion() {
+		return version;
+	}
+
 }

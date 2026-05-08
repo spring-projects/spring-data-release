@@ -165,7 +165,11 @@ public class Version implements Comparable<Version> {
 	}
 
 	public Version nextBugfix() {
-		return new Version(getMajor(), getMinor(), getBugfix() + 1);
+		return withBugfix(getBugfix() + 1);
+	}
+
+	public Version nextBuild() {
+		return withBuild(getBuild() + 1);
 	}
 
 	public Version withBugfix(BigDecimal bugfix) {
@@ -176,12 +180,27 @@ public class Version implements Comparable<Version> {
 		return new Version(getMajor(), getMinor(), bugfix);
 	}
 
+	public Version withBuild(int build) {
+		return new Version(getMajor(), getMinor(), getBugfix(), build);
+	}
+
 	public String toMajorMinor() {
 		return String.format("%s.%s", getMajor(), getMinor());
 	}
 
 	public String toMajorMinorBugfix() {
 		return String.format("%s.%s.%s", getMajor(), getMinor(), getBugfix());
+	}
+
+	public String toMajorMinorBugfixHotfix() {
+		return String.format("%s.%s.%s.%s", getMajor(), getMinor(), getBugfix(), getBuild());
+	}
+
+	public String toFullVersion() {
+		if (getComponents() > 3) {
+			return toMajorMinorBugfixHotfix();
+		}
+		return toMajorMinorBugfix();
 	}
 
 	/*

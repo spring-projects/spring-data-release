@@ -30,6 +30,7 @@ import org.springframework.data.release.model.Tracker;
 import org.springframework.data.release.model.Version;
 import org.springframework.data.release.model.VersionAware;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Value type to represent an SCM branch.
@@ -43,7 +44,7 @@ public class Branch implements Comparable<Branch> {
 
 	public static final Branch MAIN = new Branch("main");
 
-	private static final Pattern SERVICE_RELEASE_BRANCH_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)\\.x");
+	private static final Pattern SERVICE_RELEASE_BRANCH_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)(\\.(\\d+))?\\.x");
 
 	private final String name;
 
@@ -86,6 +87,9 @@ public class Branch implements Comparable<Branch> {
 	}
 
 	public static Branch from(Version version) {
+		if (version.getComponents() > 3) {
+			return from(version.toMajorMinorBugfix().concat(".x"));
+		}
 		return from(version.toMajorMinor().concat(".x"));
 	}
 
@@ -132,6 +136,11 @@ public class Branch implements Comparable<Branch> {
 
 		Matcher matcher = SERVICE_RELEASE_BRANCH_PATTERN.matcher(name);
 		Assert.state(matcher.matches(), () -> "Branch %s is not a service release branch!".formatted(name));
+
+		String sr = matcher.group(4);
+		if (StringUtils.hasText(sr)) {
+			return Version.parse(matcher.group(1) + "." + matcher.group(2) + "." + sr);
+		}
 
 		return Version.parse(matcher.group(1) + "." + matcher.group(2));
 	}

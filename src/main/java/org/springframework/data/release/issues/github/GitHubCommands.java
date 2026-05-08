@@ -27,16 +27,7 @@ import org.springframework.data.release.TimedCommand;
 import org.springframework.data.release.git.GitOperations;
 import org.springframework.data.release.git.GitProjects;
 import org.springframework.data.release.issues.TicketReference;
-import org.springframework.data.release.model.Iteration;
-import org.springframework.data.release.model.ModuleIteration;
-import org.springframework.data.release.model.Project;
-import org.springframework.data.release.model.Projects;
-import org.springframework.data.release.model.ReleaseTrains;
-import org.springframework.data.release.model.SupportStatus;
-import org.springframework.data.release.model.SupportedProject;
-import org.springframework.data.release.model.Tracker;
-import org.springframework.data.release.model.Train;
-import org.springframework.data.release.model.TrainIteration;
+import org.springframework.data.release.model.*;
 import org.springframework.data.release.utils.ExecutionUtils;
 import org.springframework.data.release.utils.GitHubExecutor;
 import org.springframework.data.release.utils.Logger;
@@ -92,7 +83,7 @@ public class GitHubCommands extends TimedCommand {
 			git.pushTags(iteration.getTrain());
 
 			if (!iteration.getTrain().isAlwaysUseBranch() && iteration.getIteration().isGAIteration()) {
-				git.push(new TrainIteration(iteration.getTrain(), Iteration.SR1));
+				git.push(new TrainIteration(iteration.getTrain(), Iteration.SR1, Hotfix.none()));
 			}
 
 			createOrUpdateRelease(iteration, null);

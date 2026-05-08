@@ -32,6 +32,7 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 
 	private final Train train;
 	private final Iteration iteration;
+	private final Hotfix hotfix;
 
 	/*
 	 * (non-Javadoc)
@@ -39,19 +40,19 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 	 */
 	@Override
 	public Iterator<ModuleIteration> iterator() {
-		return train.getModuleIterations(iteration).iterator();
+		return train.getModuleIterations(iteration, hotfix).iterator();
 	}
 
 	public ArtifactVersion getModuleVersion(Project project) {
-		return train.getModuleVersion(project, iteration);
+		return train.getModuleVersion(project, iteration, hotfix);
 	}
 
 	public ModuleIteration getModule(Project project) {
-		return train.getModuleIteration(project, iteration);
+		return train.getModuleIteration(project, iteration, hotfix);
 	}
 
 	public List<ModuleIteration> getModulesExcept(Project... exclusions) {
-		return train.getModuleIterations(iteration, exclusions);
+		return train.getModuleIterations(iteration, hotfix, exclusions);
 	}
 
 	public boolean contains(Project project) {
@@ -62,16 +63,10 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		return train.getIteration(iteration.getNext());
 	}
 
-	public ModuleIteration getPreviousIteration(ModuleIteration module) {
-
-		Iteration previousIteration = train.getIterations().getPreviousIteration(iteration);
-		return train.getModuleIteration(module.getProject(), previousIteration);
-	}
-
 	public String getName() {
 
 		if (getTrain().usesCalver()) {
-			return getCalver().toMajorMinorBugfix();
+			return getCalver().toFullVersion();
 		}
 
 		return getTrain().getName();
@@ -82,16 +77,15 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		if (getTrain().usesCalver()) {
 
 			if (getIteration().isMilestone() || getIteration().isReleaseCandidate()) {
-				return String.format("%s-%s", getCalver().toMajorMinorBugfix(), iteration);
+				return String.format("%s-%s", getCalver().toFullVersion(), iteration);
 			}
 
-			return getCalver().toMajorMinorBugfix();
+			return getCalver().toFullVersion();
 		}
 
 		String trainName = getTrain().getName();
 
-		return iteration.isGAIteration()
-				? String.format("%s-RELEASE", trainName)
+		return iteration.isGAIteration() ? String.format("%s-RELEASE", trainName)
 				: String.format("%s-%s", trainName, iteration);
 	}
 
@@ -103,28 +97,14 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		return train.getSupportedProject(module);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString() {
-
-		if (getTrain().usesCalver()) {
-			if (iteration.isPreview()) {
-				return String.format("%s-%s", getCalver().toMajorMinorBugfix(), iteration.getName());
-			}
-			return getCalver().toMajorMinorBugfix();
-		}
-
-		return String.format("%s %s", getTrain().getName(), iteration.getName());
-	}
-
 	public Version getCalver() {
 
-		Version version = getTrain().getCalver();
+		Version version = getTrain().getCalver().withBugfix(getIteration().getBugfixValue());
+		if (hotfix.isHotfix()) {
+			version = version.withBuild(hotfix.getValue());
+		}
 
-		return version.withBugfix(getIteration().getBugfixValue());
+		return version;
 	}
 
 	public String getNextBugfixName() {
@@ -138,10 +118,21 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 		return version.toMajorMinorBugfix();
 	}
 
+	public String getNextHotfixName() {
+
+		Version version = getTrain().getCalver();
+
+		if (getIteration().isServiceIteration()) {
+			return version.withBuild(hotfix.increment().getValue()).toFullVersion();
+		}
+
+		return version.toMajorMinorBugfix();
+	}
+
 	public String getNextIterationName() {
 
 		Version version = getTrain().getCalver().nextMinor();
-		return version.toMajorMinorBugfix();
+		return version.toFullVersion();
 	}
 
 	/*
@@ -151,6 +142,23 @@ public class TrainIteration implements Streamable<ModuleIteration>, Lifecycle {
 	@Override
 	public SupportStatus getSupportStatus() {
 		return train.getSupportStatus();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+
+		if (getTrain().usesCalver()) {
+			if (iteration.isPreview()) {
+				return String.format("%s-%s", getCalver().toFullVersion(), iteration.getName());
+			}
+			return getCalver().toFullVersion();
+		}
+
+		return String.format("%s %s", getTrain().getName(), iteration.getName());
 	}
 
 }

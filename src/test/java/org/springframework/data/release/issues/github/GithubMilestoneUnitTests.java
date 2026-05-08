@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.data.release.model.Hotfix;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
@@ -87,7 +88,7 @@ class GithubMilestoneUnitTests {
 	@Test
 	void rendersShortBomAndReleaseMilestoneVersions() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.VAUGHAN, Iteration.SR1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.VAUGHAN, Iteration.SR1, Hotfix.none());
 		ModuleIteration module = iteration.getModule(Projects.BOM);
 
 		GithubMilestone milestone = new GithubMilestone(module);

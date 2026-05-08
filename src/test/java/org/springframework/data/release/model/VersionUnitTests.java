@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2022 the original author or authors.
+ * Copyright 2026-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,23 @@
  */
 package org.springframework.data.release.model;
 
+import static org.assertj.core.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
 /**
- * @author Oliver Gierke
+ * Unit tests for {@link Version}.
+ *
+ * @author Mark Paluch
  */
-public enum Phase {
+class VersionUnitTests {
 
-	/**
-	 * Before a release.
-	 */
-	PREPARE,
+	@Test // GH-146
+	void shouldRenderVersion() {
+		assertThat(Version.parse("1.2.3.4")).hasToString("1.2.3.4");
+		assertThat(Version.parse("1.2.3.4").toFullVersion()).isEqualTo("1.2.3.4");
+		assertThat(Version.parse("1.2.3")).hasToString("1.2.3");
+		assertThat(Version.parse("1.2.3").toFullVersion()).isEqualTo("1.2.3");
+	}
 
-	/**
-	 * Post-release.
-	 */
-	CLEANUP,
-
-	/**
-	 * Setup maintenance branch.
-	 */
-	MAINTENANCE;
 }

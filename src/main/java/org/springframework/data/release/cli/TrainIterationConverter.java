@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.Hotfix;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ReleaseTrains;
 import org.springframework.data.release.model.Train;
@@ -60,12 +61,12 @@ public class TrainIterationConverter implements Converter<TrainIteration> {
 
 			if (version.isReleaseVersion()) {
 				if (version.isBugFixVersion()) {
-					return train.getIteration("SR" + version.getVersion().getBugfix());
+					return train.getIteration("SR" + version.getVersion().getBugfix(), version.getHotfix());
 				}
 				return train.getIteration(Iteration.GA);
 			}
 
-			return train.getIteration(version.getSuffix());
+			return train.getIteration(version.getSuffix(), version.getHotfix());
 		}
 
 		String[] parts = value.split(" ");
@@ -76,7 +77,7 @@ public class TrainIterationConverter implements Converter<TrainIteration> {
 
 		Train train = ReleaseTrains.getTrainByName(parts[0].trim());
 
-		return train.getIteration(parts[1].trim());
+		return train.getIteration(parts[1].trim(), Hotfix.none());
 	}
 
 	/*
@@ -91,7 +92,7 @@ public class TrainIterationConverter implements Converter<TrainIteration> {
 
 			for (Iteration iteration : train.getIterations()) {
 
-				TrainIteration trainIteration = train.getIteration(iteration.getName());
+				TrainIteration trainIteration = train.getIteration(iteration.getName(), Hotfix.none());
 
 				completions.add(new Completion(trainIteration.toString()));
 

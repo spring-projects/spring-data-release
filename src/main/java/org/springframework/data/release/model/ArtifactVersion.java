@@ -196,8 +196,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		}
 
 		if (iteration.isServiceIteration()) {
-			Version bugfixVersion = version.withBugfix(iteration.getBugfixValue());
-			return of(bugfixVersion, modifierVersionFormat);
+			return of(version, modifierVersionFormat);
 		}
 
 		return new ArtifactVersion(version, modifierVersionFormat, Suffix.parse(iteration.getName()));
@@ -219,7 +218,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	}
 
 	public boolean isVersionWithin(Version version) {
-		return this.version.toMajorMinorBugfix().startsWith(version.toString());
+		return this.version.toFullVersion().startsWith(version.toString());
 	}
 
 	/**
@@ -315,7 +314,8 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		if (isReleaseVersion() || isBugFixVersion()) {
 
 			boolean isGaVersion = version.withBugfix(0).equals(version);
-			Version nextVersion = isGaVersion ? version.nextMinor() : version.nextBugfix();
+			boolean isHotfix = getHotfix().isHotfix();
+			Version nextVersion = isHotfix ? version.nextBuild() : (isGaVersion ? version.nextMinor() : version.nextBugfix());
 
 			return snapshotOf(nextVersion);
 		}
@@ -332,6 +332,9 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	public ArtifactVersion getNextBugfixVersion() {
 
 		if (isReleaseVersion()) {
+			if (getHotfix().isHotfix()) {
+				return snapshotOf(version.nextBuild());
+			}
 			return snapshotOf(version.nextBugfix());
 		}
 
@@ -399,7 +402,7 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 	 */
 	public String toShortString() {
 
-		if (version.getBugfix() == 0) {
+		if (version.getBugfix() == 0 && version.getBuild() == 0) {
 			return version.toMajorMinor();
 		}
 
@@ -417,6 +420,14 @@ public class ArtifactVersion implements Comparable<ArtifactVersion> {
 		}
 
 		return String.format("%s.%s", version.getMajor(), version.getMinor());
+	}
+
+	public Hotfix getHotfix() {
+		if (version.getComponents() > 3) {
+			return Hotfix.of(version.getBuild());
+		}
+
+		return Hotfix.none();
 	}
 
 	public String getGeneration() {

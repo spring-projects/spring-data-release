@@ -124,6 +124,9 @@ public class UpdateInformation {
 						return String.format("%s-SNAPSHOT", train.getNextIterationName());
 					}
 
+					if (train.getHotfix().isHotfix()) {
+						return String.format("%s-SNAPSHOT", train.getNextHotfixName());
+					}
 					return String.format("%s-SNAPSHOT", train.getNextBugfixName());
 				}
 

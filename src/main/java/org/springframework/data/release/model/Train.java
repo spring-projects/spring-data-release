@@ -136,38 +136,54 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 	 * @return will never be {@literal null}.
 	 */
 	public ModuleIteration getModuleIteration(Project project, Iteration iteration) {
+		return getModuleIteration(project, iteration, Hotfix.none());
+	}
+
+	/**
+	 * Returns the {@link ModuleIteration} for the given {@link Project} and {@link Iteration}.
+	 *
+	 * @param project must not be {@literal null}.
+	 * @param iteration must not be {@literal null}.
+	 * @param hotfix must not be {@literal null}.
+	 * @return will never be {@literal null}.
+	 */
+	public ModuleIteration getModuleIteration(Project project, Iteration iteration, Hotfix hotfix) {
 
 		Assert.notNull(project, "Project must not be null!");
 		Assert.notNull(iteration, "Iteration must not be null!");
 
 		Module module = getModule(project);
 
-		return new ModuleIteration(module, doGetTrainIteration(iteration));
+		return new ModuleIteration(module, doGetTrainIteration(iteration, hotfix));
 	}
 
-	public Iterable<ModuleIteration> getModuleIterations(Iteration iteration) {
-		return getModuleIterations(iteration, new Project[0]);
+	public Iterable<ModuleIteration> getModuleIterations(Iteration iteration, Hotfix hotfix) {
+		return getModuleIterations(iteration, hotfix, new Project[0]);
 	}
 
-	List<ModuleIteration> getModuleIterations(Iteration iteration, Project... exclusions) {
+	List<ModuleIteration> getModuleIterations(Iteration iteration, Hotfix hotfix, Project... exclusions) {
 
 		List<Project> exclusionList = Arrays.asList(exclusions);
 
 		return modules.stream() //
 				.filter(module -> !exclusionList.contains(module.getProject())) //
-				.map(module -> new ModuleIteration(module, new TrainIteration(this, iteration))) //
+				.map(module -> new ModuleIteration(module, new TrainIteration(this, iteration, hotfix))) //
 				.collect(Collectors.toList());
 	}
 
-	public TrainIteration getIteration(String name) {
-		return doGetTrainIteration(iterations.getIterationByName(name));
+	public TrainIteration getIteration(String name, Hotfix hotfix) {
+		return doGetTrainIteration(iterations.getIterationByName(name), hotfix);
 	}
 
 	public ArtifactVersion getModuleVersion(Project project, Iteration iteration) {
+		return getModuleVersion(project, iteration, Hotfix.none());
+	}
+
+	public ArtifactVersion getModuleVersion(Project project, Iteration iteration, Hotfix hotfix) {
 
 		Module module = getModule(project);
-
-		return ArtifactVersion.of(new ModuleIteration(module, new TrainIteration(this, iteration)));
+		TrainIteration trainIteration = new TrainIteration(this, iteration, hotfix);
+		return ArtifactVersion.of(new ModuleIteration(module, trainIteration));
 	}
 
 	public boolean usesCalver() {
@@ -180,7 +196,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 		Set<Module> modules = this.modules.stream().map(it -> {
 
 			if (it.getProject() == Projects.BOM) {
-				return new Module(it.getProject(), calver.toMajorMinorBugfix());
+				return new Module(it.getProject(), calver.toFullVersion());
 			}
 			return it;
 
@@ -247,7 +263,7 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 		Assert.isTrue(iterations.contains(iteration),
 				String.format("Iteration %s is not a valid one for the configured iterations %s!", iteration, iterations));
 
-		return doGetTrainIteration(iteration);
+		return doGetTrainIteration(iteration, Hotfix.none());
 	}
 
 	public SupportedProject getSupportedProject(Project project) {
@@ -258,8 +274,8 @@ public class Train implements Streamable<SupportedProject>, SupportStatusAware {
 		return SupportedProject.of(module.getProject(), supportStatus);
 	}
 
-	protected TrainIteration doGetTrainIteration(Iteration iteration) {
-		return new TrainIteration(this, iteration);
+	protected TrainIteration doGetTrainIteration(Iteration iteration, Hotfix hotfix) {
+		return new TrainIteration(this, iteration, hotfix);
 	}
 
 	/**

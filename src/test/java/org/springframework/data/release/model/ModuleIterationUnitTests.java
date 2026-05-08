@@ -30,7 +30,7 @@ class ModuleIterationUnitTests {
 	@Test
 	void abbreviatesTrailingZerosForNonServiceReleases() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1, Hotfix.none());
 		ModuleIteration module = iteration.getModule(Projects.JPA);
 
 		assertThat(module.getShortVersionString()).isEqualTo("2.4 M1");
@@ -42,8 +42,16 @@ class ModuleIterationUnitTests {
 	@Test
 	void includesGASuffixForGAReleases() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA, Hotfix.none());
 		ModuleIteration module = iteration.getModule(Projects.JPA);
+
+		assertThat(module.getShortVersionString()).isEqualTo("2.4 GA");
+		assertThat(module.getMediumVersionString()).isEqualTo("2.4 GA (2020.0.0)");
+		assertThat(module.getMilestoneName()).isEqualTo("2.4 GA (2020.0.0)");
+		assertThat(module.getFullVersionString()).isEqualTo("2.4.0 (2020.0.0)");
+
+		iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.GA, Hotfix.of(5));
+		module = iteration.getModule(Projects.JPA);
 
 		assertThat(module.getShortVersionString()).isEqualTo("2.4 GA");
 		assertThat(module.getMediumVersionString()).isEqualTo("2.4 GA (2020.0.0)");
@@ -54,22 +62,44 @@ class ModuleIterationUnitTests {
 	@Test
 	void shouldRenderToString() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1, Hotfix.none());
 		ModuleIteration module = iteration.getModule(Projects.JPA);
 
 		assertThat(module).hasToString("Spring Data JPA 2.4 M1 (2020.0.0)");
+
+		iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1, Hotfix.of(5));
+		module = iteration.getModule(Projects.JPA);
+
+		assertThat(module).hasToString("Spring Data JPA 2.4 M1 (2020.0.0)");
+
+		iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1, Hotfix.of(5));
+		module = iteration.getModule(Projects.JPA);
+
+		assertThat(module).hasToString("Spring Data JPA 2.4.1.5 (2020.0.1.5)");
 	}
 
 	@Test
 	void doesNotListIterationSuffixForServiceReleases() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1, Hotfix.none());
 		ModuleIteration module = iteration.getModule(Projects.JPA);
 
 		assertThat(module.getShortVersionString()).isEqualTo("2.4.1");
 		assertThat(module.getMediumVersionString()).isEqualTo("2.4.1 (2020.0.1)");
 		assertThat(module.getMilestoneName()).isEqualTo("2.4.1 (2020.0.1)");
 		assertThat(module.getFullVersionString()).isEqualTo("2.4.1 (2020.0.1)");
+	}
+
+	@Test // GH-146
+	void doesNotListIterationSuffixForHotfixServiceReleases() {
+
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.SR1, Hotfix.of(5));
+		ModuleIteration module = iteration.getModule(Projects.JPA);
+
+		assertThat(module.getShortVersionString()).isEqualTo("2.4.1.5");
+		assertThat(module.getMediumVersionString()).isEqualTo("2.4.1.5 (2020.0.1.5)");
+		assertThat(module.getMilestoneName()).isEqualTo("2.4.1.5 (2020.0.1.5)");
+		assertThat(module.getFullVersionString()).isEqualTo("2.4.1.5 (2020.0.1.5)");
 	}
 
 }

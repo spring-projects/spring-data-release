@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.release.model.ArtifactVersion;
+import org.springframework.data.release.model.Hotfix;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Project;
@@ -212,7 +213,7 @@ public class VersionTags implements Streamable<Tag> {
 
 		for (Train train : ReleaseTrains.trains()) {
 
-			TrainIteration ti = new TrainIteration(train, iteration);
+			TrainIteration ti = new TrainIteration(train, iteration, Hotfix.none());
 
 			if (!ti.contains(project)) {
 				continue;

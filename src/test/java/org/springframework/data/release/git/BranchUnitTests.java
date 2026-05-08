@@ -44,6 +44,18 @@ class BranchUnitTests {
 		assertThat(Branch.from(iterationVersion).toString()).isEqualTo("1.4.x");
 	}
 
+	@Test
+	void createsHotfixBugfixBranchForServiceRelease() {
+
+		IterationVersion iterationVersion = new SimpleIterationVersion(Version.of(1, 4, 1, 5), Iteration.SR1) {
+			@Override
+			public Version getVersion() {
+				return Version.of(1, 4, 1, 5);
+			}
+		};
+		assertThat(Branch.from(iterationVersion).toString()).isEqualTo("1.4.1.x");
+	}
+
 	@Test // #2
 	void detectsIssueBranches() {
 
@@ -61,7 +73,7 @@ class BranchUnitTests {
 
 	@Test
 	void getVersion() {
-
 		assertThat(Branch.from("head/2.0.x").asVersion()).isEqualTo(Version.of(2, 0));
+		assertThat(Branch.from("head/2.0.5.x").asVersion()).isEqualTo(Version.of(2, 0, 5));
 	}
 }

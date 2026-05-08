@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.release.AbstractIntegrationTests;
+import org.springframework.data.release.model.Hotfix;
 import org.springframework.data.release.model.Iteration;
 import org.springframework.data.release.model.ModuleIteration;
 import org.springframework.data.release.model.Projects;
@@ -39,7 +40,7 @@ class DeploymentInformationIntegrationTests extends AbstractIntegrationTests {
 	@Test
 	void createsDeploymentInformation() {
 
-		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1);
+		TrainIteration iteration = new TrainIteration(ReleaseTrains.OCKHAM, Iteration.M1, Hotfix.none());
 		ModuleIteration buildModule = iteration.getModule(Projects.BUILD);
 
 		DeploymentInformation information = new DefaultDeploymentInformation(buildModule, properties);
