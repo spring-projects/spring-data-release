@@ -1,3 +1,0 @@
-org.springframework.boot.diagnostics.FailureAnalyzer=org.springframework.data.release.io.JavaRuntimes$NoSuchJavaRuntimeExceptionFailureAnalyzer,\
-org.springframework.data.release.cli.JavaToolingVerifier.InvalidMavenVersionExceptionFailureAnalyzer,\
-org.springframework.data.release.build.MavenRuntimes$NoSuchMavenRuntimeExceptionFailureAnalyzer
